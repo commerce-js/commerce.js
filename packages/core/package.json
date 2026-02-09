@@ -1,0 +1,42 @@
+{
+  "name": "@commercejs/core",
+  "version": "0.1.0",
+  "description": "CommerceJS core Nuxt module — composables, plugin, and auto-generated REST API",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/module.mjs",
+  "types": "./dist/types.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/module.mjs"
+    },
+    "./runtime/*": {
+      "types": "./dist/runtime/*.d.ts",
+      "import": "./dist/runtime/*"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nuxt-module-build build",
+    "dev": "nuxi dev playground",
+    "typecheck": "nuxt-module-build build && tsc --noEmit",
+    "clean": "rm -rf dist .nuxt"
+  },
+  "dependencies": {
+    "@commercejs/types": "workspace:*",
+    "@commercejs/adapter-salla": "workspace:*",
+    "@nuxt/kit": "^3.14.0",
+    "@vueuse/core": "^14.2.0",
+    "consola": "^3.4.2",
+    "h3": "^1.13.0"
+  },
+  "devDependencies": {
+    "@nuxt/module-builder": "^0.8.0",
+    "@nuxt/schema": "^4.3.1",
+    "nuxt": "^3.14.0",
+    "typescript": "^5.7.0"
+  }
+}

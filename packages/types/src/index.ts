@@ -1,0 +1,92 @@
+// ---------------------------------------------------------------------------
+// @commercejs/types — Unified Data Model for eCommerce
+// ---------------------------------------------------------------------------
+// Barrel export — re-exports all domain types
+
+// Common primitives & utilities
+export type { Maybe, Id, LocalizedString, PaginatedResult, PaginationParams, Price, DiscountablePrice, Image, DeepPartial, CommerceErrorCode, TaxStrategy } from './common.js'
+export { CommerceError, isCommerceError } from './common.js'
+
+// Product
+export type { Product, ProductVariant, ProductOption, Attribute, ProductType, DigitalProductMeta, ServiceProductMeta, EventProductMeta, SubscriptionProductMeta, PreOrderMeta } from './product.js'
+
+// Category
+export type { Category } from './category.js'
+
+// Brand
+export type { Brand } from './brand.js'
+
+// Cart
+export type { Cart, CartItem, CartTotals } from './cart.js'
+
+// Customer
+export type { Customer, Address, RegisterInput, UpdateCustomerInput } from './customer.js'
+
+// Order
+export type { Order, OrderItem, OrderStatus, FulfillmentStatus } from './order.js'
+
+// Shipping
+export type { ShippingMethod, ShippingProvider } from './shipping.js'
+
+// Payment
+export type { PaymentMethod, PaymentType, Installment } from './payment.js'
+
+// Search
+export type { SearchParams, SearchResult, Facet, FacetValue, SortOption, SortDirection } from './search.js'
+
+// Wishlist
+export type { Wishlist, WishlistItem } from './wishlist.js'
+
+// Review
+export type { Review, ReviewInput, ReviewSummary } from './review.js'
+
+// Store
+export type { StoreInfo, StoreCurrency, StoreLocale } from './store.js'
+
+// Country
+export type { Country } from './country.js'
+
+// Store Location
+export type { StoreLocation, Coordinates, LocationContact, WorkingHoursEntry } from './location.js'
+
+// Promotion
+export type { Promotion, Coupon, DiscountType, PromotionTarget, PromotionCondition } from './promotion.js'
+
+// Return
+export type { ReturnRequest, ReturnItem, CreateReturnInput, ReturnReason, ReturnStatus, RefundMethod } from './return.js'
+
+// Wholesale / B2B
+export type { PriceTier, CustomerGroup, CustomerGroupPrice, QuoteRequest, QuoteLineItem, QuoteStatus, CreateQuoteInput, PaymentTerms, PaymentTermsType } from './wholesale.js'
+
+// Auction
+export type { AuctionProductMeta, AuctionType, AuctionStatus, Bid, PlaceBidInput } from './auction.js'
+
+// Rental
+export type { RentalProductMeta, RentalPricingUnit, RentalPricingTier, AvailabilitySlot, RentalBooking, RentalBookingStatus, CreateRentalBookingInput } from './rental.js'
+
+// Gift Card
+export type { GiftCard, GiftCardStatus, GiftCardTransaction, PurchaseGiftCardInput, RedeemGiftCardInput } from './gift-card.js'
+
+// Adapter contract (sub-interfaces + composed)
+export type {
+  CommerceAdapter,
+  CatalogAdapter,
+  CartAdapter,
+  CheckoutAdapter,
+  CustomerAdapter,
+  WishlistAdapter,
+  ReviewAdapter,
+  StoreAdapter,
+  PromotionAdapter,
+  ReturnAdapter,
+  WholesaleAdapter,
+  AuctionAdapter,
+  RentalAdapter,
+  GiftCardAdapter,
+  BrandAdapter,
+  CountryAdapter,
+  LocationAdapter,
+  GetProductParams,
+  GetCategoriesParams,
+  AddToCartInput,
+} from './adapter.js'
