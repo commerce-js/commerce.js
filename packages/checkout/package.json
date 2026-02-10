@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/checkout",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Universal checkout engine — framework-agnostic state machine for payment flows",
   "license": "MIT",
   "type": "module",
