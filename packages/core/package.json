@@ -28,12 +28,12 @@
   "dependencies": {
     "@commercejs/adapter-salla": "workspace:*",
     "@commercejs/types": "workspace:*",
-    "@nuxt/kit": "^3.14.0",
     "@vueuse/core": "^14.2.0",
     "consola": "^3.4.2",
     "h3": "^1.13.0"
   },
   "devDependencies": {
+    "@nuxt/kit": "^4.3.1",
     "@nuxt/module-builder": "^0.8.0",
     "@nuxt/schema": "^4.3.1",
     "nuxt": "^4.3.1",
