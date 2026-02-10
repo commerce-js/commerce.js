@@ -18,10 +18,11 @@ export default defineAppConfig({
     title: 'Commerce.js',
     to: '/',
     logo: {
-      alt: '',
-      light: '',
-      dark: ''
+      alt: 'Commercejs Logo',
+      light: '/logo-500.svg',
+      dark: '/logo-400.svg'
     },
+    version: 'Pre-Alpha',
     search: true,
     colorMode: true,
     links: [{

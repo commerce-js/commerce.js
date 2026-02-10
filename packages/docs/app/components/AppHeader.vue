@@ -29,24 +29,22 @@ const { header } = useAppConfig()
         class="h-6 w-auto shrink-0"
       />
 
-      <span v-else-if="header?.title">
+      <span v-if="header?.title">
         {{ header.title }}
       </span>
-      <UBadge color="neutral" variant="subtle">
-        beta
+      <UBadge color="primary" variant="soft">
+        {{ header.version }}
       </UBadge>
     </template>
 
-    <!-- <template
+    <template
       v-else
       #left
     >
       <NuxtLink :to="header?.to || '/'">
         <AppLogo class="w-auto h-6 shrink-0" />
       </NuxtLink>
-
-      <TemplateMenu />
-    </template> -->
+    </template>
 
     <template #right>
       <UContentSearchButton
