@@ -18,7 +18,7 @@ You need the following tools installed:
 ### Clone the repository
 
 ```bash
-git clone https://github.com/commercejs/commercejs.git
+git clone https://github.com/commerce-js/commerce.js.git
 cd commercejs
 ```
 
