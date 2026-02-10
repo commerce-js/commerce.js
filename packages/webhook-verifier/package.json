@@ -2,6 +2,7 @@
   "name": "@commercejs/webhook-verifier",
   "version": "1.0.0",
   "description": "Webhook signature verification with built-in provider formatters",
+  "repository": { "type": "git", "url": "https://github.com/commerce-js/commerce.js.git", "directory": "packages/webhook-verifier" },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

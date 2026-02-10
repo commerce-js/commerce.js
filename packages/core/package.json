@@ -2,6 +2,7 @@
   "name": "@commercejs/core",
   "version": "0.1.0",
   "description": "CommerceJS core Nuxt module — composables, plugin, and auto-generated REST API",
+  "repository": { "type": "git", "url": "https://github.com/commerce-js/commerce.js.git", "directory": "packages/core" },
   "license": "MIT",
   "type": "module",
   "main": "./dist/module.mjs",
