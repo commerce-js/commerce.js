@@ -1,7 +1,3 @@
-// ---------------------------------------------------------------------------
-// @commercejs/adapter-salla — Salla platform adapter for CommerceJS
-// ---------------------------------------------------------------------------
-
 // Adapter
 export { SallaAdapter } from './adapter.js'
 
@@ -19,6 +15,8 @@ export type {
   SallaRawCustomer,
   SallaRawOrder,
   SallaRawOrderItem,
+  SallaRawOrderStatus,
+  SallaRawOrderHistory,
   SallaRawReview,
   SallaRawShippingCompany,
   SallaRawPaymentMethod,
@@ -41,6 +39,8 @@ export {
   mapSallaCustomer,
   mapSallaAddress,
   mapSallaOrder,
+  mapSallaOrderStatus,
+  mapSallaOrderHistory,
   mapSallaReview,
   mapSallaShipping,
   mapSallaPayment,

@@ -5,6 +5,7 @@
 import {
   CommerceError,
   type CommerceAdapter,
+  type AdapterDomain,
   type Product,
   type Category,
   type Cart,
@@ -17,6 +18,10 @@ import {
   type GetProductParams,
   type GetCategoriesParams,
   type AddToCartInput,
+  type CreateOrderInput,
+  type UpdateOrderStatusInput,
+  type OrderStatusInfo,
+  type OrderHistoryEntry,
   type Address,
   type ShippingMethod,
   type PaymentMethod,
@@ -55,6 +60,8 @@ import type {
   SallaRawCategory,
   SallaRawCustomer,
   SallaRawOrder,
+  SallaRawOrderStatus,
+  SallaRawOrderHistory,
   SallaRawReview,
   SallaRawShippingCompany,
   SallaRawPaymentMethod,
@@ -70,6 +77,8 @@ import {
   mapSallaCategory,
   mapSallaCustomer,
   mapSallaOrder,
+  mapSallaOrderStatus,
+  mapSallaOrderHistory,
   mapSallaReview,
   mapSallaShipping,
   mapSallaPayment,
@@ -85,7 +94,7 @@ import {
 function notImplemented(method: string): never {
   throw new CommerceError(
     `SallaAdapter.${method}() is not supported by the Salla platform`,
-    'UNKNOWN',
+    'NOT_SUPPORTED',
     501,
   )
 }
@@ -103,6 +112,22 @@ export class SallaAdapter implements CommerceAdapter {
   readonly name = 'salla' as const
   private readonly client: SallaClient
   private readonly locale: string
+
+  /**
+   * Domains this adapter actually supports (methods won't throw NOT_SUPPORTED).
+   * Used by consumers to check capability before calling.
+   */
+  readonly capabilities: AdapterDomain[] = [
+    'catalog',
+    'orders',
+    'store',
+    'promotions',
+    'reviews',
+    'brands',
+    'countries',
+    'locations',
+    'customers', // partial: register + read via API
+  ]
 
   constructor(config: SallaConfig) {
     this.client = new SallaClient(config)
@@ -211,6 +236,7 @@ export class SallaAdapter implements CommerceAdapter {
   // ========================================================================
 
   async login(_email: string, _password: string): Promise<Customer> {
+    // Salla Merchant API doesn't support customer login — auth is via OAuth
     return notImplemented('login')
   }
 
@@ -225,10 +251,15 @@ export class SallaAdapter implements CommerceAdapter {
   }
 
   async getCustomer(): Promise<Customer> {
+    // Salla Merchant API doesn't have a "me" endpoint —
+    // this requires a customer ID which we'd get from session context.
+    // For now, throw until we have session management.
     return notImplemented('getCustomer')
   }
 
-  async updateCustomer(_input: UpdateCustomerInput): Promise<Customer> {
+  async updateCustomer(input: UpdateCustomerInput): Promise<Customer> {
+    // Requires customer ID from session context
+    // When session management is added, this will use PUT /customers/{id}
     return notImplemented('updateCustomer')
   }
 
@@ -245,6 +276,7 @@ export class SallaAdapter implements CommerceAdapter {
   }
 
   async getAddresses(): Promise<Address[]> {
+    // Requires customer ID from session context
     return notImplemented('getAddresses')
   }
 
@@ -258,6 +290,60 @@ export class SallaAdapter implements CommerceAdapter {
 
   async deleteAddress(_addressId: string): Promise<void> {
     return notImplemented('deleteAddress')
+  }
+
+  // ========================================================================
+  // OrderAdapter
+  // ========================================================================
+
+  async createOrder(input: CreateOrderInput): Promise<Order> {
+    // Build Salla's POST /orders payload
+    const body: Record<string, unknown> = {
+      // Items
+      items: input.items.map((item) => ({
+        product_id: Number(item.productId),
+        quantity: item.quantity,
+        ...(item.variantId ? { variant_id: Number(item.variantId) } : {}),
+        ...(item.notes ? { note: item.notes } : {}),
+      })),
+
+      // Shipping address
+      shipping: {
+        company_id: input.shippingMethodId ? Number(input.shippingMethodId) : undefined,
+        address: {
+          country: input.shippingAddress.country,
+          city: input.shippingAddress.city,
+          street: input.shippingAddress.street,
+          ...(input.shippingAddress.street2 ? { block: input.shippingAddress.street2 } : {}),
+          ...(input.shippingAddress.postalCode ? { postal_code: input.shippingAddress.postalCode } : {}),
+        },
+      },
+
+      // Payment method
+      ...(input.payment ? { payment_method: input.payment.methodId } : {}),
+
+      // Note
+      ...(input.note ? { note: input.note } : {}),
+    }
+
+    // Customer ID or receiver (guest)
+    if (input.customerId) {
+      body.customer_id = Number(input.customerId)
+    } else if (input.receiver) {
+      body.receiver = {
+        name: `${input.receiver.firstName} ${input.receiver.lastName}`,
+        email: input.receiver.email,
+        ...(input.receiver.phone ? { phone: input.receiver.phone } : {}),
+      }
+    }
+
+    // Coupon
+    if (input.couponCode) {
+      body.coupon = input.couponCode
+    }
+
+    const res = await this.client.post<SallaRawOrder>('/orders', body)
+    return mapSallaOrder(res.data, this.locale)
   }
 
   async getCustomerOrders(params?: PaginationParams): Promise<PaginatedResult<Order>> {
@@ -278,6 +364,41 @@ export class SallaAdapter implements CommerceAdapter {
   async getOrder(orderId: string): Promise<Order> {
     const res = await this.client.get<SallaRawOrder>(`/orders/${orderId}`)
     return mapSallaOrder(res.data, this.locale)
+  }
+
+  async getOrderStatuses(): Promise<OrderStatusInfo[]> {
+    const res = await this.client.get<SallaRawOrderStatus[]>('/orders/statuses')
+    return res.data.map(mapSallaOrderStatus)
+  }
+
+  async updateOrderStatus(orderId: string, input: UpdateOrderStatusInput): Promise<void> {
+    await this.client.post(`/orders/${orderId}/status`, {
+      slug: input.status,
+      ...(input.note ? { note: input.note } : {}),
+      ...(input.restoreItems !== undefined ? { restore_items: input.restoreItems } : {}),
+    })
+  }
+
+  async cancelOrder(orderId: string, note?: string): Promise<void> {
+    await this.updateOrderStatus(orderId, {
+      status: 'canceled',
+      note,
+      restoreItems: true,
+    })
+  }
+
+  async duplicateOrder(orderId: string): Promise<Order> {
+    const res = await this.client.post<SallaRawOrder>('/orders/duplicate', {
+      order_id: Number(orderId),
+    })
+    return mapSallaOrder(res.data, this.locale)
+  }
+
+  async getOrderHistory(orderId: string): Promise<OrderHistoryEntry[]> {
+    const res = await this.client.get<SallaRawOrderHistory[]>('/orders/histories', {
+      order_id: orderId,
+    })
+    return res.data.map((h) => mapSallaOrderHistory(h, orderId))
   }
 
   // ========================================================================

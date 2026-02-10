@@ -3,6 +3,10 @@
 // ---------------------------------------------------------------------------
 // Split into domain-specific sub-interfaces (Design Pattern: Interface
 // Segregation) so adapters can implement only the domains they support.
+//
+// The CommerceAdapter type composes all sub-interfaces. For composable
+// setups, consumers can use individual sub-interfaces (CatalogAdapter,
+// OrderAdapter, etc.) and the AdapterCapabilities system.
 // ---------------------------------------------------------------------------
 
 import type { PaginatedResult, PaginationParams } from './common.js'
@@ -26,6 +30,8 @@ import type { GiftCard, GiftCardTransaction, PurchaseGiftCardInput, RedeemGiftCa
 import type { Brand } from './brand.js'
 import type { Country } from './country.js'
 import type { StoreLocation } from './location.js'
+import type { CreateOrderInput } from './order-input.js'
+import type { OrderStatusInfo, OrderHistoryEntry, UpdateOrderStatusInput } from './order-status.js'
 
 // ---- Input types for adapter methods ----
 
@@ -124,11 +130,10 @@ export interface CheckoutAdapter<
 }
 
 /**
- * Customer operations — authentication, profile, address book, and orders.
+ * Customer operations — authentication, profile, and address book.
  */
 export interface CustomerAdapter<
   TCustomer extends Customer = Customer,
-  TOrder extends Order = Order,
 > {
   /** Authenticate a customer */
   login(email: string, password: string): Promise<TCustomer>
@@ -166,14 +171,39 @@ export interface CustomerAdapter<
 
   /** Delete an address from the address book */
   deleteAddress(addressId: string): Promise<void>
+}
 
-  // ---- Customer Orders ----
-
-  /** Get paginated list of customer orders */
-  getCustomerOrders(params?: PaginationParams): Promise<PaginatedResult<TOrder>>
+/**
+ * Order operations — create, read, and list orders.
+ *
+ * Separated from CustomerAdapter so that order creation can be handled
+ * independently (e.g., by a checkout engine that pushes orders to the
+ * platform after payment processing).
+ */
+export interface OrderAdapter<TOrder extends Order = Order> {
+  /** Create a new order from structured input (e.g., after checkout) */
+  createOrder(input: CreateOrderInput): Promise<TOrder>
 
   /** Get a single order by ID */
   getOrder(orderId: string): Promise<TOrder>
+
+  /** Get paginated list of orders (optionally filtered by customer) */
+  getCustomerOrders(params?: PaginationParams): Promise<PaginatedResult<TOrder>>
+
+  /** Get all available order statuses (with labels, colors, icons) */
+  getOrderStatuses(): Promise<OrderStatusInfo[]>
+
+  /** Update an order's status */
+  updateOrderStatus(orderId: string, input: UpdateOrderStatusInput): Promise<void>
+
+  /** Cancel an order (convenience — calls updateOrderStatus with 'canceled') */
+  cancelOrder(orderId: string, note?: string): Promise<void>
+
+  /** Duplicate an existing order (reorder) */
+  duplicateOrder(orderId: string): Promise<TOrder>
+
+  /** Get order status change history / timeline */
+  getOrderHistory(orderId: string): Promise<OrderHistoryEntry[]>
 }
 
 /**
@@ -341,22 +371,51 @@ export interface GiftCardAdapter {
   getGiftCardTransactions(giftCardId: string): Promise<GiftCardTransaction[]>
 }
 
+// ---- Adapter Capabilities ----
+
+/** Well-known capability domain names */
+export type AdapterDomain =
+  | 'catalog'
+  | 'cart'
+  | 'checkout'
+  | 'orders'
+  | 'customers'
+  | 'wishlist'
+  | 'reviews'
+  | 'store'
+  | 'promotions'
+  | 'returns'
+  | 'wholesale'
+  | 'auctions'
+  | 'rentals'
+  | 'gift-cards'
+  | 'brands'
+  | 'countries'
+  | 'locations'
+
 // ---- Composed Adapter ----
 
 /**
- * CommerceAdapter — the full contract that all platform adapters must implement.
+ * CommerceAdapter — the full contract that platform adapters implement.
  *
  * Composed from domain-specific sub-interfaces. Each adapter (Salla, Zid,
  * Shopify, Medusa, etc.) provides its own implementation, mapping
  * platform-specific API calls and data shapes to the unified types.
+ *
+ * Adapters MUST implement all sub-interfaces but MAY throw a
+ * `CommerceError` with code 'NOT_SUPPORTED' (status 501) for domains
+ * the platform doesn't support. Use `capabilities` to check support
+ * at runtime before calling.
  *
  * Generic type parameters allow adapters to expose enriched, platform-specific
  * types while remaining compatible with the base interface.
  *
  * @example
  * ```ts
- * // Adapter with default types
- * class GenericAdapter implements CommerceAdapter { ... }
+ * // Check before calling optional domain
+ * if (adapter.capabilities.includes('cart')) {
+ *   const cart = await adapter.createCart()
+ * }
  *
  * // Adapter with enriched types
  * class SallaAdapter implements CommerceAdapter<SallaProduct, SallaCategory> { ... }
@@ -375,7 +434,8 @@ export interface CommerceAdapter<
   CatalogAdapter<TProduct, TCategory, TSearchResult>,
   CartAdapter<TCart>,
   CheckoutAdapter<TCart, TOrder>,
-  CustomerAdapter<TCustomer, TOrder>,
+  CustomerAdapter<TCustomer>,
+  OrderAdapter<TOrder>,
   WishlistAdapter<TWishlist>,
   ReviewAdapter,
   StoreAdapter<TStoreInfo>,
@@ -391,4 +451,12 @@ export interface CommerceAdapter<
 {
   /** Unique adapter identifier (e.g., "salla", "zid", "shopify") */
   readonly name: string
+
+  /**
+   * Domains this adapter actually supports (i.e., won't throw NOT_SUPPORTED).
+   *
+   * Consumers should check this before calling methods in optional domains.
+   * Required domains like 'catalog' and 'store' should always be listed.
+   */
+  readonly capabilities: AdapterDomain[]
 }

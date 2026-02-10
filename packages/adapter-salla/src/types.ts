@@ -344,3 +344,27 @@ export interface SallaRawBranch {
   city: { id: number; name: string; name_en: string } | null
   region: { id: number; name: string; code: string } | null
 }
+
+/** Raw Salla order status from GET /orders/statuses */
+export interface SallaRawOrderStatus {
+  id: number
+  name: string
+  type: 'original' | 'custom'
+  slug: string
+  message: string | null
+  color: string | null
+  icon: string | null
+  sort: number
+  is_active: boolean
+  original: { id: number; name: string } | null
+  parent: { id: number; name: string } | null
+  children: SallaRawOrderStatus[] | null
+}
+
+/** Raw Salla order history entry from GET /orders/histories */
+export interface SallaRawOrderHistory {
+  id: number
+  action: string
+  note: string | null
+  created_at: string | { date: string; timezone_type: number; timezone: string }
+}

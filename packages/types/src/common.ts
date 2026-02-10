@@ -78,6 +78,7 @@ export type DeepPartial<T> = {
 /** Standardized error codes for all adapter operations */
 export type CommerceErrorCode =
   | 'NOT_FOUND'
+  | 'NOT_SUPPORTED'
   | 'UNAUTHORIZED'
   | 'FORBIDDEN'
   | 'VALIDATION'

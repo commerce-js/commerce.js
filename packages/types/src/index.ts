@@ -25,11 +25,27 @@ export type { Customer, Address, RegisterInput, UpdateCustomerInput } from './cu
 // Order
 export type { Order, OrderItem, OrderStatus, FulfillmentStatus } from './order.js'
 
+// Order Input (for OrderAdapter.createOrder)
+export type { CreateOrderInput, OrderItemInput } from './order-input.js'
+
+// Order Status & History (for OrderAdapter status/timeline methods)
+export type { OrderStatusInfo, OrderHistoryEntry, UpdateOrderStatusInput } from './order-status.js'
+
 // Shipping
 export type { ShippingMethod, ShippingProvider } from './shipping.js'
 
 // Payment
 export type { PaymentMethod, PaymentType, Installment } from './payment.js'
+
+// Payment Provider (pluggable gateway interface)
+export type {
+  PaymentProvider,
+  PaymentSession,
+  PaymentSessionStatus,
+  CreatePaymentSessionInput,
+  RefundInput,
+  PaymentWebhookEvent,
+} from './payment-provider.js'
 
 // Search
 export type { SearchParams, SearchResult, Facet, FacetValue, SortOption, SortDirection } from './search.js'
@@ -74,6 +90,7 @@ export type {
   CartAdapter,
   CheckoutAdapter,
   CustomerAdapter,
+  OrderAdapter,
   WishlistAdapter,
   ReviewAdapter,
   StoreAdapter,
@@ -89,4 +106,5 @@ export type {
   GetProductParams,
   GetCategoriesParams,
   AddToCartInput,
+  AdapterDomain,
 } from './adapter.js'

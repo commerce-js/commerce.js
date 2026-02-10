@@ -1,0 +1,33 @@
+{
+  "name": "@commercejs/checkout",
+  "version": "0.1.0",
+  "description": "Universal checkout engine — framework-agnostic state machine for payment flows",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "@commercejs/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@commercejs/types": "workspace:*",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.0"
+  }
+}
