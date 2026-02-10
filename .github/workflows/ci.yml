@@ -1,0 +1,44 @@
+# CI — Runs on every pull request to catch issues before merging.
+#
+# What it does:
+#   1. Installs dependencies (cached for speed)
+#   2. Builds all packages (checks for compile errors)
+#   3. Runs type checking (catches type bugs)
+#   4. Runs tests (catches logic bugs)
+#
+# If any step fails, the PR gets a red ❌ and you should fix the issue before merging.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Build, Typecheck & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build, Typecheck & Test
+        run: pnpm turbo run build typecheck test

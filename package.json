@@ -9,9 +9,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "changeset": "changeset"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.0",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0",
     "vitest": "^4.0.18"
