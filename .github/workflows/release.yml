@@ -53,8 +53,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Build all packages
-        run: pnpm turbo run build
+      - name: Build publishable packages
+        run: pnpm turbo run build --filter='@commercejs/*'
 
       - name: Create Release PR or Publish
         uses: changesets/action@v1
