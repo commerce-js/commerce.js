@@ -194,7 +194,7 @@ Contributions are welcome! This project uses [Changesets](https://github.com/cha
 
 ```bash
 # Create a changeset after making changes
-pnpm changeset
+pnpm release
 
 # Follow the prompts to select packages and describe your change
 # Commit the generated changeset file with your PR

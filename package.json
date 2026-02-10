@@ -10,7 +10,7 @@
     "test:watch": "vitest",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean && rm -rf node_modules",
-    "changeset": "changeset"
+    "release": "changeset"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.2",
