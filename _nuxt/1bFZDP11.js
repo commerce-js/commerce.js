@@ -1,0 +1,1 @@
+import{X as c,e as n,p,a1 as l,c as m,o as u,a4 as s}from"./BeqSVR52.js";const i={base:""},_={__name:"ProseEm",props:{class:{type:String,required:!1}},setup(e){const a=e,o=c(),t=m(()=>s({extend:s(i),...o.ui?.prose?.em||{}}));return(r,f)=>(u(),n("em",{class:l(t.value({class:a.class}))},[p(r.$slots,"default")],2))}};export{_ as default};
