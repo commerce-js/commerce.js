@@ -26,8 +26,8 @@
     "clean": "rm -rf dist .nuxt"
   },
   "dependencies": {
-    "@commercejs/types": "workspace:*",
     "@commercejs/adapter-salla": "workspace:*",
+    "@commercejs/types": "workspace:*",
     "@nuxt/kit": "^3.14.0",
     "@vueuse/core": "^14.2.0",
     "consola": "^3.4.2",
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@nuxt/module-builder": "^0.8.0",
     "@nuxt/schema": "^4.3.1",
-    "nuxt": "^3.14.0",
+    "nuxt": "^4.3.1",
     "typescript": "^5.7.0"
   }
 }
