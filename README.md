@@ -12,6 +12,7 @@
   <a href="https://turbo.build/"><img src="https://img.shields.io/badge/Turborepo-EF4444?logo=turborepo&logoColor=white" alt="Turborepo"></a>
   <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-F69220?logo=pnpm&logoColor=white" alt="pnpm"></a>
   <a href="https://commerce.js.org"><img src="https://img.shields.io/badge/Docs-commerce.js.org-blue?logo=readthedocs&logoColor=white" alt="Docs"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
 ---
@@ -220,3 +221,9 @@ Built with these excellent open source projects:
 - **[Vitest](https://vitest.dev/)** — Blazing fast unit testing
 - **[TypeScript](https://www.typescriptlang.org/)** — Type-safe JavaScript
 - **[pnpm](https://pnpm.io/)** — Fast, disk-efficient package manager
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+Core packages (`@commercejs/types`, `@commercejs/checkout`, `@commercejs/core`, etc.) are MIT-licensed and free to use in any project. Premium adapters may use a separate commercial license — check individual package `LICENSE` files for details.
