@@ -1,0 +1,243 @@
+# Adapter Development
+
+> How to build a CommerceAdapter for a new eCommerce platform.
+
+The adapter pattern is the core of CommerceJS's platform-agnostic design. Each eCommerce platform (Salla, Shopify, WooCommerce) provides an adapter that maps its API to the unified `CommerceAdapter` interface.
+
+## The CommerceAdapter Interface
+
+The adapter is composed of domain-specific sub-adapters:
+
+```ts
+interface CommerceAdapter {
+  catalog: CatalogAdapter     // Products, categories, brands
+  cart: CartAdapter            // Cart CRUD
+  checkout: CheckoutAdapter    // Shipping/payment methods
+  customer: CustomerAdapter    // Profiles, auth
+  order: OrderAdapter          // Order management
+  store: StoreAdapter          // Store info
+  // ... more domains
+}
+```
+
+Each sub-adapter focuses on a single domain. You can implement them incrementally — start with `catalog` and add more as needed.
+
+## Step-by-Step Guide
+
+<steps>
+
+### Create the package
+
+```bash
+mkdir -p packages/adapter-shopify/src/mappers
+```
+
+```json [packages/adapter-shopify/package.json]
+{
+  "name": "@commercejs/adapter-shopify",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@commercejs/types": "workspace:*"
+  }
+}
+```
+
+### Write the mapper functions
+
+Mappers transform platform-specific data into unified CommerceJS types. Keep them as pure functions:
+
+```ts [packages/adapter-shopify/src/mappers/product.ts]
+import type { Product, Image } from '@commercejs/types'
+
+interface ShopifyProduct {
+  id: number
+  title: string
+  body_html: string
+  handle: string
+  images: { id: number; src: string }[]
+  variants: ShopifyVariant[]
+}
+
+export function mapProduct(raw: ShopifyProduct): Product {
+  return {
+    id: String(raw.id),
+    name: raw.title,
+    slug: raw.handle,
+    description: raw.body_html,
+    type: 'physical',
+    price: {
+      amount: parseFloat(raw.variants[0]?.price ?? '0'),
+      currency: 'USD',
+    },
+    sku: raw.variants[0]?.sku ?? undefined,
+    variants: raw.variants.map(mapVariant),
+    options: [],
+    images: raw.images.map(mapImage),
+    attributes: [],
+    categories: [],
+  }
+}
+
+function mapImage(img: { id: number; src: string }): Image {
+  return { url: img.src, alt: '' }
+}
+```
+
+### Implement the CatalogAdapter
+
+```ts [packages/adapter-shopify/src/catalog.ts]
+import type { CatalogAdapter, Product, PaginatedResult } from '@commercejs/types'
+import { mapProduct } from './mappers/product.js'
+
+export function createCatalogAdapter(config: {
+  token: string
+  store: string
+}): CatalogAdapter {
+  const baseUrl = `https://${config.store}.myshopify.com/admin/api/2024-01`
+
+  async function request<T>(path: string): Promise<T> {
+    const res = await fetch(`${baseUrl}${path}`, {
+      headers: { 'X-Shopify-Access-Token': config.token },
+    })
+    return res.json()
+  }
+
+  return {
+    async getProducts(params): Promise<PaginatedResult<Product>> {
+      const data = await request<{ products: any[] }>('/products.json')
+      return {
+        data: data.products.map(mapProduct),
+        total: data.products.length,
+        page: 1,
+        perPage: 50,
+        hasNext: false,
+      }
+    },
+
+    async getProduct(id: string): Promise<Product> {
+      const data = await request<{ product: any }>(`/products/${id}.json`)
+      return mapProduct(data.product)
+    },
+
+    async getCategories() {
+      // Map Shopify collections to CommerceJS categories
+      throw new Error('Not implemented')
+    },
+  }
+}
+```
+
+### Compose the full adapter
+
+```ts [packages/adapter-shopify/src/adapter.ts]
+import type { CommerceAdapter } from '@commercejs/types'
+import { createCatalogAdapter } from './catalog.js'
+
+export function createShopifyAdapter(config: {
+  token: string
+  store: string
+}): CommerceAdapter {
+  return {
+    catalog: createCatalogAdapter(config),
+    cart: null as any,       // Implement later
+    checkout: null as any,
+    customer: null as any,
+    order: null as any,
+    store: null as any,
+    // ...
+  }
+}
+```
+
+### Export the adapter
+
+```ts [packages/adapter-shopify/src/index.ts]
+export { createShopifyAdapter } from './adapter.js'
+```
+
+</steps>
+
+## Mapping Patterns
+
+### LocalizedString
+
+Some platforms return localized strings as objects, others as plain strings. The `LocalizedString` type handles both:
+
+```ts
+// Platform returns a string
+const name: LocalizedString = raw.title
+
+// Platform returns localized values
+const name: LocalizedString = {
+  en: raw.title_en,
+  ar: raw.title_ar,
+}
+```
+
+### Price Normalization
+
+Normalize platform-specific price formats:
+
+```ts
+// Salla: { amount: 99.99, currency: "SAR" }
+const price = { amount: raw.regular_price.amount, currency: raw.currency }
+
+// Shopify: "99.99" (string), currency from store settings
+const price = { amount: parseFloat(raw.price), currency: storeCurrency }
+```
+
+### Error Wrapping
+
+Wrap platform errors in `CommerceError` for consistent handling:
+
+```ts
+import { CommerceError } from '@commercejs/types'
+
+async function getProduct(id: string): Promise<Product> {
+  const res = await fetch(`${baseUrl}/products/${id}`)
+  if (res.status === 404) {
+    throw new CommerceError('NOT_FOUND', 'Product not found')
+  }
+  if (!res.ok) {
+    throw new CommerceError('PROVIDER_ERROR', `Shopify API error: ${res.status}`)
+  }
+  return mapProduct(await res.json())
+}
+```
+
+## Testing Strategy
+
+Test mappers in isolation with fixture data:
+
+```ts [packages/adapter-shopify/test/mappers.test.ts]
+import { describe, it, expect } from 'vitest'
+import { mapProduct } from '../src/mappers/product.js'
+
+describe('mapProduct', () => {
+  it('maps Shopify product to unified Product', () => {
+    const shopifyProduct = {
+      id: 123,
+      title: 'Blue T-Shirt',
+      handle: 'blue-t-shirt',
+      body_html: '<p>A nice shirt</p>',
+      images: [{ id: 1, src: 'https://cdn.shopify.com/img.png' }],
+      variants: [{ price: '29.99', sku: 'BTS-001' }],
+    }
+
+    const product = mapProduct(shopifyProduct)
+
+    expect(product.id).toBe('123')
+    expect(product.name).toBe('Blue T-Shirt')
+    expect(product.price.amount).toBe(29.99)
+  })
+})
+```
+
+<tip>
+
+The `@commercejs/adapter-salla` package serves as the reference implementation. Study its mapper functions and adapter structure when building your own.
+
+</tip>

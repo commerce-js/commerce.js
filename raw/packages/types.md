@@ -1,0 +1,196 @@
+# @commercejs/types
+
+> The unified data model — TypeScript interfaces for every eCommerce domain.
+
+The `@commercejs/types` package defines the shared vocabulary for all CommerceJS packages. It contains only TypeScript interfaces and type definitions — no runtime code.
+
+## Installation
+
+```bash
+pnpm add @commercejs/types
+```
+
+## Usage
+
+Import types directly from the package:
+
+```ts
+import type { Product, Cart, Order, Customer } from '@commercejs/types'
+import type { PaymentProvider, PaymentSession } from '@commercejs/types'
+import type { CommerceAdapter, CatalogAdapter } from '@commercejs/types'
+```
+
+## Domain Types
+
+### Product
+
+```ts
+interface Product {
+  id: string
+  name: LocalizedString
+  slug: string
+  description: LocalizedString
+  type: ProductType
+  price: DiscountablePrice
+  sku?: string
+  barcode?: string
+  quantity?: number
+  variants: ProductVariant[]
+  options: ProductOption[]
+  images: Image[]
+  attributes: Attribute[]
+  categories: Category[]
+  brand?: Brand
+  metadata?: Record<string, unknown>
+}
+```
+
+### Cart
+
+```ts
+interface Cart {
+  id: string
+  items: CartItem[]
+  totals: CartTotals
+  currency: string
+  metadata?: Record<string, unknown>
+}
+
+interface CartItem {
+  id: string
+  productId: string
+  variantId?: string
+  name: LocalizedString
+  quantity: number
+  price: Price
+  image?: Image
+}
+```
+
+### Order
+
+```ts
+interface Order {
+  id: string
+  status: OrderStatus
+  fulfillmentStatus: FulfillmentStatus
+  items: OrderItem[]
+  currency: string
+  subtotal: number
+  total: number
+  shippingTotal: number
+  taxTotal: number
+  discountTotal: number
+  customer: Customer
+  shippingAddress: Address
+  billingAddress: Address
+  paymentMethod?: PaymentMethod
+  shippingMethod?: ShippingMethod
+  createdAt: string
+  updatedAt: string
+}
+```
+
+### Customer
+
+```ts
+interface Customer {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  phone?: string
+  addresses: Address[]
+  metadata?: Record<string, unknown>
+}
+
+interface Address {
+  id: string
+  street: string | null
+  street2: string | null
+  city: string
+  state: string | null
+  country: string
+  postalCode: string | null
+  district: string | null
+  nationalAddress: string | null
+  isDefault: boolean
+}
+```
+
+## Payment Types
+
+### PaymentProvider
+
+The pluggable interface that all payment gateways implement:
+
+```ts
+interface PaymentProvider {
+  createSession(input: CreatePaymentSessionInput): Promise<PaymentSession>
+  confirmSession(sessionId: string): Promise<PaymentSession>
+  refund(input: RefundInput): Promise<PaymentSession>
+  verifyWebhook(event: PaymentWebhookEvent): Promise<boolean>
+}
+```
+
+### PaymentSession
+
+Tracks the lifecycle of a single payment:
+
+```ts
+interface PaymentSession {
+  id: string
+  providerId: string
+  status: PaymentSessionStatus
+  amount: number
+  currency: string
+  redirectUrl: string | null
+  providerData?: Record<string, unknown>
+  createdAt: string
+}
+
+type PaymentSessionStatus =
+  | 'pending'
+  | 'processing'
+  | 'requires_action'
+  | 'captured'
+  | 'failed'
+  | 'cancelled'
+  | 'refunded'
+```
+
+## Adapter Contract
+
+The `CommerceAdapter` composes domain-specific sub-adapters:
+
+```ts
+interface CommerceAdapter {
+  catalog: CatalogAdapter       // getProducts, getProduct, getCategories
+  cart: CartAdapter              // getCart, addToCart, removeFromCart
+  checkout: CheckoutAdapter      // getShippingMethods, getPaymentMethods
+  customer: CustomerAdapter      // getCustomer, login, register
+  order: OrderAdapter            // getOrders, getOrder, createOrder
+  wishlist: WishlistAdapter      // getWishlist, addToWishlist
+  review: ReviewAdapter          // getReviews, submitReview
+  store: StoreAdapter            // getStoreInfo
+  promotion: PromotionAdapter    // applyCoupon, removeCoupon
+  // ... more domains
+}
+```
+
+## Error Handling
+
+```ts
+import { CommerceError, isCommerceError } from '@commercejs/types'
+
+try {
+  const product = await adapter.catalog.getProduct('invalid-id')
+} catch (err) {
+  if (isCommerceError(err)) {
+    console.log(err.code)    // 'NOT_FOUND'
+    console.log(err.message) // 'Product not found'
+  }
+}
+```
+
+Available error codes: `NOT_FOUND`, `VALIDATION_ERROR`, `UNAUTHORIZED`, `RATE_LIMITED`, `PROVIDER_ERROR`, `NOT_IMPLEMENTED`.

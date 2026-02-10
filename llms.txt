@@ -1,0 +1,40 @@
+# CommerceJS
+
+> A modular, provider-agnostic eCommerce toolkit for JavaScript and TypeScript.
+
+## Documentation Sets
+
+- [CommerceJS - Full Documentation](https://commercejs.dev//llms-full.txt): Complete documentation for CommerceJS — types, checkout engine, payment providers, and platform adapters.
+
+## Getting Started
+
+- [Introduction](https://commercejs.dev/raw/getting-started.md): CommerceJS is a modular, provider-agnostic eCommerce toolkit for JavaScript and TypeScript.
+- [Installation](https://commercejs.dev/raw/getting-started/installation.md): Set up the CommerceJS monorepo and install all dependencies.
+- [Quick Start](https://commercejs.dev/raw/getting-started/quick-start.md): Process your first payment with CommerceJS in 5 minutes.
+
+## Architecture
+
+- [Overview](https://commercejs.dev/raw/architecture/overview.md): How the CommerceJS packages fit together — the adapter pattern, dependency graph, and design principles.
+- [Unified Types](https://commercejs.dev/raw/architecture/unified-types.md): The @commercejs/types package provides a single data model that works across every eCommerce platform.
+- [Checkout Flow](https://commercejs.dev/raw/architecture/checkout-flow.md): How the CheckoutSession state machine manages the payment lifecycle from start to finish.
+
+## Packages
+
+- [@commercejs/types](https://commercejs.dev/raw/packages/types.md): The unified data model — TypeScript interfaces for every eCommerce domain.
+- [@commercejs/checkout](https://commercejs.dev/raw/packages/checkout.md): The CheckoutSession state machine — manages the checkout flow from customer info to payment confirmation.
+- [@commercejs/payment-tap](https://commercejs.dev/raw/packages/payment-tap.md): Tap Payments provider — charges, 3DS redirects, refunds, and per-transaction webhooks for the MENA region.
+- [@commercejs/webhook-verifier](https://commercejs.dev/raw/packages/webhook-verifier.md): Provider-agnostic webhook verification with built-in presets for Tap and extensible configuration.
+- [@commercejs/adapter-salla](https://commercejs.dev/raw/packages/adapter-salla.md): Salla platform adapter — maps Salla's API to the unified CommerceAdapter interface.
+- [@commercejs/hosted-checkout](https://commercejs.dev/raw/packages/hosted-checkout.md): A ready-to-deploy Nuxt application for hosted checkout with goSell.js integration.
+
+## Guides
+
+- [Payment Integration](https://commercejs.dev/raw/guides/payment-integration.md): How to add a new payment provider to CommerceJS.
+- [Webhook Setup](https://commercejs.dev/raw/guides/webhook-setup.md): Set up local webhook testing with ngrok and verify webhook events from payment providers.
+- [Adapter Development](https://commercejs.dev/raw/guides/adapter-development.md): How to build a CommerceAdapter for a new eCommerce platform.
+
+## API Reference
+
+- [PaymentProvider](https://commercejs.dev/raw/reference/payment-provider.md): The PaymentProvider interface — the contract every payment gateway implements.
+- [CommerceAdapter](https://commercejs.dev/raw/reference/commerce-adapter.md): The CommerceAdapter interface — the contract every eCommerce platform implements.
+- [CheckoutSession](https://commercejs.dev/raw/reference/checkout-session.md): The CheckoutSession class — a framework-agnostic state machine for the checkout lifecycle.

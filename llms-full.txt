@@ -1,0 +1,2623 @@
+# Introduction
+
+CommerceJS is a modular eCommerce SDK that provides unified types, a checkout engine, and pluggable payment providers. It works across any JavaScript runtime — Node.js, Edge, Deno, or the browser.
+
+## The Problem
+
+Every eCommerce platform has its own API, data shapes, and payment flow. Building a storefront that works with Salla requires completely different code than one for Shopify or WooCommerce. Switching payment providers means rewriting your checkout.
+
+CommerceJS solves this with three core ideas:
+
+1. **Unified types** — A single data model for products, carts, orders, and customers that works across every platform.
+2. **Adapter pattern** — Each platform implements the `CommerceAdapter` interface, mapping its API to the unified types.
+3. **Pluggable providers** — Payment providers implement the `PaymentProvider` interface, making them interchangeable.
+
+## Package Ecosystem
+
+The toolkit is organized as a monorepo of focused packages:
+
+| Package                        | Purpose                               |
+| ------------------------------ | ------------------------------------- |
+| `@commercejs/types`            | Unified data model — 20+ domain types |
+| `@commercejs/checkout`         | CheckoutSession state machine         |
+| `@commercejs/payment-tap`      | Tap Payments provider                 |
+| `@commercejs/webhook-verifier` | Cryptographic webhook verification    |
+| `@commercejs/adapter-salla`    | Salla platform adapter                |
+| `@commercejs/hosted-checkout`  | Ready-to-deploy Nuxt checkout page    |
+
+## Who Is This For?
+
+CommerceJS is designed for developers building:
+
+- **Storefronts** that need to work with multiple eCommerce backends
+- **Checkout flows** with pluggable payment providers
+- **Multi-tenant platforms** where each merchant uses a different payment gateway
+- **Headless commerce** applications that need a clean separation between frontend and backend
+
+## Next Steps
+
+::card-group
+  :::card
+  ---
+  icon: i-lucide-download
+  title: Installation
+  to: https://commercejs.dev/getting-started/installation
+  ---
+  Set up the monorepo and install dependencies.
+  :::
+
+  :::card
+  ---
+  icon: i-lucide-rocket
+  title: Quick Start
+  to: https://commercejs.dev/getting-started/quick-start
+  ---
+  Process your first payment in 5 minutes.
+  :::
+
+  :::card
+  ---
+  icon: i-lucide-layers
+  title: Architecture
+  to: https://commercejs.dev/architecture/overview
+  ---
+  Understand how the packages fit together.
+  :::
+::
+
+
+# Installation
+
+CommerceJS uses a pnpm monorepo. All packages live under the `packages/` directory and share a common build toolchain.
+
+## Prerequisites
+
+You need the following tools installed:
+
+- **Node.js** 20 or later
+- **pnpm** 9 or later
+
+## Clone and Install
+
+::steps
+### Clone the repository
+
+```bash
+git clone https://github.com/commercejs/commercejs.git
+cd commercejs
+```
+
+### Install dependencies
+
+```bash
+pnpm install
+```
+
+### Build all packages
+
+The packages depend on each other, so build them in order:
+
+```bash
+pnpm --filter @commercejs/types build
+pnpm --filter @commercejs/checkout build
+pnpm --filter @commercejs/payment-tap build
+pnpm --filter @commercejs/webhook-verifier build
+pnpm --filter @commercejs/adapter-salla build
+```
+
+  :::tip
+  You can also build everything at once with `pnpm -r build`, but the ordered approach is more reliable for the first build.
+  :::
+::
+
+## Environment Setup
+
+The hosted checkout application requires Tap Payments credentials. Create an `.env` file:
+
+```bash [packages/hosted-checkout/.env]
+TAP_SECRET_KEY="sk_test_your_key_here"
+TAP_PUBLIC_KEY="pk_test_your_key_here"
+TAP_BASE_URL="https://api.tap.company/v2"
+TAP_MERCHANT_ID="your_merchant_id"
+APP_URL="http://localhost:3100"
+```
+
+::note
+Get your test keys from the [Tap Dashboard](https://dashboard.tap.company){rel=""nofollow""}. The `APP_URL` is used for payment redirects and webhook URLs.
+::
+
+## Run the Hosted Checkout
+
+Start the development server for the hosted checkout application:
+
+```bash
+cd packages/hosted-checkout
+pnpm dev
+```
+
+The checkout page is available at `http://localhost:3100`.
+
+## Monorepo Structure
+
+```text
+commercejs/
+├── packages/
+│   ├── types/              # @commercejs/types
+│   ├── checkout/           # @commercejs/checkout
+│   ├── payment-tap/        # @commercejs/payment-tap
+│   ├── webhook-verifier/   # @commercejs/webhook-verifier
+│   ├── adapter-salla/      # @commercejs/adapter-salla
+│   ├── hosted-checkout/    # Nuxt checkout application
+│   ├── storefront/         # Nuxt storefront application
+│   ├── core/               # Core utilities
+│   └── docs/               # This documentation site
+├── pnpm-workspace.yaml
+└── package.json
+```
+
+
+# Quick Start
+
+This guide walks through creating a checkout session, submitting a payment, and handling the result. You will use the `CheckoutSession` state machine with the Tap payment provider.
+
+## Create a Checkout Session
+
+The `CheckoutSession` class manages the entire checkout flow. Pass it a payment provider and the order details:
+
+```ts [server/checkout.ts]
+import { CheckoutSession } from '@commercejs/checkout'
+import { TapPaymentProvider } from '@commercejs/payment-tap'
+
+const provider = new TapPaymentProvider({
+  secretKey: process.env.TAP_SECRET_KEY!,
+  baseUrl: 'https://api.tap.company/v2',
+})
+
+const session = new CheckoutSession({
+  provider,
+  amount: 99.999,
+  currency: 'BHD',
+  orderId: 'order-001',
+  returnUrl: 'https://myapp.com/checkout/confirm',
+})
+```
+
+## Set Customer Info
+
+The session follows a state machine. Set customer information to advance from `idle` to `info`:
+
+```ts [server/checkout.ts]
+session.setCustomerInfo({
+  email: 'customer@example.com',
+  firstName: 'Ahmed',
+  lastName: 'Al-Rashid',
+  phone: '+97312345678',
+})
+```
+
+## Set Shipping Address
+
+Provide a shipping address to advance to `shipping`:
+
+```ts [server/checkout.ts]
+session.setShippingAddress({
+  street: '123 Main Street',
+  street2: null,
+  city: 'Manama',
+  state: null,
+  country: 'BH',
+  postalCode: '1234',
+  district: null,
+  nationalAddress: null,
+})
+```
+
+## Submit Payment
+
+Submit a payment with a tokenized card. The provider creates a charge with Tap:
+
+```ts [server/checkout.ts]
+const paymentSession = await session.submitPayment({
+  sourceToken: 'tok_card_xxxxx', // from goSell.js or Tap's tokenization
+})
+
+if (paymentSession.redirectUrl) {
+  // Customer needs to complete 3DS verification
+  // Redirect them to paymentSession.redirectUrl
+}
+```
+
+::note
+Most card payments require 3DS authentication. The `redirectUrl` takes the customer to Tap's 3DS page, which redirects back to your `returnUrl` after verification.
+::
+
+## Confirm Payment
+
+After the customer returns from 3DS, confirm the payment:
+
+```ts [server/confirm.ts]
+const chargeId = getQueryParam('tap_id') // from the redirect URL
+
+const confirmed = await session.confirmPayment(chargeId)
+
+if (session.state === 'complete') {
+  // Payment captured successfully
+  console.log('Order paid!', confirmed)
+}
+```
+
+## Handle Webhooks
+
+For asynchronous payment results, Tap sends a webhook to your server. The `handleWebhookUpdate` method updates the session state from trusted server-side events:
+
+```ts [server/webhook.ts]
+import { WebhookVerifier } from '@commercejs/webhook-verifier'
+import { tap as tapConfig } from '@commercejs/webhook-verifier/configs'
+
+const verifier = new WebhookVerifier({
+  ...tapConfig,
+  secretKey: process.env.TAP_SECRET_KEY!,
+})
+
+// Verify the webhook signature
+const result = verifier.verify(body, headers)
+if (!result.isValid) {
+  throw new Error('Invalid webhook signature')
+}
+
+// Update the session
+session.handleWebhookUpdate({
+  id: body.id,
+  providerId: 'tap',
+  status: body.status === 'CAPTURED' ? 'captured' : 'failed',
+  amount: body.amount,
+  currency: body.currency,
+  redirectUrl: null,
+  createdAt: body.created,
+})
+```
+
+## State Machine Summary
+
+The checkout session follows this state flow:
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    idle --> info : setCustomerInfo()
+    info --> shipping : setShippingAddress()
+    shipping --> payment : submitPayment()
+    payment --> confirming : confirmPayment()
+    confirming --> complete : Payment captured
+    confirming --> failed : Payment failed
+    payment --> complete : Webhook CAPTURED
+    payment --> failed : Webhook DECLINED
+    failed --> payment : Retry
+```
+
+::tip
+The `handleWebhookUpdate` method can transition the session to `complete` or `failed` from any non-terminal state. This acts as a safety net for cases where the synchronous confirm flow fails.
+::
+
+
+# Overview
+
+CommerceJS is organized as a layered architecture where each package has a single responsibility. The packages compose together through well-defined interfaces.
+
+## Package Dependency Graph
+
+```mermaid
+graph TD
+    A["@commercejs/types"] --> B["@commercejs/checkout"]
+    A --> C["@commercejs/payment-tap"]
+    A --> D["@commercejs/adapter-salla"]
+    A --> E["@commercejs/webhook-verifier"]
+    B --> F["@commercejs/hosted-checkout"]
+    C --> F
+    E --> F
+    D --> G["@commercejs/storefront"]
+```
+
+All packages depend on `@commercejs/types` as the shared language. The checkout engine depends on the type system and accepts any `PaymentProvider`. The hosted checkout application ties everything together.
+
+## Design Principles
+
+### Adapter Pattern
+
+The `CommerceAdapter` interface defines how storefronts talk to eCommerce backends. Each platform (Salla, Shopify, WooCommerce) provides an adapter that maps its API to the unified types.
+
+```ts
+// The adapter contract
+interface CommerceAdapter {
+  catalog: CatalogAdapter    // Products, categories, brands
+  cart: CartAdapter           // Cart operations
+  checkout: CheckoutAdapter   // Checkout flow
+  customer: CustomerAdapter   // Customer management
+  order: OrderAdapter         // Order history, status
+  // ... more domains
+}
+```
+
+A storefront imports the adapter for its platform and calls the same API regardless of the backend:
+
+```ts [storefront/server/api/products.ts]
+import { createSallaAdapter } from '@commercejs/adapter-salla'
+
+const adapter = createSallaAdapter({ token, baseUrl })
+const products = await adapter.catalog.getProducts({ limit: 10 })
+// Returns Product[] — same shape for Salla, Shopify, or any other platform
+```
+
+### Provider Interface
+
+Payment providers implement the `PaymentProvider` interface. The checkout engine does not know or care which provider it uses:
+
+```ts
+interface PaymentProvider {
+  createSession(input: CreatePaymentSessionInput): Promise<PaymentSession>
+  confirmSession(sessionId: string): Promise<PaymentSession>
+  refund(input: RefundInput): Promise<PaymentSession>
+  verifyWebhook(event: PaymentWebhookEvent): Promise<boolean>
+}
+```
+
+Swapping from Tap to Stripe requires changing one line — the provider instantiation.
+
+### State Machine
+
+The `CheckoutSession` uses a finite state machine to enforce valid checkout flows. Each state has defined transitions, and invalid transitions throw errors:
+
+| State        | Allowed Transitions                | Triggered By                |
+| ------------ | ---------------------------------- | --------------------------- |
+| `idle`       | `info`                             | `setCustomerInfo()`         |
+| `info`       | `shipping`                         | `setShippingAddress()`      |
+| `shipping`   | `payment`                          | `submitPayment()`           |
+| `payment`    | `confirming`, `complete`, `failed` | `confirmPayment()`, webhook |
+| `confirming` | `complete`, `failed`               | Provider response           |
+| `failed`     | `payment`                          | Retry                       |
+| `complete`   | —                                  | Terminal                    |
+
+## Layer Responsibilities
+
+| Layer              | Packages                        | Role                                                 |
+| ------------------ | ------------------------------- | ---------------------------------------------------- |
+| **Types**          | `@commercejs/types`             | Shared vocabulary — interfaces only, no runtime code |
+| **Engine**         | `@commercejs/checkout`          | Business logic — state machine, event emitter        |
+| **Providers**      | `@commercejs/payment-tap`       | Gateway integration — API calls, request mapping     |
+| **Infrastructure** | `@commercejs/webhook-verifier`  | Cross-cutting — security, verification               |
+| **Adapters**       | `@commercejs/adapter-salla`     | Platform glue — maps external APIs to unified types  |
+| **Applications**   | `hosted-checkout`, `storefront` | End-user apps — Nuxt applications                    |
+
+
+# Unified Types
+
+The `@commercejs/types` package is the foundation of CommerceJS. It defines TypeScript interfaces for every eCommerce domain — products, carts, orders, customers, payments, and more.
+
+## Why Unified Types?
+
+Every eCommerce platform represents data differently. Salla calls it `name`, Shopify calls it `title`. Salla uses `regular_price`, Shopify uses `price`. The unified types normalize these differences into a single vocabulary.
+
+```ts
+// Same Product type, regardless of source
+interface Product {
+  id: string
+  name: LocalizedString
+  slug: string
+  description: LocalizedString
+  price: DiscountablePrice
+  variants: ProductVariant[]
+  images: Image[]
+  // ... more fields
+}
+```
+
+Adapters map platform-specific data into these types, so application code never deals with platform differences directly.
+
+## Domain Coverage
+
+The type system covers these eCommerce domains:
+
+| Domain        | Key Types                                                 | Purpose                 |
+| ------------- | --------------------------------------------------------- | ----------------------- |
+| **Product**   | `Product`, `ProductVariant`, `ProductOption`, `Attribute` | Catalog data            |
+| **Category**  | `Category`                                                | Product categorization  |
+| **Brand**     | `Brand`                                                   | Brand information       |
+| **Cart**      | `Cart`, `CartItem`, `CartTotals`                          | Shopping cart           |
+| **Customer**  | `Customer`, `Address`                                     | Customer profiles       |
+| **Order**     | `Order`, `OrderItem`, `OrderStatus`                       | Order management        |
+| **Payment**   | `PaymentMethod`, `PaymentSession`                         | Payment processing      |
+| **Shipping**  | `ShippingMethod`, `ShippingProvider`                      | Delivery options        |
+| **Search**    | `SearchParams`, `SearchResult`, `Facet`                   | Product search          |
+| **Wishlist**  | `Wishlist`, `WishlistItem`                                | Saved items             |
+| **Review**    | `Review`, `ReviewInput`                                   | Product reviews         |
+| **Promotion** | `Promotion`, `Coupon`                                     | Discounts and campaigns |
+
+## Common Primitives
+
+Several utility types appear throughout the system:
+
+### LocalizedString
+
+Supports multi-language content with a simple key-value map:
+
+```ts
+type LocalizedString = string | Record<string, string>
+
+// Usage
+const name: LocalizedString = {
+  en: 'Blue T-Shirt',
+  ar: 'تي شيرت أزرق',
+}
+```
+
+### Price and DiscountablePrice
+
+Represent monetary values with optional discount information:
+
+```ts
+interface Price {
+  amount: number
+  currency: string
+}
+
+interface DiscountablePrice extends Price {
+  compareAtAmount?: number  // Original price before discount
+}
+```
+
+### PaginatedResult
+
+Standard pagination wrapper for list endpoints:
+
+```ts
+interface PaginatedResult<T> {
+  data: T[]
+  total: number
+  page: number
+  perPage: number
+  hasNext: boolean
+}
+```
+
+## Adapter Contract
+
+The `CommerceAdapter` interface composes domain-specific sub-adapters. Each sub-adapter handles one domain:
+
+```ts
+interface CommerceAdapter {
+  catalog: CatalogAdapter
+  cart: CartAdapter
+  checkout: CheckoutAdapter
+  customer: CustomerAdapter
+  order: OrderAdapter
+  wishlist: WishlistAdapter
+  review: ReviewAdapter
+  store: StoreAdapter
+  promotion: PromotionAdapter
+  return: ReturnAdapter
+  wholesale: WholesaleAdapter
+  auction: AuctionAdapter
+  rental: RentalAdapter
+  giftCard: GiftCardAdapter
+  brand: BrandAdapter
+  country: CountryAdapter
+  location: LocationAdapter
+}
+```
+
+::tip
+Not every platform supports every domain. Adapters can return `null` or throw `CommerceError` for unsupported operations. The storefront should handle these gracefully.
+::
+
+## Payment Provider Interface
+
+The `PaymentProvider` interface is separate from the adapter — it represents a payment gateway, not a platform:
+
+```ts
+interface PaymentProvider {
+  createSession(input: CreatePaymentSessionInput): Promise<PaymentSession>
+  confirmSession(sessionId: string): Promise<PaymentSession>
+  refund(input: RefundInput): Promise<PaymentSession>
+  verifyWebhook(event: PaymentWebhookEvent): Promise<boolean>
+}
+```
+
+The `PaymentSession` tracks the lifecycle of a single payment:
+
+```ts
+interface PaymentSession {
+  id: string
+  providerId: string
+  status: PaymentSessionStatus  // 'pending' | 'processing' | 'captured' | 'failed' | 'cancelled'
+  amount: number
+  currency: string
+  redirectUrl: string | null    // 3DS redirect
+  providerData?: Record<string, unknown>
+  createdAt: string
+}
+```
+
+
+# Checkout Flow
+
+The `CheckoutSession` class is a framework-agnostic state machine that orchestrates the complete checkout flow. It enforces valid transitions, emits events, and works identically in Node.js, Edge runtimes, and the browser.
+
+## State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    idle --> info : setCustomerInfo()
+    info --> shipping : setShippingAddress()
+    shipping --> payment : submitPayment()
+    payment --> confirming : confirmPayment()
+    confirming --> complete : captured
+    confirming --> failed : failed/cancelled
+    payment --> complete : webhook CAPTURED
+    payment --> failed : webhook DECLINED
+    failed --> payment : retry submitPayment()
+    complete --> [*]
+```
+
+## Step-by-Step Flow
+
+::steps
+### Customer Info (idle → info)
+
+The session starts in `idle` state. Calling `setCustomerInfo()` validates the customer data and transitions to `info`:
+
+```ts
+session.setCustomerInfo({
+  email: 'customer@example.com',
+  firstName: 'Ahmed',
+  lastName: 'Al-Rashid',
+  phone: '+97312345678',
+})
+// session.state === 'info'
+```
+
+### Shipping Address (info → shipping)
+
+Providing a shipping address moves the session to `shipping`. You can optionally set a separate billing address:
+
+```ts
+session.setShippingAddress(shippingAddress, billingAddress)
+// session.state === 'shipping'
+```
+
+### Payment Submission (shipping → payment)
+
+Calling `submitPayment()` creates a payment session with the provider. The session transitions to `payment` while awaiting the result:
+
+```ts
+const paymentSession = await session.submitPayment({
+  sourceToken: 'tok_xxx',
+})
+// session.state === 'payment'
+// paymentSession.redirectUrl → 3DS URL (if required)
+```
+
+### Payment Confirmation (payment → confirming → complete)
+
+After 3DS redirect, confirm the payment to finalize:
+
+```ts
+const confirmed = await session.confirmPayment(chargeId)
+// session.state === 'complete' (if captured)
+// session.state === 'failed' (if declined)
+```
+
+### Webhook Safety Net (payment → complete)
+
+For asynchronous results, the `handleWebhookUpdate()` method can transition the session directly from any non-terminal state:
+
+```ts
+session.handleWebhookUpdate(paymentSession)
+// Forces to 'complete' or 'failed' based on status
+```
+::
+
+## Sync-on-Return vs Webhook
+
+CommerceJS uses a dual strategy for payment confirmation:
+
+| Method             | When                             | How                                         |
+| ------------------ | -------------------------------- | ------------------------------------------- |
+| **Sync-on-Return** | Customer redirected back         | `confirmPayment()` calls provider to verify |
+| **Webhook**        | Async notification from provider | `handleWebhookUpdate()` updates session     |
+
+The webhook acts as a safety net. If the customer closes their browser during 3DS, or the redirect fails, the webhook still updates the session.
+
+## Events
+
+The `CheckoutSession` extends `EventEmitter` and fires events at key transitions:
+
+```ts
+session.on('stateChange', ({ from, to }) => {
+  console.log(`Checkout: ${from} → ${to}`)
+})
+
+session.on('complete', ({ paymentSession }) => {
+  // Send confirmation email, update order status
+})
+
+session.on('error', ({ error, state }) => {
+  // Log error, show failure UI
+})
+```
+
+## Retry Logic
+
+Failed payments can be retried. The state machine allows `failed → payment` transitions, so calling `submitPayment()` again with a new token works:
+
+```ts
+if (session.state === 'failed') {
+  // Customer enters a different card
+  const retry = await session.submitPayment({
+    sourceToken: 'tok_new_card',
+  })
+}
+```
+
+## Snapshots
+
+The `toSnapshot()` method returns a serializable representation of the session state. Use this for SSR hydration, storing state, or returning to the client:
+
+```ts
+const snapshot = session.toSnapshot()
+// {
+//   state: 'payment',
+//   customerInfo: { ... },
+//   shippingAddress: { ... },
+//   paymentSession: { id: 'chg_xxx', status: 'pending', ... },
+//   amount: 99.999,
+//   currency: 'BHD',
+//   error: null,
+// }
+```
+
+
+# @commercejs/types
+
+The `@commercejs/types` package defines the shared vocabulary for all CommerceJS packages. It contains only TypeScript interfaces and type definitions — no runtime code.
+
+## Installation
+
+```bash
+pnpm add @commercejs/types
+```
+
+## Usage
+
+Import types directly from the package:
+
+```ts
+import type { Product, Cart, Order, Customer } from '@commercejs/types'
+import type { PaymentProvider, PaymentSession } from '@commercejs/types'
+import type { CommerceAdapter, CatalogAdapter } from '@commercejs/types'
+```
+
+## Domain Types
+
+### Product
+
+```ts
+interface Product {
+  id: string
+  name: LocalizedString
+  slug: string
+  description: LocalizedString
+  type: ProductType
+  price: DiscountablePrice
+  sku?: string
+  barcode?: string
+  quantity?: number
+  variants: ProductVariant[]
+  options: ProductOption[]
+  images: Image[]
+  attributes: Attribute[]
+  categories: Category[]
+  brand?: Brand
+  metadata?: Record<string, unknown>
+}
+```
+
+### Cart
+
+```ts
+interface Cart {
+  id: string
+  items: CartItem[]
+  totals: CartTotals
+  currency: string
+  metadata?: Record<string, unknown>
+}
+
+interface CartItem {
+  id: string
+  productId: string
+  variantId?: string
+  name: LocalizedString
+  quantity: number
+  price: Price
+  image?: Image
+}
+```
+
+### Order
+
+```ts
+interface Order {
+  id: string
+  status: OrderStatus
+  fulfillmentStatus: FulfillmentStatus
+  items: OrderItem[]
+  currency: string
+  subtotal: number
+  total: number
+  shippingTotal: number
+  taxTotal: number
+  discountTotal: number
+  customer: Customer
+  shippingAddress: Address
+  billingAddress: Address
+  paymentMethod?: PaymentMethod
+  shippingMethod?: ShippingMethod
+  createdAt: string
+  updatedAt: string
+}
+```
+
+### Customer
+
+```ts
+interface Customer {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  phone?: string
+  addresses: Address[]
+  metadata?: Record<string, unknown>
+}
+
+interface Address {
+  id: string
+  street: string | null
+  street2: string | null
+  city: string
+  state: string | null
+  country: string
+  postalCode: string | null
+  district: string | null
+  nationalAddress: string | null
+  isDefault: boolean
+}
+```
+
+## Payment Types
+
+### PaymentProvider
+
+The pluggable interface that all payment gateways implement:
+
+```ts
+interface PaymentProvider {
+  createSession(input: CreatePaymentSessionInput): Promise<PaymentSession>
+  confirmSession(sessionId: string): Promise<PaymentSession>
+  refund(input: RefundInput): Promise<PaymentSession>
+  verifyWebhook(event: PaymentWebhookEvent): Promise<boolean>
+}
+```
+
+### PaymentSession
+
+Tracks the lifecycle of a single payment:
+
+```ts
+interface PaymentSession {
+  id: string
+  providerId: string
+  status: PaymentSessionStatus
+  amount: number
+  currency: string
+  redirectUrl: string | null
+  providerData?: Record<string, unknown>
+  createdAt: string
+}
+
+type PaymentSessionStatus =
+  | 'pending'
+  | 'processing'
+  | 'requires_action'
+  | 'captured'
+  | 'failed'
+  | 'cancelled'
+  | 'refunded'
+```
+
+## Adapter Contract
+
+The `CommerceAdapter` composes domain-specific sub-adapters:
+
+```ts
+interface CommerceAdapter {
+  catalog: CatalogAdapter       // getProducts, getProduct, getCategories
+  cart: CartAdapter              // getCart, addToCart, removeFromCart
+  checkout: CheckoutAdapter      // getShippingMethods, getPaymentMethods
+  customer: CustomerAdapter      // getCustomer, login, register
+  order: OrderAdapter            // getOrders, getOrder, createOrder
+  wishlist: WishlistAdapter      // getWishlist, addToWishlist
+  review: ReviewAdapter          // getReviews, submitReview
+  store: StoreAdapter            // getStoreInfo
+  promotion: PromotionAdapter    // applyCoupon, removeCoupon
+  // ... more domains
+}
+```
+
+## Error Handling
+
+```ts
+import { CommerceError, isCommerceError } from '@commercejs/types'
+
+try {
+  const product = await adapter.catalog.getProduct('invalid-id')
+} catch (err) {
+  if (isCommerceError(err)) {
+    console.log(err.code)    // 'NOT_FOUND'
+    console.log(err.message) // 'Product not found'
+  }
+}
+```
+
+Available error codes: `NOT_FOUND`, `VALIDATION_ERROR`, `UNAUTHORIZED`, `RATE_LIMITED`, `PROVIDER_ERROR`, `NOT_IMPLEMENTED`.
+
+
+# @commercejs/checkout
+
+The `@commercejs/checkout` package provides the `CheckoutSession` class — a framework-agnostic state machine that orchestrates the complete checkout lifecycle.
+
+## Installation
+
+```bash
+pnpm add @commercejs/checkout
+```
+
+## Basic Usage
+
+```ts
+import { CheckoutSession } from '@commercejs/checkout'
+import type { PaymentProvider } from '@commercejs/types'
+
+const session = new CheckoutSession({
+  provider: myPaymentProvider,
+  amount: 49.99,
+  currency: 'BHD',
+  orderId: 'order-123',
+  returnUrl: 'https://myshop.com/checkout/confirm',
+  webhookUrl: 'https://myshop.com/api/webhooks/payment',
+})
+```
+
+## Configuration
+
+The `CheckoutSessionConfig` accepts these options:
+
+| Option       | Type              | Required | Description                 |
+| ------------ | ----------------- | -------- | --------------------------- |
+| `provider`   | `PaymentProvider` | Yes      | Payment gateway instance    |
+| `amount`     | `number`          | Yes      | Order total                 |
+| `currency`   | `string`          | Yes      | ISO currency code           |
+| `orderId`    | `string`          | No       | External order reference    |
+| `returnUrl`  | `string`          | No       | 3DS redirect return URL     |
+| `cancelUrl`  | `string`          | No       | Payment cancellation URL    |
+| `webhookUrl` | `string`          | No       | Per-transaction webhook URL |
+
+## Methods
+
+### setCustomerInfo(info)
+
+Set customer details and transition from `idle` to `info`:
+
+```ts
+session.setCustomerInfo({
+  email: 'ahmed@example.com',
+  firstName: 'Ahmed',
+  lastName: 'Al-Rashid',
+  phone: '+97312345678',
+})
+```
+
+### setShippingAddress(address, billingAddress?)
+
+Set shipping address (and optional billing address) to transition from `info` to `shipping`:
+
+```ts
+session.setShippingAddress({
+  street: '123 King Faisal Highway',
+  street2: null,
+  city: 'Manama',
+  state: null,
+  country: 'BH',
+  postalCode: '1234',
+  district: null,
+  nationalAddress: null,
+})
+```
+
+### setShippingMethod(methodId)
+
+Set the shipping method. Does not trigger a state transition — call `submitPayment()` when ready:
+
+```ts
+session.setShippingMethod('standard-shipping')
+```
+
+### submitPayment(options?)
+
+Create a payment session and transition from `shipping` to `payment`:
+
+```ts
+const paymentSession = await session.submitPayment({
+  sourceToken: 'tok_xxx',       // Tokenized card
+  idempotencyKey: 'key-123',    // Prevent duplicate charges
+  metadata: { source: 'web' },  // Extra data
+})
+```
+
+Returns a `PaymentSession` with an optional `redirectUrl` for 3DS.
+
+### confirmPayment(sessionId?)
+
+Confirm payment after 3DS redirect. Transitions from `payment` to `complete` or `failed`:
+
+```ts
+const confirmed = await session.confirmPayment('chg_abc123')
+```
+
+### handleWebhookUpdate(paymentSession)
+
+Handle async webhook events. Works from any non-terminal state:
+
+```ts
+session.handleWebhookUpdate({
+  id: 'chg_xxx',
+  providerId: 'tap',
+  status: 'captured',
+  amount: 49.99,
+  currency: 'BHD',
+  redirectUrl: null,
+  createdAt: '2026-02-10T00:00:00Z',
+})
+```
+
+### toSnapshot()
+
+Get a serializable snapshot for SSR hydration or API responses:
+
+```ts
+const snapshot = session.toSnapshot()
+// Returns CheckoutSnapshot with state, customer, payment, etc.
+```
+
+## Events
+
+```ts
+session.on('stateChange', ({ from, to }) => { /* ... */ })
+session.on('complete', ({ paymentSession }) => { /* ... */ })
+session.on('error', ({ error, state }) => { /* ... */ })
+```
+
+## State Transitions
+
+| From         | To           | Trigger                 |
+| ------------ | ------------ | ----------------------- |
+| `idle`       | `info`       | `setCustomerInfo()`     |
+| `info`       | `shipping`   | `setShippingAddress()`  |
+| `shipping`   | `payment`    | `submitPayment()`       |
+| `payment`    | `confirming` | `confirmPayment()`      |
+| `confirming` | `complete`   | Payment captured        |
+| `confirming` | `failed`     | Payment declined        |
+| `failed`     | `payment`    | Retry `submitPayment()` |
+
+::warning
+Calling a method that requires a different state throws an error. For example, calling `submitPayment()` while in `idle` state results in `Error: Invalid transition: "idle" → "payment"`.
+::
+
+
+# @commercejs/payment-tap
+
+The `@commercejs/payment-tap` package implements the `PaymentProvider` interface for [Tap Payments](https://tap.company){rel="&#x22;nofollow&#x22;"}, the leading payment gateway in the MENA region.
+
+## Installation
+
+```bash
+pnpm add @commercejs/payment-tap
+```
+
+## Configuration
+
+```ts
+import { TapPaymentProvider } from '@commercejs/payment-tap'
+
+const provider = new TapPaymentProvider({
+  secretKey: 'sk_test_xxx',
+  baseUrl: 'https://api.tap.company/v2',
+  merchantId: '1632424', // optional
+})
+```
+
+| Option       | Type     | Required | Description                                          |
+| ------------ | -------- | -------- | ---------------------------------------------------- |
+| `secretKey`  | `string` | Yes      | Tap secret API key                                   |
+| `baseUrl`    | `string` | No       | API base URL (default: `https://api.tap.company/v2`) |
+| `merchantId` | `string` | No       | Tap merchant ID for multi-merchant setups            |
+
+## Creating a Charge
+
+The `createSession` method creates a Tap charge and returns a `PaymentSession`:
+
+```ts
+const session = await provider.createSession({
+  amount: 99.999,
+  currency: 'BHD',
+  sourceToken: 'tok_xxx',        // From goSell.js tokenization
+  returnUrl: 'https://myapp.com/confirm',
+  webhookUrl: 'https://myapp.com/api/webhooks/tap',
+  customer: {
+    email: 'ahmed@example.com',
+    firstName: 'Ahmed',
+    lastName: 'Al-Rashid',
+    phone: '+97312345678',
+  },
+  orderId: 'order-001',
+})
+```
+
+The `webhookUrl` maps to Tap's `post.url` field — Tap sends charge results to this URL asynchronously.
+
+::note
+Most card payments return a `redirectUrl` for 3DS verification. Redirect the customer to this URL, and Tap will redirect back to your `returnUrl` after verification.
+::
+
+## Confirming a Charge
+
+After 3DS redirect, confirm the payment by charge ID:
+
+```ts
+const confirmed = await provider.confirmSession('chg_abc123')
+// confirmed.status === 'captured' | 'failed' | 'cancelled'
+```
+
+## Tap Status Mapping
+
+The provider maps Tap's charge statuses to `PaymentSessionStatus`:
+
+| Tap Status    | PaymentSessionStatus |
+| ------------- | -------------------- |
+| `INITIATED`   | `pending`            |
+| `IN_PROGRESS` | `processing`         |
+| `CAPTURED`    | `captured`           |
+| `FAILED`      | `failed`             |
+| `DECLINED`    | `failed`             |
+| `CANCELLED`   | `cancelled`          |
+| `ABANDONED`   | `cancelled`          |
+| `TIMEDOUT`    | `failed`             |
+| `VOID`        | `cancelled`          |
+
+## Webhook Handling
+
+Tap sends charge results to the `post.url` specified in the charge request. Use `@commercejs/webhook-verifier` to verify these events:
+
+```ts
+import { WebhookVerifier } from '@commercejs/webhook-verifier'
+import { tap as tapConfig } from '@commercejs/webhook-verifier/configs'
+
+const verifier = new WebhookVerifier({
+  ...tapConfig,
+  secretKey: 'sk_test_xxx',
+})
+
+const result = verifier.verify(body, headers)
+if (result.isValid) {
+  // Process the charge update
+}
+```
+
+::read-more{to="https://commercejs.dev/packages/webhook-verifier"}
+See the webhook-verifier package for detailed verification documentation.
+::
+
+## Multi-Merchant Support
+
+For marketplace scenarios where each merchant has their own Tap account, create a provider instance per merchant:
+
+```ts
+function getProviderForMerchant(merchantId: string): TapPaymentProvider {
+  const config = getMerchantConfig(merchantId)
+  return new TapPaymentProvider({
+    secretKey: config.tapSecretKey,
+    merchantId: config.tapMerchantId,
+  })
+}
+```
+
+## Supported Currencies
+
+Tap supports currencies across the MENA region:
+
+| Currency       | Code  | Decimals |
+| -------------- | ----- | -------- |
+| Bahraini Dinar | `BHD` | 3        |
+| Saudi Riyal    | `SAR` | 2        |
+| Kuwaiti Dinar  | `KWD` | 3        |
+| UAE Dirham     | `AED` | 2        |
+| Omani Rial     | `OMR` | 3        |
+| Qatari Riyal   | `QAR` | 2        |
+| Egyptian Pound | `EGP` | 2        |
+| US Dollar      | `USD` | 2        |
+
+
+# @commercejs/webhook-verifier
+
+The `@commercejs/webhook-verifier` package provides cryptographic webhook verification. It ships with a built-in Tap configuration and supports custom providers through an extensible config system.
+
+## Installation
+
+```bash
+pnpm add @commercejs/webhook-verifier
+```
+
+## Quick Start
+
+```ts
+import { WebhookVerifier } from '@commercejs/webhook-verifier'
+import { tap as tapConfig } from '@commercejs/webhook-verifier/configs'
+
+const verifier = new WebhookVerifier({
+  ...tapConfig,
+  secretKey: process.env.TAP_SECRET_KEY!,
+})
+
+const result = verifier.verify(webhookBody, requestHeaders)
+if (result.isValid) {
+  console.log('Webhook verified')
+} else {
+  console.error('Verification failed:', result.error)
+}
+```
+
+## How It Works
+
+Each webhook provider has a different verification strategy. The `WebhookVerifier` abstracts this through a configuration object:
+
+1. **Formatter** — Extracts and concatenates fields from the webhook body into a hashstring
+2. **Algorithm** — Applies a cryptographic hash (HMAC-SHA256, SHA-256, etc.)
+3. **getExpectedSignature** — Retrieves the signature from the request headers for comparison
+
+## Tap Configuration
+
+Tap uses a hashstring verification pattern. The verifier concatenates specific fields from the charge body, hashes them with your secret key, and compares against a header signature:
+
+```ts
+import { tap } from '@commercejs/webhook-verifier/configs'
+
+// The tap config defines:
+// - formatter: extracts id, amount, currency, gateway.reference, created
+// - algorithm: HMAC-SHA256
+// - getExpectedSignature: reads 'hashstring' header
+```
+
+### Hashstring Format
+
+Tap constructs the hashstring by concatenating these fields:
+
+```text
+x_id + x_amount + x_currency + x_gateway_reference + x_created + secret_key
+```
+
+The verifier replicates this format, hashes the result, and compares it against the `hashstring` header sent by Tap.
+
+## Custom Provider Configuration
+
+Create a configuration for any webhook provider:
+
+```ts
+import { WebhookVerifier } from '@commercejs/webhook-verifier'
+
+const stripeConfig = {
+  formatter: (body: any) => {
+    // Extract fields in Stripe's expected order
+    return `${body.id}.${body.created}`
+  },
+  algorithm: 'hmac-sha256' as const,
+  getExpectedSignature: (headers: Record<string, string>) => {
+    return headers['stripe-signature'] ?? null
+  },
+}
+
+const verifier = new WebhookVerifier({
+  ...stripeConfig,
+  secretKey: process.env.STRIPE_WEBHOOK_SECRET!,
+})
+```
+
+## API
+
+### WebhookVerifier
+
+```ts
+class WebhookVerifier {
+  constructor(config: WebhookVerifierConfig)
+  verify(body: unknown, headers: Record<string, string>): VerificationResult
+}
+```
+
+### WebhookVerifierConfig
+
+| Property               | Type                         | Description                              |
+| ---------------------- | ---------------------------- | ---------------------------------------- |
+| `secretKey`            | `string`                     | Secret key for HMAC signing              |
+| `formatter`            | `(body: any) => string`      | Converts webhook body to hashstring      |
+| `algorithm`            | `'hmac-sha256' | 'sha-256'`  | Hash algorithm                           |
+| `getExpectedSignature` | `(headers) => string | null` | Extracts expected signature from headers |
+
+### VerificationResult
+
+```ts
+interface VerificationResult {
+  isValid: boolean
+  error?: string
+}
+```
+
+## Testing with ngrok
+
+For local webhook testing, use [ngrok](https://ngrok.com){rel="&#x22;nofollow&#x22;"} to expose your local server:
+
+```bash
+ngrok http 3100
+```
+
+Update your `APP_URL` environment variable with the ngrok URL so that webhook URLs in charge requests point to your tunnel.
+
+::read-more{to="https://commercejs.dev/guides/webhook-setup"}
+See the Webhook Setup guide for a complete local testing walkthrough.
+::
+
+
+# @commercejs/adapter-salla
+
+The `@commercejs/adapter-salla` package implements the `CommerceAdapter` interface for [Salla](https://salla.com){rel="&#x22;nofollow&#x22;"}, the leading eCommerce platform in Saudi Arabia and the MENA region.
+
+## Installation
+
+```bash
+pnpm add @commercejs/adapter-salla
+```
+
+## Configuration
+
+```ts
+import { createSallaAdapter } from '@commercejs/adapter-salla'
+
+const adapter = createSallaAdapter({
+  token: 'your-salla-api-token',
+  baseUrl: 'https://api.salla.dev/admin/v2',
+})
+```
+
+| Option    | Type     | Required | Description            |
+| --------- | -------- | -------- | ---------------------- |
+| `token`   | `string` | Yes      | Salla API access token |
+| `baseUrl` | `string` | No       | API base URL           |
+
+## Supported Domains
+
+The adapter implements these sub-adapters:
+
+| Domain       | Methods                                                                     | Status        |
+| ------------ | --------------------------------------------------------------------------- | ------------- |
+| **Catalog**  | `getProducts`, `getProduct`, `getCategories`                                | ✅ Implemented |
+| **Cart**     | `getCart`, `addToCart`, `removeFromCart`, `updateCartItem`                  | ✅ Implemented |
+| **Customer** | `getCustomer`, `login`, `register`                                          | ✅ Implemented |
+| **Order**    | `getOrders`, `getOrder`, `createOrder`, `getOrderStatus`, `getOrderHistory` | ✅ Implemented |
+| **Store**    | `getStoreInfo`                                                              | ✅ Implemented |
+| **Brand**    | `getBrands`, `getBrand`                                                     | ✅ Implemented |
+| **Country**  | `getCountries`                                                              | ✅ Implemented |
+
+## Data Mapping
+
+The adapter transforms Salla's API responses into unified CommerceJS types. Key mappings:
+
+### Product Mapping
+
+| Salla Field            | CommerceJS Field        | Notes                             |
+| ---------------------- | ----------------------- | --------------------------------- |
+| `name`                 | `name`                  | Wrapped in `LocalizedString`      |
+| `regular_price.amount` | `price.amount`          | Normalized to `DiscountablePrice` |
+| `sale_price.amount`    | `price.compareAtAmount` | Original price before discount    |
+| `images[].url`         | `images[].url`          | Mapped to `Image` type            |
+| `options`              | `options`               | Mapped to `ProductOption`         |
+| `skus`                 | `variants`              | Mapped to `ProductVariant`        |
+
+### Order Status Mapping
+
+| Salla Status  | CommerceJS Status |
+| ------------- | ----------------- |
+| `created`     | `pending`         |
+| `in_progress` | `processing`      |
+| `completed`   | `delivered`       |
+| `cancelled`   | `cancelled`       |
+| `refunded`    | `refunded`        |
+
+## Usage Examples
+
+### Fetch Products
+
+```ts
+const products = await adapter.catalog.getProducts({
+  limit: 10,
+  page: 1,
+})
+// Returns PaginatedResult<Product>
+```
+
+### Get Single Product
+
+```ts
+const product = await adapter.catalog.getProduct('product-123')
+// Returns Product with variants, images, options
+```
+
+### Fetch Orders
+
+```ts
+const orders = await adapter.order.getOrders({
+  limit: 20,
+  page: 1,
+})
+// Returns PaginatedResult<Order>
+```
+
+### Get Order Timeline
+
+```ts
+const history = await adapter.order.getOrderHistory('order-456')
+// Returns OrderHistoryEntry[] - status changes with timestamps
+```
+
+## Error Handling
+
+The adapter wraps Salla API errors in `CommerceError`:
+
+```ts
+import { isCommerceError } from '@commercejs/types'
+
+try {
+  await adapter.catalog.getProduct('nonexistent')
+} catch (err) {
+  if (isCommerceError(err)) {
+    // err.code === 'NOT_FOUND'
+    // err.message === 'Product not found'
+  }
+}
+```
+
+
+# @commercejs/hosted-checkout
+
+The `@commercejs/hosted-checkout` package is a full Nuxt application that provides a drop-in hosted checkout page. Merchants create a session via API, redirect customers to the checkout URL, and receive webhook notifications when payment completes.
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    participant M as Merchant Server
+    participant HC as Hosted Checkout
+    participant T as Tap Payments
+    participant C as Customer
+
+    M->>HC: POST /api/sessions (amount, currency)
+    HC-->>M: { id, checkoutUrl }
+    M->>C: Redirect to checkoutUrl
+    C->>HC: Enter payment details
+    HC->>T: Create charge (goSell.js)
+    T->>C: 3DS verification
+    C->>HC: Return from 3DS
+    HC->>T: Confirm charge
+    T->>HC: POST webhook (CAPTURED)
+    HC-->>C: Show success page
+```
+
+## Running Locally
+
+```bash
+cd packages/hosted-checkout
+cp .env.example .env  # Configure your Tap keys
+pnpm dev
+```
+
+The checkout page is available at `http://localhost:3100`.
+
+## Environment Variables
+
+```bash [.env]
+TAP_SECRET_KEY="sk_test_xxx"
+TAP_PUBLIC_KEY="pk_test_xxx"
+TAP_BASE_URL="https://api.tap.company/v2"
+TAP_MERCHANT_ID="1632424"
+APP_URL="http://localhost:3100"
+```
+
+| Variable          | Description                               |
+| ----------------- | ----------------------------------------- |
+| `TAP_SECRET_KEY`  | Tap secret key for server-side operations |
+| `TAP_PUBLIC_KEY`  | Tap public key for goSell.js tokenization |
+| `TAP_BASE_URL`    | Tap API base URL                          |
+| `TAP_MERCHANT_ID` | Tap merchant ID                           |
+| `APP_URL`         | Base URL for redirects and webhooks       |
+
+## API Endpoints
+
+### POST /api/sessions
+
+Create a new checkout session:
+
+```ts
+const response = await fetch('https://checkout.myapp.com/api/sessions', {
+  method: 'POST',
+  body: JSON.stringify({
+    amount: 99.999,
+    currency: 'BHD',
+    orderId: 'order-001',
+  }),
+})
+
+const { id, checkoutUrl } = await response.json()
+// Redirect customer to checkoutUrl
+```
+
+### GET /api/sessions/\:id
+
+Get the current session state:
+
+```ts
+const session = await fetch(`/api/sessions/${sessionId}`)
+// Returns CheckoutSnapshot
+```
+
+### POST /api/sessions/\:id/pay
+
+Submit payment with a tokenized card:
+
+```ts
+const result = await fetch(`/api/sessions/${sessionId}/pay`, {
+  method: 'POST',
+  body: JSON.stringify({
+    sourceToken: 'tok_xxx',
+    customerInfo: { email, firstName, lastName, phone },
+    shippingAddress: { street, city, country },
+  }),
+})
+```
+
+### POST /api/sessions/\:id/confirm
+
+Confirm payment after 3DS redirect:
+
+```ts
+const result = await fetch(`/api/sessions/${sessionId}/confirm`, {
+  method: 'POST',
+  body: JSON.stringify({ chargeId: 'chg_xxx' }),
+})
+```
+
+### POST /api/webhooks/tap-payment
+
+Receives async charge results from Tap. Verifies the webhook signature and updates the session state.
+
+## goSell.js Integration
+
+The checkout page uses Tap's [goSell.js](https://github.com/nicpay-payments/goSellSDK-v2){rel="&#x22;nofollow&#x22;"} for PCI-compliant card tokenization. The card element renders inside the checkout page, and tokenization happens on Tap's servers.
+
+```vue [app/pages/[id\\]/index.vue]
+<script setup>
+// goSell.js configuration
+const config = {
+  gateway: {
+    publicKey: tapPublicKey,
+    language: 'en',
+    supportedCurrencies: ['BHD'],
+    supportedPaymentMethods: 'all',
+  },
+  // Card element renders in #card-element
+}
+</script>
+```
+
+## Multi-Merchant Support
+
+The hosted checkout supports multi-merchant scenarios through a merchant configuration store. Each merchant registers their Tap credentials, and the checkout resolves the correct keys at runtime.
+
+::read-more{to="https://commercejs.dev/guides/payment-integration"}
+See the Payment Integration guide for details on adding new payment providers.
+::
+
+
+# Payment Integration
+
+CommerceJS uses a pluggable payment architecture. Adding a new provider — Stripe, PayPal, or a custom gateway — requires implementing the `PaymentProvider` interface from `@commercejs/types`.
+
+## The PaymentProvider Interface
+
+Every payment provider implements four methods:
+
+```ts
+interface PaymentProvider {
+  createSession(input: CreatePaymentSessionInput): Promise<PaymentSession>
+  confirmSession(sessionId: string): Promise<PaymentSession>
+  refund(input: RefundInput): Promise<PaymentSession>
+  verifyWebhook(event: PaymentWebhookEvent): Promise<boolean>
+}
+```
+
+## Step-by-Step Guide
+
+::steps
+### Create the package
+
+Create a new package in the monorepo:
+
+```bash
+mkdir -p packages/payment-stripe/src
+```
+
+```json [packages/payment-stripe/package.json]
+{
+  "name": "@commercejs/payment-stripe",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@commercejs/types": "workspace:*"
+  }
+}
+```
+
+### Implement the provider
+
+Create the provider class that implements `PaymentProvider`:
+
+```ts [packages/payment-stripe/src/stripe-provider.ts]
+import type {
+  PaymentProvider,
+  PaymentSession,
+  CreatePaymentSessionInput,
+  RefundInput,
+  PaymentWebhookEvent,
+} from '@commercejs/types'
+
+export class StripePaymentProvider implements PaymentProvider {
+  private secretKey: string
+
+  constructor(config: { secretKey: string }) {
+    this.secretKey = config.secretKey
+  }
+
+  async createSession(input: CreatePaymentSessionInput): Promise<PaymentSession> {
+    // Call Stripe's API to create a PaymentIntent
+    const response = await fetch('https://api.stripe.com/v1/payment_intents', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.secretKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        amount: String(Math.round(input.amount * 100)),
+        currency: input.currency.toLowerCase(),
+        'payment_method': input.sourceToken!,
+        confirm: 'true',
+        'return_url': input.returnUrl!,
+      }),
+    })
+
+    const intent = await response.json()
+
+    return {
+      id: intent.id,
+      providerId: 'stripe',
+      status: this.mapStatus(intent.status),
+      amount: input.amount,
+      currency: input.currency,
+      redirectUrl: intent.next_action?.redirect_to_url?.url ?? null,
+      createdAt: new Date().toISOString(),
+    }
+  }
+
+  async confirmSession(sessionId: string): Promise<PaymentSession> {
+    // Retrieve the PaymentIntent to check its status
+    const response = await fetch(
+      `https://api.stripe.com/v1/payment_intents/${sessionId}`,
+      { headers: { 'Authorization': `Bearer ${this.secretKey}` } },
+    )
+    const intent = await response.json()
+
+    return {
+      id: intent.id,
+      providerId: 'stripe',
+      status: this.mapStatus(intent.status),
+      amount: intent.amount / 100,
+      currency: intent.currency.toUpperCase(),
+      redirectUrl: null,
+      createdAt: new Date(intent.created * 1000).toISOString(),
+    }
+  }
+
+  async refund(input: RefundInput): Promise<PaymentSession> {
+    // Create a Stripe refund
+    throw new Error('Not implemented')
+  }
+
+  async verifyWebhook(event: PaymentWebhookEvent): Promise<boolean> {
+    // Verify Stripe webhook signature
+    throw new Error('Not implemented')
+  }
+
+  private mapStatus(stripeStatus: string): PaymentSession['status'] {
+    switch (stripeStatus) {
+      case 'succeeded': return 'captured'
+      case 'requires_action': return 'requires_action'
+      case 'requires_payment_method': return 'failed'
+      case 'canceled': return 'cancelled'
+      case 'processing': return 'processing'
+      default: return 'pending'
+    }
+  }
+}
+```
+
+### Export the provider
+
+```ts [packages/payment-stripe/src/index.ts]
+export { StripePaymentProvider } from './stripe-provider.js'
+```
+
+### Use it with CheckoutSession
+
+```ts
+import { CheckoutSession } from '@commercejs/checkout'
+import { StripePaymentProvider } from '@commercejs/payment-stripe'
+
+const session = new CheckoutSession({
+  provider: new StripePaymentProvider({
+    secretKey: process.env.STRIPE_SECRET_KEY!,
+  }),
+  amount: 49.99,
+  currency: 'USD',
+})
+```
+::
+
+## Status Mapping
+
+Map your provider's statuses to `PaymentSessionStatus`:
+
+| PaymentSessionStatus | Meaning                                |
+| -------------------- | -------------------------------------- |
+| `pending`            | Payment created, not yet processed     |
+| `processing`         | Payment is being processed             |
+| `requires_action`    | Customer action needed (3DS, redirect) |
+| `captured`           | Payment captured successfully          |
+| `failed`             | Payment failed or declined             |
+| `cancelled`          | Payment cancelled                      |
+| `refunded`           | Payment refunded                       |
+
+## Webhook Verification
+
+Add a webhook verifier config for your provider:
+
+```ts [packages/payment-stripe/src/webhook-config.ts]
+export const stripeWebhookConfig = {
+  formatter: (body: any) => `${body.id}.${body.created}`,
+  algorithm: 'hmac-sha256' as const,
+  getExpectedSignature: (headers: Record<string, string>) => {
+    const sigHeader = headers['stripe-signature'] ?? ''
+    const parts = sigHeader.split(',')
+    const sig = parts.find(p => p.startsWith('v1='))
+    return sig?.replace('v1=', '') ?? null
+  },
+}
+```
+
+::tip
+See `@commercejs/payment-tap` for a complete, production-ready implementation to use as a reference.
+::
+
+
+# Webhook Setup
+
+Payment providers like Tap send charge results asynchronously via webhooks. During local development, you need a public URL that tunnels to your local server. This guide walks through the complete setup with ngrok.
+
+## Prerequisites
+
+- [ngrok](https://ngrok.com){rel="&#x22;nofollow&#x22;"} installed and authenticated
+- The hosted checkout running locally on port 3100
+
+## Set Up the Tunnel
+
+::steps
+### Start the hosted checkout
+
+```bash
+cd packages/hosted-checkout
+pnpm dev
+```
+
+### Start ngrok
+
+In a separate terminal, start an ngrok tunnel:
+
+```bash
+ngrok http 3100
+```
+
+ngrok displays a public URL like `https://abc123.ngrok-free.app`.
+
+### Update APP\_URL
+
+Set the `APP_URL` environment variable to the ngrok URL:
+
+```bash [packages/hosted-checkout/.env]
+APP_URL="https://abc123.ngrok-free.app"
+```
+
+Restart the dev server for the change to take effect.
+::
+
+## How Webhooks Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Customer
+    participant HC as Hosted Checkout<br/>(localhost:3100)
+    participant N as ngrok Tunnel
+    participant T as Tap Payments
+
+    C->>HC: Submit payment
+    HC->>T: Create charge (post.url = ngrok/api/webhooks/tap-payment)
+    T->>C: 3DS redirect
+    C->>T: Complete 3DS
+    T->>N: POST /api/webhooks/tap-payment
+    N->>HC: Forward to localhost:3100
+    HC->>HC: Verify signature, update session
+```
+
+## Webhook Handler
+
+The webhook handler at `/api/webhooks/tap-payment` does three things:
+
+1. **Reads** the raw request body
+2. **Verifies** the webhook signature with `WebhookVerifier`
+3. **Updates** the checkout session with `handleWebhookUpdate`
+
+```ts [server/api/webhooks/tap-payment.post.ts]
+import { WebhookVerifier } from '@commercejs/webhook-verifier'
+import { tap as tapConfig } from '@commercejs/webhook-verifier/configs'
+
+const verifier = new WebhookVerifier({
+  ...tapConfig,
+  secretKey: process.env.TAP_SECRET_KEY!,
+})
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event)
+  const headers = getHeaders(event)
+
+  // 1. Verify signature
+  const result = verifier.verify(body, headers)
+  if (!result.isValid) {
+    throw createError({ statusCode: 401, message: 'Invalid signature' })
+  }
+
+  // 2. Find the checkout session
+  const sessionId = body.reference?.order
+  const session = getSession(sessionId)
+
+  // 3. Update session state
+  session.handleWebhookUpdate({
+    id: body.id,
+    providerId: 'tap',
+    status: body.status === 'CAPTURED' ? 'captured' : 'failed',
+    amount: body.amount,
+    currency: body.currency,
+    redirectUrl: null,
+    createdAt: body.created,
+  })
+
+  return { received: true }
+})
+```
+
+## Vite Host Configuration
+
+Vite blocks requests from unknown hosts by default. For ngrok to work, allow all hosts in development:
+
+```ts [nuxt.config.ts]
+export default defineNuxtConfig({
+  vite: {
+    server: {
+      allowedHosts: true, // Allow ngrok and other tunnel services
+    },
+  },
+})
+```
+
+::warning
+Only use `allowedHosts: true` in development. Production deployments should restrict allowed hosts.
+::
+
+## Debugging Webhooks
+
+### Inspect with ngrok
+
+The ngrok dashboard at `http://localhost:4040` shows all incoming requests. Use it to inspect webhook payloads, headers, and response status codes.
+
+### Common Issues
+
+| Problem             | Cause              | Fix                                         |
+| ------------------- | ------------------ | ------------------------------------------- |
+| 403 from Vite       | Host not allowed   | Set `allowedHosts: true`                    |
+| 401 from handler    | Signature mismatch | Check `TAP_SECRET_KEY` matches              |
+| No webhook received | Wrong `post.url`   | Verify `APP_URL` is the ngrok URL           |
+| Session not found   | Server restarted   | Sessions are in-memory — restart loses them |
+
+## Testing Tip
+
+After a webhook lands, check the ngrok inspector to see the full payload and your server's response. The `hashstring` header contains the signature Tap generated — you can manually verify it against your `TAP_SECRET_KEY` for debugging.
+
+
+# Adapter Development
+
+The adapter pattern is the core of CommerceJS's platform-agnostic design. Each eCommerce platform (Salla, Shopify, WooCommerce) provides an adapter that maps its API to the unified `CommerceAdapter` interface.
+
+## The CommerceAdapter Interface
+
+The adapter is composed of domain-specific sub-adapters:
+
+```ts
+interface CommerceAdapter {
+  catalog: CatalogAdapter     // Products, categories, brands
+  cart: CartAdapter            // Cart CRUD
+  checkout: CheckoutAdapter    // Shipping/payment methods
+  customer: CustomerAdapter    // Profiles, auth
+  order: OrderAdapter          // Order management
+  store: StoreAdapter          // Store info
+  // ... more domains
+}
+```
+
+Each sub-adapter focuses on a single domain. You can implement them incrementally — start with `catalog` and add more as needed.
+
+## Step-by-Step Guide
+
+::steps
+### Create the package
+
+```bash
+mkdir -p packages/adapter-shopify/src/mappers
+```
+
+```json [packages/adapter-shopify/package.json]
+{
+  "name": "@commercejs/adapter-shopify",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@commercejs/types": "workspace:*"
+  }
+}
+```
+
+### Write the mapper functions
+
+Mappers transform platform-specific data into unified CommerceJS types. Keep them as pure functions:
+
+```ts [packages/adapter-shopify/src/mappers/product.ts]
+import type { Product, Image } from '@commercejs/types'
+
+interface ShopifyProduct {
+  id: number
+  title: string
+  body_html: string
+  handle: string
+  images: { id: number; src: string }[]
+  variants: ShopifyVariant[]
+}
+
+export function mapProduct(raw: ShopifyProduct): Product {
+  return {
+    id: String(raw.id),
+    name: raw.title,
+    slug: raw.handle,
+    description: raw.body_html,
+    type: 'physical',
+    price: {
+      amount: parseFloat(raw.variants[0]?.price ?? '0'),
+      currency: 'USD',
+    },
+    sku: raw.variants[0]?.sku ?? undefined,
+    variants: raw.variants.map(mapVariant),
+    options: [],
+    images: raw.images.map(mapImage),
+    attributes: [],
+    categories: [],
+  }
+}
+
+function mapImage(img: { id: number; src: string }): Image {
+  return { url: img.src, alt: '' }
+}
+```
+
+### Implement the CatalogAdapter
+
+```ts [packages/adapter-shopify/src/catalog.ts]
+import type { CatalogAdapter, Product, PaginatedResult } from '@commercejs/types'
+import { mapProduct } from './mappers/product.js'
+
+export function createCatalogAdapter(config: {
+  token: string
+  store: string
+}): CatalogAdapter {
+  const baseUrl = `https://${config.store}.myshopify.com/admin/api/2024-01`
+
+  async function request<T>(path: string): Promise<T> {
+    const res = await fetch(`${baseUrl}${path}`, {
+      headers: { 'X-Shopify-Access-Token': config.token },
+    })
+    return res.json()
+  }
+
+  return {
+    async getProducts(params): Promise<PaginatedResult<Product>> {
+      const data = await request<{ products: any[] }>('/products.json')
+      return {
+        data: data.products.map(mapProduct),
+        total: data.products.length,
+        page: 1,
+        perPage: 50,
+        hasNext: false,
+      }
+    },
+
+    async getProduct(id: string): Promise<Product> {
+      const data = await request<{ product: any }>(`/products/${id}.json`)
+      return mapProduct(data.product)
+    },
+
+    async getCategories() {
+      // Map Shopify collections to CommerceJS categories
+      throw new Error('Not implemented')
+    },
+  }
+}
+```
+
+### Compose the full adapter
+
+```ts [packages/adapter-shopify/src/adapter.ts]
+import type { CommerceAdapter } from '@commercejs/types'
+import { createCatalogAdapter } from './catalog.js'
+
+export function createShopifyAdapter(config: {
+  token: string
+  store: string
+}): CommerceAdapter {
+  return {
+    catalog: createCatalogAdapter(config),
+    cart: null as any,       // Implement later
+    checkout: null as any,
+    customer: null as any,
+    order: null as any,
+    store: null as any,
+    // ...
+  }
+}
+```
+
+### Export the adapter
+
+```ts [packages/adapter-shopify/src/index.ts]
+export { createShopifyAdapter } from './adapter.js'
+```
+::
+
+## Mapping Patterns
+
+### LocalizedString
+
+Some platforms return localized strings as objects, others as plain strings. The `LocalizedString` type handles both:
+
+```ts
+// Platform returns a string
+const name: LocalizedString = raw.title
+
+// Platform returns localized values
+const name: LocalizedString = {
+  en: raw.title_en,
+  ar: raw.title_ar,
+}
+```
+
+### Price Normalization
+
+Normalize platform-specific price formats:
+
+```ts
+// Salla: { amount: 99.99, currency: "SAR" }
+const price = { amount: raw.regular_price.amount, currency: raw.currency }
+
+// Shopify: "99.99" (string), currency from store settings
+const price = { amount: parseFloat(raw.price), currency: storeCurrency }
+```
+
+### Error Wrapping
+
+Wrap platform errors in `CommerceError` for consistent handling:
+
+```ts
+import { CommerceError } from '@commercejs/types'
+
+async function getProduct(id: string): Promise<Product> {
+  const res = await fetch(`${baseUrl}/products/${id}`)
+  if (res.status === 404) {
+    throw new CommerceError('NOT_FOUND', 'Product not found')
+  }
+  if (!res.ok) {
+    throw new CommerceError('PROVIDER_ERROR', `Shopify API error: ${res.status}`)
+  }
+  return mapProduct(await res.json())
+}
+```
+
+## Testing Strategy
+
+Test mappers in isolation with fixture data:
+
+```ts [packages/adapter-shopify/test/mappers.test.ts]
+import { describe, it, expect } from 'vitest'
+import { mapProduct } from '../src/mappers/product.js'
+
+describe('mapProduct', () => {
+  it('maps Shopify product to unified Product', () => {
+    const shopifyProduct = {
+      id: 123,
+      title: 'Blue T-Shirt',
+      handle: 'blue-t-shirt',
+      body_html: '<p>A nice shirt</p>',
+      images: [{ id: 1, src: 'https://cdn.shopify.com/img.png' }],
+      variants: [{ price: '29.99', sku: 'BTS-001' }],
+    }
+
+    const product = mapProduct(shopifyProduct)
+
+    expect(product.id).toBe('123')
+    expect(product.name).toBe('Blue T-Shirt')
+    expect(product.price.amount).toBe(29.99)
+  })
+})
+```
+
+::tip
+The `@commercejs/adapter-salla` package serves as the reference implementation. Study its mapper functions and adapter structure when building your own.
+::
+
+
+# PaymentProvider
+
+The `PaymentProvider` interface defines the contract for payment gateways. Every provider — Tap, Stripe, PayPal — implements these four methods.
+
+## Interface Definition
+
+```ts
+interface PaymentProvider {
+  createSession(input: CreatePaymentSessionInput): Promise<PaymentSession>
+  confirmSession(sessionId: string): Promise<PaymentSession>
+  refund(input: RefundInput): Promise<PaymentSession>
+  verifyWebhook(event: PaymentWebhookEvent): Promise<boolean>
+}
+```
+
+## createSession
+
+Creates a payment session (charge) with the provider.
+
+**Parameters:**
+
+```ts
+interface CreatePaymentSessionInput {
+  amount: number                // Total to charge
+  currency: string             // ISO currency code
+  sourceToken?: string         // Tokenized card from client SDK
+  idempotencyKey?: string      // Prevent duplicate charges
+  orderId?: string             // External order reference
+  customerId?: string          // Customer ID in provider system
+  customer?: {                 // Customer details for new charges
+    email: string
+    firstName: string
+    lastName: string
+    phone?: string
+  }
+  returnUrl?: string           // 3DS redirect return URL
+  cancelUrl?: string           // Payment cancellation URL
+  webhookUrl?: string          // Per-transaction webhook URL
+  metadata?: Record<string, unknown>
+}
+```
+
+**Returns:** `Promise<PaymentSession>`
+
+**Behavior:**
+
+- Creates a charge or payment intent with the provider
+- Returns a `redirectUrl` if 3DS/SCA is required
+- Returns `null` for `redirectUrl` if payment is captured directly
+
+## confirmSession
+
+Confirms a payment after 3DS redirect or async completion.
+
+**Parameters:**
+
+- `sessionId` (`string`) — The provider's charge/payment intent ID
+
+**Returns:** `Promise<PaymentSession>`
+
+**Behavior:**
+
+- Retrieves the payment status from the provider
+- Returns the updated `PaymentSession` with final status
+
+## refund
+
+Creates a refund for a captured payment.
+
+**Parameters:**
+
+```ts
+interface RefundInput {
+  sessionId: string           // Original payment session ID
+  amount?: number             // Partial refund amount (full if omitted)
+  reason?: string             // Refund reason
+}
+```
+
+**Returns:** `Promise<PaymentSession>` with status `'refunded'`
+
+## verifyWebhook
+
+Verifies the authenticity of a webhook event from the provider.
+
+**Parameters:**
+
+```ts
+interface PaymentWebhookEvent {
+  headers: Record<string, string>  // Request headers
+  body: unknown                     // Raw request body
+  rawBody?: string                  // Raw body string for signature verification
+}
+```
+
+**Returns:** `Promise<boolean>` — `true` if the webhook is authentic
+
+## PaymentSession
+
+The payment session tracks the lifecycle of a single payment:
+
+```ts
+interface PaymentSession {
+  id: string                       // Provider's charge/intent ID
+  providerId: string               // Provider identifier ('tap', 'stripe')
+  status: PaymentSessionStatus     // Current payment status
+  amount: number                   // Charged amount
+  currency: string                 // ISO currency code
+  redirectUrl: string | null       // 3DS/SCA redirect URL
+  providerData?: Record<string, unknown>  // Raw provider response
+  createdAt: string                // ISO timestamp
+}
+```
+
+## PaymentSessionStatus
+
+```ts
+type PaymentSessionStatus =
+  | 'pending'           // Created, not yet processed
+  | 'processing'        // Being processed by provider
+  | 'requires_action'   // Customer action needed (3DS)
+  | 'captured'          // Payment captured
+  | 'failed'            // Payment declined or failed
+  | 'cancelled'         // Payment cancelled
+  | 'refunded'          // Payment refunded
+```
+
+## Implementations
+
+| Package                   | Provider                                                        |
+| ------------------------- | --------------------------------------------------------------- |
+| `@commercejs/payment-tap` | [Tap Payments](https://tap.company){rel="&#x22;nofollow&#x22;"} |
+
+::read-more{to="https://commercejs.dev/guides/payment-integration"}
+Build your own PaymentProvider implementation.
+::
+
+
+# CommerceAdapter
+
+The `CommerceAdapter` interface defines the contract for eCommerce platform integrations. It is composed of domain-specific sub-adapters, each handling one area of commerce functionality.
+
+## Interface Definition
+
+```ts
+interface CommerceAdapter {
+  catalog: CatalogAdapter
+  cart: CartAdapter
+  checkout: CheckoutAdapter
+  customer: CustomerAdapter
+  order: OrderAdapter
+  wishlist: WishlistAdapter
+  review: ReviewAdapter
+  store: StoreAdapter
+  promotion: PromotionAdapter
+  return: ReturnAdapter
+  wholesale: WholesaleAdapter
+  auction: AuctionAdapter
+  rental: RentalAdapter
+  giftCard: GiftCardAdapter
+  brand: BrandAdapter
+  country: CountryAdapter
+  location: LocationAdapter
+}
+```
+
+## CatalogAdapter
+
+Product and category retrieval.
+
+```ts
+interface CatalogAdapter {
+  getProducts(params?: GetProductParams): Promise<PaginatedResult<Product>>
+  getProduct(id: string): Promise<Product>
+  getCategories(params?: GetCategoriesParams): Promise<Category[]>
+}
+```
+
+### GetProductParams
+
+```ts
+interface GetProductParams extends PaginationParams {
+  categoryId?: string
+  search?: string
+  sort?: string
+  order?: 'asc' | 'desc'
+}
+```
+
+## CartAdapter
+
+Cart operations — add, remove, update.
+
+```ts
+interface CartAdapter {
+  getCart(cartId?: string): Promise<Cart>
+  addToCart(input: AddToCartInput): Promise<Cart>
+  updateCartItem(cartId: string, itemId: string, quantity: number): Promise<Cart>
+  removeFromCart(cartId: string, itemId: string): Promise<Cart>
+  clearCart(cartId: string): Promise<Cart>
+}
+```
+
+### AddToCartInput
+
+```ts
+interface AddToCartInput {
+  productId: string
+  variantId?: string
+  quantity: number
+  metadata?: Record<string, unknown>
+}
+```
+
+## CheckoutAdapter
+
+Shipping and payment method retrieval for checkout flows.
+
+```ts
+interface CheckoutAdapter {
+  getShippingMethods(cartId: string): Promise<ShippingMethod[]>
+  getPaymentMethods(): Promise<PaymentMethod[]>
+}
+```
+
+## CustomerAdapter
+
+Customer profiles, authentication, and addresses.
+
+```ts
+interface CustomerAdapter {
+  getCustomer(id: string): Promise<Customer>
+  login(email: string, password: string): Promise<Customer>
+  register(input: RegisterInput): Promise<Customer>
+  updateCustomer(id: string, input: UpdateCustomerInput): Promise<Customer>
+}
+```
+
+## OrderAdapter
+
+Order management — creation, retrieval, and status tracking.
+
+```ts
+interface OrderAdapter {
+  getOrders(params?: PaginationParams): Promise<PaginatedResult<Order>>
+  getOrder(id: string): Promise<Order>
+  createOrder(input: CreateOrderInput): Promise<Order>
+  getOrderStatus(id: string): Promise<OrderStatusInfo>
+  getOrderHistory(id: string): Promise<OrderHistoryEntry[]>
+  updateOrderStatus(id: string, input: UpdateOrderStatusInput): Promise<OrderStatusInfo>
+}
+```
+
+## StoreAdapter
+
+Store metadata and configuration.
+
+```ts
+interface StoreAdapter {
+  getStoreInfo(): Promise<StoreInfo>
+}
+```
+
+### StoreInfo
+
+```ts
+interface StoreInfo {
+  id: string
+  name: string
+  description: string
+  logo?: Image
+  url: string
+  currency: StoreCurrency
+  locale: StoreLocale
+  metadata?: Record<string, unknown>
+}
+```
+
+## Additional Adapters
+
+| Adapter            | Key Methods                                          | Domain           |
+| ------------------ | ---------------------------------------------------- | ---------------- |
+| `WishlistAdapter`  | `getWishlist`, `addToWishlist`, `removeFromWishlist` | Saved items      |
+| `ReviewAdapter`    | `getReviews`, `submitReview`                         | Product reviews  |
+| `PromotionAdapter` | `applyCoupon`, `removeCoupon`, `getPromotions`       | Discounts        |
+| `ReturnAdapter`    | `createReturn`, `getReturn`, `getReturns`            | Return requests  |
+| `WholesaleAdapter` | `getPriceTiers`, `getQuote`, `createQuote`           | B2B pricing      |
+| `AuctionAdapter`   | `getBids`, `placeBid`                                | Auction products |
+| `RentalAdapter`    | `getAvailability`, `createBooking`                   | Rental products  |
+| `GiftCardAdapter`  | `purchaseCard`, `redeemCard`, `getBalance`           | Gift cards       |
+| `BrandAdapter`     | `getBrands`, `getBrand`                              | Brand data       |
+| `CountryAdapter`   | `getCountries`                                       | Country list     |
+| `LocationAdapter`  | `getLocations`, `getLocation`                        | Store locations  |
+
+## AdapterDomain
+
+Every sub-adapter is accessible through the `AdapterDomain` type for dynamic access:
+
+```ts
+type AdapterDomain = keyof CommerceAdapter
+// 'catalog' | 'cart' | 'checkout' | 'customer' | 'order' | ...
+```
+
+## Implementations
+
+| Package                     | Platform                                               |
+| --------------------------- | ------------------------------------------------------ |
+| `@commercejs/adapter-salla` | [Salla](https://salla.com){rel="&#x22;nofollow&#x22;"} |
+
+::read-more{to="https://commercejs.dev/guides/adapter-development"}
+Build your own CommerceAdapter implementation.
+::
+
+
+# CheckoutSession
+
+The `CheckoutSession` class orchestrates the complete checkout flow from customer info through payment and confirmation. It enforces valid state transitions, emits events, and works on any JavaScript runtime.
+
+## Constructor
+
+```ts
+new CheckoutSession(config: CheckoutSessionConfig)
+```
+
+### CheckoutSessionConfig
+
+| Property     | Type              | Required | Description                 |
+| ------------ | ----------------- | -------- | --------------------------- |
+| `provider`   | `PaymentProvider` | Yes      | Payment gateway instance    |
+| `amount`     | `number`          | Yes      | Order total amount          |
+| `currency`   | `string`          | Yes      | ISO currency code           |
+| `orderId`    | `string`          | No       | External order reference    |
+| `returnUrl`  | `string`          | No       | 3DS redirect return URL     |
+| `cancelUrl`  | `string`          | No       | Payment cancellation URL    |
+| `webhookUrl` | `string`          | No       | Per-transaction webhook URL |
+
+## Properties
+
+All properties are read-only getters:
+
+| Property           | Type                          | Description                 |
+| ------------------ | ----------------------------- | --------------------------- |
+| `state`            | `CheckoutState`               | Current state machine state |
+| `customerInfo`     | `CheckoutCustomerInfo | null` | Customer details            |
+| `shippingAddress`  | `Address | null`              | Shipping address            |
+| `billingAddress`   | `Address | null`              | Billing address             |
+| `shippingMethodId` | `string | null`               | Selected shipping method    |
+| `paymentSession`   | `PaymentSession | null`       | Current payment session     |
+| `amount`           | `number`                      | Order amount                |
+| `currency`         | `string`                      | Currency code               |
+| `orderId`          | `string | null`               | Order ID                    |
+| `error`            | `Error | null`                | Last error                  |
+
+## Methods
+
+### setCustomerInfo(info)
+
+```ts
+setCustomerInfo(info: CheckoutCustomerInfo): void
+```
+
+Set customer details. Transitions from `idle` to `info`.
+
+**CheckoutCustomerInfo:**
+
+| Field       | Type     | Required |
+| ----------- | -------- | -------- |
+| `email`     | `string` | Yes      |
+| `firstName` | `string` | Yes      |
+| `lastName`  | `string` | Yes      |
+| `phone`     | `string` | No       |
+
+### setShippingAddress(address, billingAddress?)
+
+```ts
+setShippingAddress(
+  address: Omit<Address, 'id' | 'isDefault'>,
+  billingAddress?: Omit<Address, 'id' | 'isDefault'>
+): void
+```
+
+Set shipping address. Transitions from `info` to `shipping`. If `billingAddress` is omitted, the shipping address is used for billing.
+
+### setShippingMethod(methodId)
+
+```ts
+setShippingMethod(methodId: string): void
+```
+
+Set the shipping method. Does not trigger a state transition. Must be in `shipping` state.
+
+### setAmount(amount)
+
+```ts
+setAmount(amount: number): void
+```
+
+Update the order amount. Can be called before payment is submitted.
+
+### setOrderId(orderId)
+
+```ts
+setOrderId(orderId: string): void
+```
+
+Set the order ID if not provided at construction time.
+
+### submitPayment(options?)
+
+```ts
+submitPayment(options?: {
+  sourceToken?: string
+  idempotencyKey?: string
+  metadata?: Record<string, unknown>
+}): Promise<PaymentSession>
+```
+
+Create a payment session with the provider. Transitions from `shipping` (or `failed` for retries) to `payment`.
+
+Returns a `PaymentSession` with an optional `redirectUrl` for 3DS.
+
+### confirmPayment(sessionId?)
+
+```ts
+confirmPayment(sessionId?: string): Promise<PaymentSession>
+```
+
+Confirm payment after 3DS redirect. Must be in `payment` state. Transitions to `complete` or `failed`.
+
+### handleWebhookUpdate(paymentSession)
+
+```ts
+handleWebhookUpdate(paymentSession: PaymentSession): void
+```
+
+Handle an async webhook update. Works from any non-terminal state. Transitions directly to `complete` (for `captured`) or `failed` (for `failed`/`cancelled`).
+
+### toSnapshot()
+
+```ts
+toSnapshot(): CheckoutSnapshot
+```
+
+Get a serializable snapshot of the current session state.
+
+**CheckoutSnapshot:**
+
+```ts
+interface CheckoutSnapshot {
+  state: CheckoutState
+  customerInfo: CheckoutCustomerInfo | null
+  shippingAddress: Omit<Address, 'id' | 'isDefault'> | null
+  billingAddress: Omit<Address, 'id' | 'isDefault'> | null
+  shippingMethodId: string | null
+  paymentSession: PaymentSession | null
+  amount: number
+  currency: string
+  orderId: string | null
+  error: string | null
+}
+```
+
+## Events
+
+The session extends `EventEmitter` and emits these events:
+
+| Event         | Payload                                      | When                 |
+| ------------- | -------------------------------------------- | -------------------- |
+| `stateChange` | `{ from: CheckoutState, to: CheckoutState }` | Any state transition |
+| `complete`    | `{ paymentSession: PaymentSession }`         | Payment captured     |
+| `error`       | `{ error: Error, state: CheckoutState }`     | Payment failed       |
+
+```ts
+session.on('stateChange', ({ from, to }) => {
+  console.log(`${from} → ${to}`)
+})
+```
+
+## State Transitions
+
+```ts
+type CheckoutState =
+  | 'idle'
+  | 'info'
+  | 'shipping'
+  | 'payment'
+  | 'confirming'
+  | 'complete'
+  | 'failed'
+```
+
+Valid transitions:
+
+| From         | To           | Method                    |
+| ------------ | ------------ | ------------------------- |
+| `idle`       | `info`       | `setCustomerInfo()`       |
+| `info`       | `shipping`   | `setShippingAddress()`    |
+| `shipping`   | `payment`    | `submitPayment()`         |
+| `payment`    | `confirming` | `confirmPayment()`        |
+| `confirming` | `complete`   | Payment captured          |
+| `confirming` | `failed`     | Payment declined          |
+| `failed`     | `payment`    | `submitPayment()` (retry) |
+
+Invalid transitions throw `Error: Invalid transition: "{from}" → "{to}"`.
