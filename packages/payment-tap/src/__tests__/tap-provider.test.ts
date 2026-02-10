@@ -271,46 +271,60 @@ describe('TapPaymentProvider', () => {
   // ---- verifyWebhook ----------------------------------------------------
 
   describe('verifyWebhook', () => {
-    it('throws if no webhookSecret configured', async () => {
-      const noSecret = new TapPaymentProvider({ secretKey: 'sk_test_xxx' })
-
-      await expect(
-        noSecret.verifyWebhook!('{}', 'sig'),
-      ).rejects.toThrow('webhookSecret is required')
-    })
-
-    it('throws on invalid signature', async () => {
-      await expect(
-        provider.verifyWebhook!('{"event":"charge.captured"}', 'invalid_sig'),
-      ).rejects.toThrow('invalid webhook signature')
-    })
-
-    it('returns parsed event on valid signature', async () => {
+    it('throws on invalid hashstring', async () => {
       const payload = JSON.stringify({
-        event: 'charge.captured',
         id: 'chg_test_abc123',
-        data: { amount: 99.99 },
+        amount: 99.99,
+        currency: 'SAR',
+        status: 'CAPTURED',
+        reference: { gateway: 'gw_ref', payment: 'pay_ref' },
+        transaction: { created: '2026-02-09T12:00:00Z' },
       })
 
-      // Compute the correct HMAC signature
+      await expect(
+        provider.verifyWebhook!(payload, 'invalid_sig'),
+      ).rejects.toThrow('invalid webhook hashstring')
+    })
+
+    it('returns parsed event on valid hashstring', async () => {
+      const event = {
+        id: 'chg_test_abc123',
+        amount: 99.99,
+        currency: 'SAR',
+        status: 'CAPTURED',
+        reference: { gateway: 'gw_ref', payment: 'pay_ref' },
+        transaction: { created: '2026-02-09T12:00:00Z' },
+      }
+      const payload = JSON.stringify(event)
+
+      // Build the hashstring the same way the implementation does
+      const toBeHashed =
+        `x_id${event.id}` +
+        `x_amount${event.amount}` +
+        `x_currency${event.currency}` +
+        `x_gateway_reference${event.reference.gateway}` +
+        `x_payment_reference${event.reference.payment}` +
+        `x_status${event.status}` +
+        `x_created${event.transaction.created}`
+
+      // HMAC with secretKey (not webhookSecret — matches implementation)
       const encoder = new TextEncoder()
       const key = await globalThis.crypto.subtle.importKey(
         'raw',
-        encoder.encode('whsec_test'),
+        encoder.encode('sk_test_xxx'),
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['sign'],
       )
-      const sig = await globalThis.crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+      const sig = await globalThis.crypto.subtle.sign('HMAC', key, encoder.encode(toBeHashed))
       const validSignature = Array.from(new Uint8Array(sig))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('')
 
-      const event = await provider.verifyWebhook!(payload, validSignature)
+      const result = await provider.verifyWebhook!(payload, validSignature)
 
-      expect(event.type).toBe('charge.captured')
-      expect(event.sessionId).toBe('chg_test_abc123')
-      expect(event.data).toEqual({ amount: 99.99 })
+      expect(result.type).toBe('payment.captured')
+      expect(result.sessionId).toBe('chg_test_abc123')
     })
   })
 })
