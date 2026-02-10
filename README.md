@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/commerce-js/commerce.js/actions/workflows/release.yml"><img src="https://github.com/commerce-js/commerce.js/actions/workflows/release.yml/badge.svg" alt="Release"></a>
   <a href="https://www.npmjs.com/org/commercejs"><img src="https://img.shields.io/badge/npm-%40commercejs-CB3837?logo=npm&logoColor=white" alt="npm"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://nuxt.com/"><img src="https://img.shields.io/badge/Nuxt-00DC82?logo=nuxt.js&logoColor=white" alt="Nuxt"></a>
