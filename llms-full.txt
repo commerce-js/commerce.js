@@ -41,7 +41,7 @@ CommerceJS is designed for developers building:
   ---
   icon: i-lucide-download
   title: Installation
-  to: https://commercejs.dev/getting-started/installation
+  to: https://commerce.js.org/getting-started/installation
   ---
   Set up the monorepo and install dependencies.
   :::
@@ -50,7 +50,7 @@ CommerceJS is designed for developers building:
   ---
   icon: i-lucide-rocket
   title: Quick Start
-  to: https://commercejs.dev/getting-started/quick-start
+  to: https://commerce.js.org/getting-started/quick-start
   ---
   Process your first payment in 5 minutes.
   :::
@@ -59,7 +59,7 @@ CommerceJS is designed for developers building:
   ---
   icon: i-lucide-layers
   title: Architecture
-  to: https://commercejs.dev/architecture/overview
+  to: https://commerce.js.org/architecture/overview
   ---
   Understand how the packages fit together.
   :::
@@ -1124,7 +1124,7 @@ if (result.isValid) {
 }
 ```
 
-::read-more{to="https://commercejs.dev/packages/webhook-verifier"}
+::read-more{to="https://commerce.js.org/packages/webhook-verifier"}
 See the webhook-verifier package for detailed verification documentation.
 ::
 
@@ -1281,7 +1281,7 @@ ngrok http 3100
 
 Update your `APP_URL` environment variable with the ngrok URL so that webhook URLs in charge requests point to your tunnel.
 
-::read-more{to="https://commercejs.dev/guides/webhook-setup"}
+::read-more{to="https://commerce.js.org/guides/webhook-setup"}
 See the Webhook Setup guide for a complete local testing walkthrough.
 ::
 
@@ -1540,7 +1540,7 @@ const config = {
 
 The hosted checkout supports multi-merchant scenarios through a merchant configuration store. Each merchant registers their Tap credentials, and the checkout resolves the correct keys at runtime.
 
-::read-more{to="https://commercejs.dev/guides/payment-integration"}
+::read-more{to="https://commerce.js.org/guides/payment-integration"}
 See the Payment Integration guide for details on adding new payment providers.
 ::
 
@@ -2250,7 +2250,7 @@ type PaymentSessionStatus =
 | ------------------------- | --------------------------------------------------------------- |
 | `@commercejs/payment-tap` | [Tap Payments](https://tap.company){rel="&#x22;nofollow&#x22;"} |
 
-::read-more{to="https://commercejs.dev/guides/payment-integration"}
+::read-more{to="https://commerce.js.org/guides/payment-integration"}
 Build your own PaymentProvider implementation.
 ::
 
@@ -2426,7 +2426,7 @@ type AdapterDomain = keyof CommerceAdapter
 | --------------------------- | ------------------------------------------------------ |
 | `@commercejs/adapter-salla` | [Salla](https://salla.com){rel="&#x22;nofollow&#x22;"} |
 
-::read-more{to="https://commercejs.dev/guides/adapter-development"}
+::read-more{to="https://commerce.js.org/guides/adapter-development"}
 Build your own CommerceAdapter implementation.
 ::
 
