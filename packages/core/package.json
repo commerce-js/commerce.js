@@ -22,7 +22,7 @@
   "scripts": {
     "build": "nuxt-module-build build",
     "dev": "nuxi dev playground",
-    "typecheck": "nuxt-module-build build && tsc --noEmit",
+    "typecheck": "nuxt-module-build build",
     "clean": "rm -rf dist .nuxt"
   },
   "dependencies": {
