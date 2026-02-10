@@ -28,6 +28,19 @@ const firstName = ref('')
 const lastName = ref('')
 const phone = ref('')
 
+/** Translate internal error strings into user-friendly messages */
+function toUserFriendlyError(raw: string | null | undefined): string {
+  if (!raw) return 'Your payment was declined. Please try again with a different card.'
+  const lower = raw.toLowerCase()
+  if (lower.includes('failed') || lower.includes('declined') || lower.includes('restricted'))
+    return 'Your payment was declined. Please try again or use a different payment method.'
+  if (lower.includes('cancelled') || lower.includes('abandoned'))
+    return 'Payment was cancelled. Please try again when you\'re ready.'
+  if (lower.includes('timed') || lower.includes('timeout'))
+    return 'Payment timed out. Please try again.'
+  return raw
+}
+
 // Fetch session on load
 const { data: sessionData, error: fetchError } = await useFetch(`/api/sessions/${sessionId}`)
 
@@ -40,6 +53,11 @@ else if (sessionData.value) {
     email.value = sessionData.value.customerInfo.email || ''
     firstName.value = sessionData.value.customerInfo.firstName || ''
     lastName.value = sessionData.value.customerInfo.lastName || ''
+    phone.value = sessionData.value.customerInfo.phone || ''
+  }
+  // Detect if session already failed (e.g., 3DS declined, webhook updated)
+  if (sessionData.value.state === 'failed') {
+    error.value = toUserFriendlyError(sessionData.value.error)
   }
 }
 loading.value = false
@@ -130,6 +148,7 @@ function initGoSellElements() {
  * Response shape: { id: 'tok_xxx', object: 'token', card: {...}, ... }
  */
 async function handleTokenCallback(response: any) {
+  console.log('[checkout] goSell token callback:', JSON.stringify(response))
   if (!response || !response.id) {
     error.value = 'Failed to tokenize card. Please try again.'
     submitting.value = false
@@ -144,7 +163,7 @@ async function handleTokenCallback(response: any) {
  * goSell.js error handler.
  */
 function handleTokenError(err: any) {
-  console.error('[checkout] goSell error:', err)
+  console.error('[checkout] goSell error callback:', JSON.stringify(err))
   error.value = err?.error?.message || 'Card input error. Please check your details.'
   submitting.value = false
 }
@@ -174,6 +193,14 @@ async function submitPayment() {
     // goSell.submit() triggers tokenization asynchronously.
     // The result comes back via handleTokenCallback / handleTokenError.
     goSell.submit()
+
+    // Safety timeout: if goSell never calls back, reset the UI
+    setTimeout(() => {
+      if (submitting.value) {
+        error.value = 'Payment timed out. Please check your card details and try again.'
+        submitting.value = false
+      }
+    }, 30000)
     return
   }
 
@@ -185,6 +212,7 @@ async function submitPayment() {
  * POST the payment to our backend with the card token.
  */
 async function submitPaymentWithToken(sourceToken: string | undefined) {
+  console.log('[checkout] submitPaymentWithToken called, token:', sourceToken)
   try {
     const result = await $fetch(`/api/sessions/${sessionId}/pay`, {
       method: 'POST',
@@ -210,6 +238,7 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
         },
       },
     })
+    console.log('[checkout] pay API response:', JSON.stringify(result))
 
     // If there's a redirect URL, go to Tap for 3DS
     if (result.redirectUrl) {
@@ -223,38 +252,86 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
       return
     }
 
+    // If payment failed, show error to user
+    if (result.state === 'failed') {
+      error.value = toUserFriendlyError(result.error)
+      session.value = result
+      submitting.value = false
+      return
+    }
+
     // Otherwise refresh the session state
     session.value = result
     submitting.value = false
   }
   catch (err: any) {
-    error.value = err?.data?.message || 'Payment failed. Please try again.'
+    error.value = toUserFriendlyError(err?.data?.message)
     submitting.value = false
   }
 }
 
+/** Load the goSell.js SDK (CSS + JS). Resolves when ready. No-ops if already loaded. */
+function loadGoSellSDK(): Promise<void> {
+  // Already loaded
+  if ((window as any).goSell) return Promise.resolve()
+
+  return new Promise((resolve, reject) => {
+    // CSS
+    if (!document.querySelector('link[href*="gosell.css"]')) {
+      const cssLink = document.createElement('link')
+      cssLink.rel = 'stylesheet'
+      cssLink.href = 'https://goSellJSLib.b-cdn.net/v2.0.4/css/gosell.css'
+      document.head.appendChild(cssLink)
+    }
+
+    // JS
+    const existing = document.querySelector('script[src*="gosell.js"]')
+    if (existing) {
+      // Script tag exists but may still be loading
+      existing.addEventListener('load', () => resolve())
+      if ((window as any).goSell) resolve()
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://goSellJSLib.b-cdn.net/v2.0.4/js/gosell.js'
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Failed to load goSell.js'))
+    document.head.appendChild(script)
+  })
+}
+
+/** Reset from failed state so the user can retry payment */
+async function retryPayment() {
+  error.value = null
+  cardReady.value = false
+  session.value!.state = 'idle'
+
+  // Wait for Vue to re-render the form (the #tap-card-element container)
+  await nextTick()
+
+  // Ensure SDK is loaded (may not have been if session started in failed state)
+  try {
+    await loadGoSellSDK()
+    setTimeout(initGoSellElements, 150)
+  }
+  catch {
+    error.value = 'Could not load payment form. Please reload the page.'
+  }
+}
+
 // Load goSell.js SDK and init after mount
-onMounted(() => {
-  if (!session.value || session.value.state === 'complete') return
+onMounted(async () => {
+  if (!session.value || session.value.state === 'complete' || session.value.state === 'failed') return
 
-  // Load goSell.js CSS
-  const cssLink = document.createElement('link')
-  cssLink.rel = 'stylesheet'
-  cssLink.href = 'https://goSellJSLib.b-cdn.net/v2.0.4/css/gosell.css'
-  document.head.appendChild(cssLink)
-
-  // Load goSell.js script
-  const script = document.createElement('script')
-  script.src = 'https://goSellJSLib.b-cdn.net/v2.0.4/js/gosell.js'
-  script.async = true
-  script.onload = () => {
-    // Small delay to ensure goSell global is available
+  try {
+    await loadGoSellSDK()
     setTimeout(initGoSellElements, 100)
   }
-  script.onerror = () => {
+  catch {
     console.warn('[checkout] Failed to load goSell.js — card element unavailable')
   }
-  document.head.appendChild(script)
 })
 </script>
 
@@ -290,6 +367,28 @@ onMounted(() => {
           <div class="status-description">
             This checkout has already been completed.
           </div>
+        </div>
+      </div>
+
+      <!-- Payment failed -->
+      <div v-else-if="session.state === 'failed'" class="checkout-card">
+        <div class="status-message">
+          <div class="status-icon error">✕</div>
+          <div class="status-title">Payment failed</div>
+          <div class="status-description">
+            {{ error || 'Your payment could not be processed. Please try again or use a different payment method.' }}
+          </div>
+          <button
+            class="btn btn-primary"
+            style="margin-top: 1.5rem; max-width: 200px;"
+            @click="retryPayment"
+          >
+            Try again
+          </button>
+        </div>
+
+        <div class="powered-by">
+          Powered by <a href="#">CommerceJS</a>
         </div>
       </div>
 

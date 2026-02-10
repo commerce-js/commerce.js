@@ -220,6 +220,15 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
         return session
       }
 
+      // If payment was instantly declined (no 3DS), fail immediately
+      if (session.status === 'failed' || session.status === 'cancelled') {
+        const error = new Error(`Payment ${session.status}`)
+        this._error = error
+        this.transition('failed')
+        this.emit('error', { error, state: this._state })
+        throw error
+      }
+
       // If pending/processing, wait for confirmation
       this.transition('payment')
       return session
