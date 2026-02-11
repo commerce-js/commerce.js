@@ -26,7 +26,7 @@ async function buildReturn(row: any): Promise<ReturnRequest> {
       productId: item.productId,
       variantId: item.variantId ?? null,
       name: localized(item.name, item.nameAr),
-      image: item.image ? { url: item.image, alt: null, width: null, height: null } : null,
+      image: item.image ? { url: item.image, alt: '' } : null,
       quantity: item.quantity,
       reason: item.reason as any,
       reasonNote: item.reasonNote ?? null,
@@ -48,11 +48,13 @@ export function createReturnsDomain() {
     async createReturn(input: CreateReturnInput): Promise<ReturnRequest> {
       // Look up the order to get the order number
       // Simplified — use orderId as order number placeholder
-      const returnId = await insertReturn({
+      const result = await insertReturn({
         orderId: input.orderId,
         orderNumber: input.orderId,
         customerNote: null,
       })
+      // Drizzle returns string id, Prisma returns full row
+      const returnId = typeof result === 'string' ? result : (result as any).id
 
       // Insert return items
       for (const item of input.items) {
