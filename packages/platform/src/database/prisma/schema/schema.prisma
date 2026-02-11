@@ -1,0 +1,14 @@
+// Prisma schema — generator + datasource configuration
+// Models are split across prisma/models/*.prisma via multi-file schema
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../generated"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  compilerBuild          = "fast"
+}
+
+datasource db {
+  provider = "sqlite"
+}

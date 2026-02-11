@@ -1,0 +1,18 @@
+// ---------------------------------------------------------------------------
+// Brand model
+// ---------------------------------------------------------------------------
+
+model Brand {
+  id            String   @id @default(uuid())
+  name          String
+  nameAr        String?  @map("name_ar")
+  slug          String   @unique
+  logo          String?
+  description   String?
+  descriptionAr String?  @map("description_ar")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     String   @map("created_at")
+  updatedAt     String   @map("updated_at")
+
+  @@map("brands")
+}

@@ -1,0 +1,206 @@
+// ---------------------------------------------------------------------------
+// Checkout domain — shipping, addresses, and order placement
+// ---------------------------------------------------------------------------
+
+import type {
+  Cart,
+  Order,
+  ShippingMethod,
+  PaymentMethod,
+  Address,
+} from '@commercejs/types'
+import {
+  updateCart,
+  deleteCart,
+  findProductById,
+  createOrder as dbCreateOrder,
+  createOrderItem,
+  createOrderHistory,
+  findOrderById,
+  findOrderItems,
+} from '../database/index.js'
+import { generateOrderNumber, localized, price, priceRequired, img } from './helpers.js'
+import { createCartDomain } from './cart.js'
+
+export function createCheckoutDomain(currency: string) {
+  const cartDomain = createCartDomain(currency)
+
+  return {
+    async getShippingMethods(_cartId: string): Promise<ShippingMethod[]> {
+      return [
+        {
+          id: 'standard',
+          name: localized('Standard Shipping', 'شحن عادي'),
+          provider: 'custom',
+          price: priceRequired(15, currency),
+          estimatedDays: { min: 5, max: 7 },
+          cashOnDelivery: false,
+        },
+        {
+          id: 'express',
+          name: localized('Express Shipping', 'شحن سريع'),
+          provider: 'custom',
+          price: priceRequired(35, currency),
+          estimatedDays: { min: 1, max: 2 },
+          cashOnDelivery: false,
+        },
+      ]
+    },
+
+    async setShippingAddress(cartId: string, address: Omit<Address, 'id' | 'isDefault'>): Promise<Cart> {
+      await updateCart(cartId, { shippingAddress: address as any, updatedAt: new Date().toISOString() })
+      return cartDomain.getCart(cartId)
+    },
+
+    async setBillingAddress(cartId: string, address: Omit<Address, 'id' | 'isDefault'>): Promise<Cart> {
+      await updateCart(cartId, { billingAddress: address as any, updatedAt: new Date().toISOString() })
+      return cartDomain.getCart(cartId)
+    },
+
+    async setShippingMethod(cartId: string, methodId: string): Promise<Cart> {
+      await updateCart(cartId, { shippingMethodId: methodId, updatedAt: new Date().toISOString() })
+      return cartDomain.getCart(cartId)
+    },
+
+    async getPaymentMethods(_cartId: string): Promise<PaymentMethod[]> {
+      return [
+        {
+          id: 'card',
+          type: 'card',
+          name: localized('Credit / Debit Card', 'بطاقة ائتمان'),
+          provider: 'platform',
+          installments: null,
+          icon: null,
+        },
+        {
+          id: 'cod',
+          type: 'cash_on_delivery',
+          name: localized('Cash on Delivery', 'الدفع عند الاستلام'),
+          provider: 'platform',
+          installments: null,
+          icon: null,
+        },
+      ]
+    },
+
+    async setPaymentMethod(cartId: string, methodId: string): Promise<Cart> {
+      await updateCart(cartId, { paymentMethodId: methodId, updatedAt: new Date().toISOString() })
+      return cartDomain.getCart(cartId)
+    },
+
+    async placeOrder(cartId: string): Promise<Order> {
+      const cart = await cartDomain.getCart(cartId)
+
+      if (cart.items.length === 0) {
+        throw new Error('Cannot place order with empty cart')
+      }
+
+      const now = new Date().toISOString()
+      const orderId = crypto.randomUUID()
+      const orderNumber = generateOrderNumber()
+
+      const subtotal = cart.totals.subtotal.amount
+      const shippingCost = cart.totals.shipping?.amount ?? 0
+      const tax = cart.totals.tax?.amount ?? 0
+      const discount = cart.totals.discount?.amount ?? 0
+      const total = subtotal + shippingCost + tax - discount
+
+      await dbCreateOrder({
+        id: orderId,
+        orderNumber,
+        customerId: cart.customerId ?? null,
+        status: 'pending',
+        subtotal,
+        shippingCost,
+        tax,
+        discount,
+        total,
+        currency,
+        shippingAddress: cart.shippingAddress as any,
+        billingAddress: cart.billingAddress as any,
+        shippingMethod: cart.shippingMethod?.name ? JSON.stringify(cart.shippingMethod.name) : null,
+        paymentMethod: cart.paymentMethod?.name ? JSON.stringify(cart.paymentMethod.name) : null,
+        requiresShipping: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+
+      for (const item of cart.items) {
+        await createOrderItem({
+          orderId,
+          productId: item.productId,
+          variantId: item.variantId ?? null,
+          name: typeof item.name === 'object' ? (item.name as any).en : String(item.name),
+          quantity: item.quantity,
+          price: item.price.amount,
+          totalPrice: item.totalPrice.amount,
+          productType: 'physical',
+          fulfillmentStatus: 'unfulfilled',
+        })
+      }
+
+      await createOrderHistory({
+        orderId,
+        fromStatus: null,
+        toStatus: 'pending',
+        note: 'Order placed',
+        createdAt: now,
+      })
+
+      // Delete cart after order placement
+      await deleteCart(cartId)
+
+      // Build and return the order
+      const order = await findOrderById(orderId)
+      if (!order) throw new Error(`Order not found after creation: ${orderId}`)
+      const items = await findOrderItems(orderId)
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status as any,
+        items: items.map((i: any) => ({
+          id: i.id,
+          productId: i.productId,
+          variantId: i.variantId ?? null,
+          name: localized(i.name, i.nameAr),
+          image: i.image ? img(i.image, null) : null,
+          quantity: i.quantity,
+          price: priceRequired(i.price, currency),
+          totalPrice: priceRequired(i.totalPrice, currency),
+          fulfillmentStatus: i.fulfillmentStatus as any,
+          productType: i.productType as any,
+          digital: null,
+          event: null,
+        })),
+        totals: {
+          subtotal: priceRequired(order.subtotal, currency),
+          shipping: price(order.shippingCost, currency),
+          tax: price(order.tax, currency),
+          discount: price(order.discount, currency),
+          total: priceRequired(order.total, currency),
+        },
+        shippingAddress: order.shippingAddress as any ?? null,
+        billingAddress: order.billingAddress as any ?? null,
+        shippingMethod: order.shippingMethod
+          ? { id: 'default', name: localized(order.shippingMethod, null), provider: 'custom', price: priceRequired(0, currency), estimatedDays: { min: 1, max: 7 }, cashOnDelivery: false }
+          : null,
+        paymentMethod: order.paymentMethod
+          ? { id: 'default', type: 'card', name: localized(order.paymentMethod, null), provider: 'platform', installments: null, icon: null }
+          : null,
+        trackingNumber: order.trackingNumber ?? null,
+        trackingUrl: order.trackingUrl ?? null,
+        note: order.note ?? null,
+        customerId: order.customerId ?? null,
+        requiresShipping: Boolean(order.requiresShipping),
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        paymentTerms: null,
+        purchaseOrderNumber: null,
+        companyName: null,
+        giftCardCodesApplied: [],
+        giftCardAmountApplied: null,
+      }
+    },
+  }
+}

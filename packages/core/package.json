@@ -1,0 +1,33 @@
+{
+  "name": "@commercejs/core",
+  "version": "0.1.0",
+  "description": "Commerce.js orchestration engine — createCommerce(), event bus, capability routing, webhook dispatch",
+  "repository": { "type": "git", "url": "https://github.com/commerce-js/commerce.js.git", "directory": "packages/core" },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts",
+    "dev": "tsdown src/index.ts --format esm --dts --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@commercejs/types": "workspace:*",
+    "consola": "^3.4.0"
+  },
+  "devDependencies": {
+    "tsdown": "^0.12.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1"
+  }
+}

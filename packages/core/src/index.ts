@@ -1,0 +1,14 @@
+// ---------------------------------------------------------------------------
+// @commercejs/core — Unified Commerce Orchestration Engine
+// ---------------------------------------------------------------------------
+
+export { createCommerce } from './commerce.js'
+export type { CommerceConfig, CommerceInstance } from './commerce.js'
+
+export { CommerceEventBus } from './event-bus.js'
+export type { EventHandler, WildcardHandler } from './event-bus.js'
+
+export type { CommerceEvents } from './events.js'
+
+export { createWebhookDispatcher } from './webhook-dispatcher.js'
+export type { WebhookEndpoint, WebhookDispatcherConfig, WebhookDelivery } from './webhook-dispatcher.js'

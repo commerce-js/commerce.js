@@ -1,0 +1,40 @@
+// ---------------------------------------------------------------------------
+// Return models
+// ---------------------------------------------------------------------------
+
+model Return {
+  id                    String       @id @default(uuid())
+  orderId               String       @map("order_id")
+  orderNumber           String       @map("order_number")
+  status                String       @default("requested")
+  refundAmount          Float?       @map("refund_amount")
+  refundCurrency        String?      @map("refund_currency")
+  refundMethod          String?      @map("refund_method")
+  returnShippingLabel   String?      @map("return_shipping_label")
+  returnTrackingNumber  String?      @map("return_tracking_number")
+  merchantNote          String?      @map("merchant_note")
+  customerNote          String?      @map("customer_note")
+  createdAt             String       @map("created_at")
+  updatedAt             String       @map("updated_at")
+  items                 ReturnItem[]
+
+  @@map("returns")
+}
+
+model ReturnItem {
+  id          String  @id @default(uuid())
+  returnId    String  @map("return_id")
+  orderItemId String  @map("order_item_id")
+  productId   String  @map("product_id")
+  variantId   String? @map("variant_id")
+  name        String
+  nameAr      String? @map("name_ar")
+  image       String?
+  quantity    Int
+  reason      String  @default("other")
+  reasonNote  String? @map("reason_note")
+
+  returnReq   Return  @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  @@map("return_items")
+}

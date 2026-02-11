@@ -1,0 +1,35 @@
+// ---------------------------------------------------------------------------
+// Cart models — Cart and CartItem
+// ---------------------------------------------------------------------------
+
+model Cart {
+  id               String  @id @default(uuid())
+  customerId       String? @map("customer_id")
+  couponCode       String? @map("coupon_code")
+  shippingAddress  String? @map("shipping_address")
+  billingAddress   String? @map("billing_address")
+  shippingMethodId String? @map("shipping_method_id")
+  paymentMethodId  String? @map("payment_method_id")
+  createdAt        String  @map("created_at")
+  updatedAt        String  @map("updated_at")
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cartId    String  @map("cart_id")
+  productId String  @map("product_id")
+  variantId String? @map("variant_id")
+  quantity  Int     @default(1)
+  createdAt String  @map("created_at")
+
+  cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@map("cart_items")
+}

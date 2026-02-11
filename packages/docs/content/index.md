@@ -43,30 +43,32 @@ A modular, provider-agnostic eCommerce SDK for JavaScript and TypeScript. Unifie
   :::prose-pre
   ---
   code: |
-    import { CheckoutSession } from '@commercejs/checkout'
+    import { createCommerce } from '@commercejs/core'
+    import { SallaAdapter } from '@commercejs/adapter-salla'
     import { TapPaymentProvider } from '@commercejs/payment-tap'
 
-    const session = new CheckoutSession({
-      provider: new TapPaymentProvider({ secretKey }),
-      amount: 99.99,
-      currency: 'BHD',
+    const commerce = createCommerce({
+      adapter: new SallaAdapter({ token }),
+      payments: { tap: new TapPaymentProvider({ secretKey }) },
+      defaultPayment: 'tap',
     })
 
-    await session.submitPayment({ sourceToken: 'tok_xxx' })
+    const products = await commerce.getProducts({ query: 'shirt' })
   filename: example.ts
   ---
 
   ```ts [example.ts]
-  import { CheckoutSession } from '@commercejs/checkout'
+  import { createCommerce } from '@commercejs/core'
+  import { SallaAdapter } from '@commercejs/adapter-salla'
   import { TapPaymentProvider } from '@commercejs/payment-tap'
 
-  const session = new CheckoutSession({
-    provider: new TapPaymentProvider({ secretKey }),
-    amount: 99.99,
-    currency: 'BHD',
+  const commerce = createCommerce({
+    adapter: new SallaAdapter({ token }),
+    payments: { tap: new TapPaymentProvider({ secretKey }) },
+    defaultPayment: 'tap',
   })
 
-  await session.submitPayment({ sourceToken: 'tok_xxx' })
+  const products = await commerce.getProducts({ query: 'shirt' })
   ```
   :::
 ::
@@ -160,6 +162,17 @@ Built for flexibility
 The package ecosystem
 
 #features
+  :::u-page-feature
+  ---
+  icon: i-lucide-cpu
+  ---
+  #title
+  @commercejs/core
+
+  #description
+  The orchestration engine — createCommerce(), event bus, capability routing, and webhook dispatch. One entry point, any adapter.
+  :::
+
   :::u-page-feature
   ---
   icon: i-lucide-box

@@ -1,0 +1,24 @@
+// ---------------------------------------------------------------------------
+// Category model
+// ---------------------------------------------------------------------------
+
+model Category {
+  id            String  @id @default(uuid())
+  name          String
+  nameAr        String? @map("name_ar")
+  slug          String  @unique
+  description   String?
+  descriptionAr String? @map("description_ar")
+  image         String?
+  parentId      String? @map("parent_id")
+  sortOrder     Int     @default(0) @map("sort_order")
+  createdAt     String  @map("created_at")
+  updatedAt     String  @map("updated_at")
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+
+  products ProductCategory[]
+
+  @@map("categories")
+}

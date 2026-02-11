@@ -1,0 +1,64 @@
+// ---------------------------------------------------------------------------
+// Order models — Order, OrderItem, OrderHistory
+// ---------------------------------------------------------------------------
+
+model Order {
+  id               String  @id @default(uuid())
+  orderNumber      String  @unique @map("order_number")
+  customerId       String? @map("customer_id")
+  status           String  @default("pending")
+  subtotal         Float   @default(0)
+  shippingCost     Float?  @map("shipping_cost")
+  tax              Float?
+  discount         Float?
+  total            Float   @default(0)
+  currency         String  @default("SAR")
+  shippingAddress  String? @map("shipping_address")
+  billingAddress   String? @map("billing_address")
+  shippingMethod   String? @map("shipping_method")
+  paymentMethod    String? @map("payment_method")
+  trackingNumber   String? @map("tracking_number")
+  trackingUrl      String? @map("tracking_url")
+  note             String?
+  requiresShipping Boolean @default(true) @map("requires_shipping")
+  createdAt        String  @map("created_at")
+  updatedAt        String  @map("updated_at")
+
+  customer Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  history  OrderHistory[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                String @id @default(uuid())
+  orderId           String @map("order_id")
+  productId         String @map("product_id")
+  variantId         String? @map("variant_id")
+  name              String
+  nameAr            String? @map("name_ar")
+  image             String?
+  quantity          Int
+  price             Float
+  totalPrice        Float  @map("total_price")
+  productType       String @default("physical") @map("product_type")
+  fulfillmentStatus String @default("unfulfilled") @map("fulfillment_status")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model OrderHistory {
+  id         String  @id @default(uuid())
+  orderId    String  @map("order_id")
+  fromStatus String? @map("from_status")
+  toStatus   String  @map("to_status")
+  note       String?
+  createdAt  String  @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_history")
+}

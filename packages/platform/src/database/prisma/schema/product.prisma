@@ -1,0 +1,143 @@
+// ---------------------------------------------------------------------------
+// Product models — Product, Image, Variant, Option, Attribute, Tag, Category join
+// ---------------------------------------------------------------------------
+
+model Product {
+  id                 String  @id @default(uuid())
+  sku                String?
+  name               String
+  nameAr             String? @map("name_ar")
+  slug               String  @unique
+  description        String?
+  descriptionAr      String? @map("description_ar")
+  shortDescription   String? @map("short_description")
+  shortDescriptionAr String? @map("short_description_ar")
+
+  // Pricing
+  price          Float?
+  compareAtPrice Float?  @map("compare_at_price")
+  currency       String  @default("SAR")
+
+  // Classification
+  productType String @default("physical") @map("product_type")
+
+  // Stock
+  inStock           Boolean @default(true) @map("in_stock")
+  inventoryQuantity Int?    @map("inventory_quantity")
+  quantityLimit     Int?    @map("quantity_limit")
+
+  // Flags
+  vatIncluded      Boolean @default(true) @map("vat_included")
+  vatRate          Float?  @map("vat_rate")
+  requiresShipping Boolean @default(true) @map("requires_shipping")
+  isDropshipped    Boolean @default(false) @map("is_dropshipped")
+
+  // Status
+  status String @default("draft")
+
+  // Timestamps
+  createdAt String @map("created_at")
+  updatedAt String @map("updated_at")
+
+  // Relations
+  images     ProductImage[]
+  variants   ProductVariant[]
+  options    ProductOption[]
+  attributes ProductAttribute[]
+  categories ProductCategory[]
+  tags       ProductTag[]
+  cartItems  CartItem[]
+
+  @@map("products")
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String  @map("product_id")
+  url       String
+  altText   String? @map("alt_text")
+  sortOrder Int     @default(0) @map("sort_order")
+  isPrimary Boolean @default(false) @map("is_primary")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model ProductVariant {
+  id                String  @id @default(uuid())
+  productId         String  @map("product_id")
+  sku               String?
+  name              String?
+  nameAr            String? @map("name_ar")
+  price             Float?
+  compareAtPrice    Float?  @map("compare_at_price")
+  inStock           Boolean @default(true) @map("in_stock")
+  inventoryQuantity Int?    @map("inventory_quantity")
+  sortOrder         Int     @default(0) @map("sort_order")
+
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems CartItem[]
+
+  @@map("product_variants")
+}
+
+model ProductOption {
+  id        String @id @default(uuid())
+  productId String @map("product_id")
+  name      String
+  nameAr    String? @map("name_ar")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  product Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  values  ProductOptionValue[]
+
+  @@map("product_options")
+}
+
+model ProductOptionValue {
+  id        String  @id @default(uuid())
+  optionId  String  @map("option_id")
+  name      String
+  nameAr    String? @map("name_ar")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  option ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@map("product_option_values")
+}
+
+model ProductAttribute {
+  id        String  @id @default(uuid())
+  productId String  @map("product_id")
+  code      String
+  name      String
+  nameAr    String? @map("name_ar")
+  value     String
+  valueAr   String? @map("value_ar")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_attributes")
+}
+
+model ProductCategory {
+  productId  String @map("product_id")
+  categoryId String @map("category_id")
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@map("product_categories")
+}
+
+model ProductTag {
+  id        String @id @default(uuid())
+  productId String @map("product_id")
+  tag       String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_tags")
+}

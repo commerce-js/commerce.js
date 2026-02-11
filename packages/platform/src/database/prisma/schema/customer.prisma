@@ -1,0 +1,43 @@
+// ---------------------------------------------------------------------------
+// Customer models — Customer and Address book
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id               String  @id @default(uuid())
+  email            String  @unique
+  passwordHash     String  @map("password_hash")
+  firstName        String? @map("first_name")
+  lastName         String? @map("last_name")
+  phone            String?
+  defaultAddressId String? @map("default_address_id")
+  createdAt        String  @map("created_at")
+  updatedAt        String  @map("updated_at")
+
+  addresses CustomerAddress[]
+  carts     Cart[]
+  orders    Order[]
+
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id               String  @id @default(uuid())
+  customerId       String  @map("customer_id")
+  firstName        String  @map("first_name")
+  lastName         String  @map("last_name")
+  phone            String?
+  street           String
+  street2          String?
+  city             String
+  state            String?
+  country          String
+  postalCode       String? @map("postal_code")
+  district         String?
+  nationalAddress  String? @map("national_address")
+  additionalNumber String? @map("additional_number")
+  isDefault        Boolean @default(false) @map("is_default")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_addresses")
+}

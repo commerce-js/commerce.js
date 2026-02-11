@@ -27,6 +27,7 @@ Every eCommerce platform speaks a different language — Salla, Shopify, WooComm
 - **Unified types** — A single data model for products, carts, orders, and customers that works across every platform
 - **Adapter pattern** — Each platform implements the `CommerceAdapter` interface, mapping its API to the unified types
 - **Pluggable providers** — Payment providers implement the `PaymentProvider` interface, making them hot-swappable
+- **Orchestration engine** — `createCommerce()` wires adapter + payments + event bus + webhooks into a single entry point
 
 It works across any JavaScript runtime — Node.js, Edge, Deno, or the browser.
 
@@ -41,10 +42,12 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 | Package | Version | Description |
 |---------|---------|-------------|
 | [`@commercejs/types`](packages/types) | [![npm](https://img.shields.io/npm/v/@commercejs/types?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/types) | Unified Data Model — 20+ domain types |
+| [`@commercejs/core`](packages/core) | [![npm](https://img.shields.io/npm/v/@commercejs/core?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/core) | Orchestration engine — createCommerce(), event bus, webhooks |
 | [`@commercejs/checkout`](packages/checkout) | [![npm](https://img.shields.io/npm/v/@commercejs/checkout?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/checkout) | Checkout state machine for payment flows |
 | [`@commercejs/payment-tap`](packages/payment-tap) | [![npm](https://img.shields.io/npm/v/@commercejs/payment-tap?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/payment-tap) | Tap Payments provider — redirect-based, PCI-free |
 | [`@commercejs/webhook-verifier`](packages/webhook-verifier) | [![npm](https://img.shields.io/npm/v/@commercejs/webhook-verifier?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/webhook-verifier) | Cryptographic webhook signature verification |
 | [`@commercejs/adapter-salla`](packages/adapter-salla) | [![npm](https://img.shields.io/npm/v/@commercejs/adapter-salla?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/adapter-salla) | Salla platform adapter |
+| [`@commercejs/platform`](packages/platform) | [![npm](https://img.shields.io/npm/v/@commercejs/platform?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/platform) | Built-in commerce engine — SQLite-powered, zero-config |
 | [`@commercejs/nuxt`](packages/nuxt) | [![npm](https://img.shields.io/npm/v/@commercejs/nuxt?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/nuxt) | Nuxt module — composables, plugin, and auto-generated REST API |
 
 ### Applications (private)
@@ -63,10 +66,15 @@ graph TD
     A --> C["@commercejs/payment-tap"]
     A --> D["@commercejs/adapter-salla"]
     A --> E["@commercejs/webhook-verifier"]
+    A --> H["@commercejs/core"]
+    A --> I["@commercejs/platform"]
+    D --> H
+    C --> H
+    I --> H
     B --> F["hosted-checkout"]
     C --> F
     E --> F
-    D --> G["storefront"]
+    H --> G["storefront"]
 
     style A fill:#3178C6,color:#fff
     style B fill:#10B981,color:#fff
@@ -75,9 +83,11 @@ graph TD
     style E fill:#EF4444,color:#fff
     style F fill:#6366F1,color:#fff
     style G fill:#EC4899,color:#fff
+    style H fill:#06B6D4,color:#fff
+    style I fill:#14B8A6,color:#fff
 ```
 
-All packages depend on `@commercejs/types` as the shared language. The checkout engine accepts any `PaymentProvider` implementation. The hosted checkout ties everything together into a deployable app.
+All packages depend on `@commercejs/types` as the shared language. The `@commercejs/core` engine orchestrates adapters, payment providers, and events. The checkout engine accepts any `PaymentProvider` implementation.
 
 ## Getting Started
 
@@ -118,6 +128,40 @@ pnpm turbo run typecheck
 
 ## Quick Start
 
+### Using the orchestration engine
+
+```typescript
+import { createCommerce } from '@commercejs/core'
+import { SallaAdapter } from '@commercejs/adapter-salla'
+import { TapPaymentProvider } from '@commercejs/payment-tap'
+
+const commerce = createCommerce({
+  adapter: new SallaAdapter({ token: process.env.SALLA_TOKEN! }),
+  payments: {
+    tap: new TapPaymentProvider({
+      secretKey: process.env.TAP_SECRET_KEY!,
+      publishableKey: process.env.TAP_PUBLISHABLE_KEY!,
+    }),
+  },
+  defaultPayment: 'tap',
+})
+
+// Capability-checked calls
+const products = await commerce.getProducts({ query: 'shirt' })
+const cart = await commerce.createCart()
+
+// Event-driven side effects
+commerce.events.on('order.created', ({ order }) => {
+  console.log('New order:', order.id)
+})
+
+// Multi-provider payments
+const session = await commerce.createPayment({
+  amount: 99.99,
+  currency: 'SAR',
+})
+```
+
 ### Using the checkout engine
 
 ```typescript
@@ -155,6 +199,23 @@ const products = await adapter.getProducts({ limit: 10 })
 const cart = await adapter.getCart(cartId)
 ```
 
+### Using the built-in platform engine
+
+```typescript
+import { initDatabase, createPlatformAdapter } from '@commercejs/platform'
+
+// Initialize SQLite database (auto-creates tables)
+initDatabase({ driver: 'drizzle' })
+
+const adapter = createPlatformAdapter({ currency: 'SAR' })
+
+// Full commerce operations, zero external APIs
+const products = await adapter.getProducts({ limit: 10 })
+const cart = await adapter.createCart()
+const brands = await adapter.getBrands()
+const summary = await adapter.getReviewSummary('prod-1')
+```
+
 ### Verifying webhooks
 
 ```typescript
@@ -174,11 +235,13 @@ const isValid = verifyWebhook({
 commerce.js/
 ├── packages/
 │   ├── types/               # Unified data model types
+│   ├── core/                # Orchestration engine
 │   ├── checkout/            # Checkout state machine
 │   ├── payment-tap/         # Tap Payments provider
 │   ├── webhook-verifier/    # Webhook signature verification
 │   ├── adapter-salla/       # Salla platform adapter
-│   ├── core/                # Nuxt module
+│   ├── platform/            # Built-in commerce engine (SQLite)
+│   ├── nuxt/                # Nuxt module
 │   ├── hosted-checkout/     # Deployable checkout app
 │   ├── storefront/          # Reference storefront
 │   └── docs/                # Documentation site

@@ -1,0 +1,16 @@
+// ---------------------------------------------------------------------------
+// Country model
+// ---------------------------------------------------------------------------
+
+model Country {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  nameAr      String?  @map("name_ar")
+  callingCode String?  @map("calling_code")
+  currency    String?
+  capital     String?
+  isActive    Boolean  @default(true) @map("is_active")
+
+  @@map("countries")
+}

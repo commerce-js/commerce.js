@@ -1,0 +1,24 @@
+// ---------------------------------------------------------------------------
+// Wishlist models
+// ---------------------------------------------------------------------------
+
+model Wishlist {
+  id         String         @id @default(uuid())
+  customerId String         @map("customer_id")
+  createdAt  String         @map("created_at")
+  items      WishlistItem[]
+
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String  @id @default(uuid())
+  wishlistId String  @map("wishlist_id")
+  productId  String  @map("product_id")
+  variantId  String? @map("variant_id")
+  addedAt    String  @map("added_at")
+
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  @@map("wishlist_items")
+}
