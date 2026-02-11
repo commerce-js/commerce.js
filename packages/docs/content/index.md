@@ -238,6 +238,28 @@ The package ecosystem
   #description
   A ready-to-deploy Nuxt application for hosted checkout. Drop-in payment page with goSell.js integration.
   :::
+
+  :::u-page-feature
+  ---
+  icon: i-lucide-database
+  ---
+  #title
+  @commercejs/platform
+
+  #description
+  Built-in commerce engine — zero-config, SQLite-backed. Own your data with 12 implemented domains and dual database drivers.
+  :::
+
+  :::u-page-feature
+  ---
+  icon: i-lucide-hexagon
+  ---
+  #title
+  @commercejs/nuxt
+
+  #description
+  Nuxt module — auto-imported composables, server-generated REST API, and a runtime plugin that wires the adapter into your app.
+  :::
 ::
 
 ::u-page-section{class="dark:bg-gradient-to-b from-neutral-950 to-neutral-900"}
