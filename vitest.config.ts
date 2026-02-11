@@ -6,6 +6,26 @@ export default defineConfig({
       'packages/types',
       'packages/adapter-salla',
       'packages/webhook-verifier',
+      'packages/checkout',
+      'packages/payment-tap',
     ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      include: [
+        'packages/checkout/src/**/*.ts',
+        'packages/payment-tap/src/**/*.ts',
+        'packages/adapter-salla/src/**/*.ts',
+        'packages/webhook-verifier/src/**/*.ts',
+      ],
+      exclude: [
+        '**/__tests__/**',
+        '**/*.test.ts',
+        '**/*.d.ts',
+        '**/dist/**',
+        '**/index.ts',
+        'packages/types/src/**',
+      ],
+    },
   },
 })

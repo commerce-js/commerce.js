@@ -40,5 +40,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Build, Typecheck & Test
-        run: pnpm turbo run build typecheck test
+      - name: Build & Typecheck
+        run: pnpm turbo run build typecheck
+
+      - name: Test with coverage
+        run: pnpm vitest run --coverage
