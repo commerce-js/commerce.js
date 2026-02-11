@@ -5,6 +5,7 @@ export default defineConfig({
     projects: [
       'packages/types',
       'packages/adapter-salla',
+      'packages/webhook-verifier',
     ],
   },
 })
