@@ -23,10 +23,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
+        run: pnpm install --frozen-lockfile
 
-      - name: Rebuild native modules
-        run: pnpm rebuild better-sqlite3
+      - name: Build library packages
+        run: pnpm turbo run build --filter='@commercejs/*'
 
       - name: Build docs
         working-directory: packages/docs
