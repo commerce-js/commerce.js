@@ -10,7 +10,7 @@ import {
 import type { NuxtModule } from '@nuxt/schema'
 import { consola } from 'consola'
 
-const logger = consola.withTag('@commercejs/core')
+const logger = consola.withTag('@commercejs/nuxt')
 
 export interface CommerceModuleOptions {
   /**
@@ -34,7 +34,7 @@ export interface CommerceModuleOptions {
 
 const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<CommerceModuleOptions>({
   meta: {
-    name: '@commercejs/core',
+    name: '@commercejs/nuxt',
     configKey: 'commerce',
     compatibility: {
       nuxt: '>=3.0.0',

@@ -1,20 +1,20 @@
-# @commercejs/core
+# @commercejs/nuxt
 
 CommerceJS Nuxt module — composables, plugin, and auto-generated REST API.
 
-[![npm](https://img.shields.io/npm/v/@commercejs/core?color=CB3837)](https://www.npmjs.com/package/@commercejs/core)
+[![npm](https://img.shields.io/npm/v/@commercejs/nuxt?color=CB3837)](https://www.npmjs.com/package/@commercejs/nuxt)
 [![Nuxt](https://img.shields.io/badge/Nuxt-00DC82?logo=nuxt.js&logoColor=white)](https://nuxt.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
 
-`@commercejs/core` is a Nuxt module that integrates CommerceJS into your Nuxt application. It provides auto-imported composables, injects the adapter into your app context, and optionally generates a full REST API from your adapter — zero boilerplate.
+`@commercejs/nuxt` is a Nuxt module that integrates CommerceJS into your Nuxt application. It provides auto-imported composables, injects the adapter into your app context, and optionally generates a full REST API from your adapter — zero boilerplate.
 
 ## Install
 
 ```bash
-npm install @commercejs/core @commercejs/types @commercejs/adapter-salla
+npm install @commercejs/nuxt @commercejs/types @commercejs/adapter-salla
 ```
 
 ## Setup
@@ -23,7 +23,7 @@ Add the module to your `nuxt.config.ts`:
 
 ```typescript
 export default defineNuxtConfig({
-  modules: ['@commercejs/core'],
+  modules: ['@commercejs/nuxt'],
 
   commerce: {
     adapter: 'salla',       // adapter package to use

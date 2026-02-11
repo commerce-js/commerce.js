@@ -12,7 +12,7 @@ export function useAdapter(): CommerceAdapter | null {
 
   if (!adapter && import.meta.server) {
     throw new Error(
-      '[@commercejs/core] No commerce adapter available. ' +
+      '[@commercejs/nuxt] No commerce adapter available. ' +
       'Make sure you have installed and configured an adapter package ' +
       '(e.g., @commercejs/adapter-salla, @commercejs/adapter-zid).',
     )

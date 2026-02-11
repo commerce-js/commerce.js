@@ -55,40 +55,6 @@ importers:
         specifier: ^4.0.0
         version: 4.0.18(@types/node@25.2.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
-  packages/core:
-    dependencies:
-      '@commercejs/adapter-salla':
-        specifier: workspace:*
-        version: link:../adapter-salla
-      '@commercejs/types':
-        specifier: workspace:*
-        version: link:../types
-      '@vueuse/core':
-        specifier: ^14.2.0
-        version: 14.2.0(vue@3.5.28(typescript@5.9.3))
-      consola:
-        specifier: ^3.4.2
-        version: 3.4.2
-      h3:
-        specifier: ^1.13.0
-        version: 1.15.5
-    devDependencies:
-      '@nuxt/kit':
-        specifier: ^4.3.1
-        version: 4.3.1(magicast@0.5.2)
-      '@nuxt/module-builder':
-        specifier: ^0.8.0
-        version: 0.8.4(@nuxt/kit@4.3.1(magicast@0.5.2))(nuxi@3.33.1)(typescript@5.9.3)
-      '@nuxt/schema':
-        specifier: ^4.3.1
-        version: 4.3.1
-      nuxt:
-        specifier: ^4.3.1
-        version: 4.3.1(@parcel/watcher@2.5.6)(@types/node@25.2.2)(@vue/compiler-sfc@3.5.28)(better-sqlite3@12.6.2)(cac@6.7.14)(db0@0.3.4(better-sqlite3@12.6.2))(ioredis@5.9.2)(lightningcss@1.30.2)(magicast@0.5.2)(optionator@0.9.4)(rollup@3.29.5)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(yaml@2.8.2)
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
   packages/docs:
     dependencies:
       '@iconify-json/lucide':
@@ -180,6 +146,40 @@ importers:
         specifier: ^4.6.4
         version: 4.6.4(vue@3.5.28(typescript@5.9.3))
 
+  packages/nuxt:
+    dependencies:
+      '@commercejs/adapter-salla':
+        specifier: workspace:*
+        version: link:../adapter-salla
+      '@commercejs/types':
+        specifier: workspace:*
+        version: link:../types
+      '@vueuse/core':
+        specifier: ^14.2.0
+        version: 14.2.0(vue@3.5.28(typescript@5.9.3))
+      consola:
+        specifier: ^3.4.2
+        version: 3.4.2
+      h3:
+        specifier: ^1.13.0
+        version: 1.15.5
+    devDependencies:
+      '@nuxt/kit':
+        specifier: ^4.3.1
+        version: 4.3.1(magicast@0.5.2)
+      '@nuxt/module-builder':
+        specifier: ^0.8.0
+        version: 0.8.4(@nuxt/kit@4.3.1(magicast@0.5.2))(nuxi@3.33.1)(typescript@5.9.3)
+      '@nuxt/schema':
+        specifier: ^4.3.1
+        version: 4.3.1
+      nuxt:
+        specifier: ^4.3.1
+        version: 4.3.1(@parcel/watcher@2.5.6)(@types/node@25.2.2)(@vue/compiler-sfc@3.5.28)(better-sqlite3@12.6.2)(cac@6.7.14)(db0@0.3.4(better-sqlite3@12.6.2))(ioredis@5.9.2)(lightningcss@1.30.2)(magicast@0.5.2)(optionator@0.9.4)(rollup@3.29.5)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(yaml@2.8.2)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/payment-tap:
     dependencies:
       '@commercejs/types':
@@ -195,9 +195,9 @@ importers:
 
   packages/storefront:
     dependencies:
-      '@commercejs/core':
+      '@commercejs/nuxt':
         specifier: workspace:*
-        version: link:../core
+        version: link:../nuxt
       '@commercejs/types':
         specifier: workspace:*
         version: link:../types

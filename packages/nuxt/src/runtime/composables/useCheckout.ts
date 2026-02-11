@@ -62,7 +62,7 @@ export function useCheckout() {
 
   function requireCartId(): string {
     if (!cartId.value) {
-      throw new Error('[@commercejs/core] No cart ID found. Add items to cart first.')
+      throw new Error('[@commercejs/nuxt] No cart ID found. Add items to cart first.')
     }
     return cartId.value
   }

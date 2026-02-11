@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// @commercejs/core — Composables barrel export
+// @commercejs/nuxt — Composables barrel export
 // ---------------------------------------------------------------------------
 
 export { useAdapter } from './useAdapter'

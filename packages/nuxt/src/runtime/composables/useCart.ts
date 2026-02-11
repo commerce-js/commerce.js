@@ -90,7 +90,7 @@ export function useCart() {
    */
   async function addItem(item: AddToCartInput) {
     if (!cartId.value) {
-      throw new Error('[@commercejs/core] No cart ID. Ensure the cart is initialized.')
+      throw new Error('[@commercejs/nuxt] No cart ID. Ensure the cart is initialized.')
     }
 
     loading.value = true

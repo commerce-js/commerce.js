@@ -13,7 +13,7 @@ export function useServerAdapter(event: H3Event): CommerceAdapter {
   if (!adapter) {
     throw createError({
       statusCode: 500,
-      message: '[@commercejs/core] No commerce adapter configured on the server.',
+      message: '[@commercejs/nuxt] No commerce adapter configured on the server.',
     })
   }
 

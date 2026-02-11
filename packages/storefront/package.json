@@ -10,7 +10,7 @@
     "postinstall": "nuxt prepare || true"
   },
   "dependencies": {
-    "@commercejs/core": "workspace:*",
+    "@commercejs/nuxt": "workspace:*",
     "@commercejs/types": "workspace:*",
     "@nuxt/image": "2.0.0",
     "@nuxt/ui": "4.4.0",

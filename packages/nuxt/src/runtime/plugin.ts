@@ -2,7 +2,7 @@ import { defineNuxtPlugin } from '#imports'
 import { consola } from 'consola'
 import type { CommerceAdapter } from '@commercejs/types'
 
-const logger = consola.withTag('@commercejs/core')
+const logger = consola.withTag('@commercejs/nuxt')
 
 /**
  * Plugin that provides the CommerceAdapter instance to the Nuxt app.

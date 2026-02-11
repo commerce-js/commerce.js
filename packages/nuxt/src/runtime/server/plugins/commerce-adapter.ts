@@ -15,7 +15,7 @@ function getAdapter() {
   const token = process.env.SALLA_TOKEN || process.env.NUXT_SALLA_TOKEN
   if (!token) {
     throw new Error(
-      '[@commercejs/core] SALLA_TOKEN environment variable is required. ' +
+      '[@commercejs/nuxt] SALLA_TOKEN environment variable is required. ' +
       'Set it in your .env file or via NUXT_SALLA_TOKEN.',
     )
   }

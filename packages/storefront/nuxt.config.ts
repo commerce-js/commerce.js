@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/ui',
     '@nuxt/image',
-    '@commercejs/core',
+    '@commercejs/nuxt',
   ],
 
   css: ['~/assets/css/main.css'],
