@@ -25,9 +25,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build library packages
-        run: pnpm turbo run build --filter='@commercejs/*'
-
       - name: Build docs
         working-directory: packages/docs
         run: npx nuxt build --preset github_pages
