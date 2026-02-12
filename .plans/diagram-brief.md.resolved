@@ -1,0 +1,274 @@
+# Commerce.js — Diagram Design Brief
+
+Complete reference for redesigning all diagrams in a graphics editor. Each diagram uses **abstract, conceptual terms** — not package names.
+
+## Color Palette
+
+| Role | Hex | Name | Usage |
+|---|---|---|---|
+| Application | `#10b981` | Emerald | Storefront, apps, success |
+| Engine | `#3b82f6` | Blue | Core engine, orchestration |
+| Data Model | `#818cf8` | Indigo | Types, unified data layer |
+| Integration | `#06b6d4` | Cyan | Adapters, providers |
+| Framework | `#f59e0b` | Amber | Nuxt module |
+| Error | `#ef4444` | Red | Failed states |
+| External | `#71717a` | Zinc | Third-party platforms/gateways |
+
+**Design specs:** SVG, 800px max width, 12px corners on containers, 8px on nodes, Inter font, light + dark variants.  
+**Export to:** `packages/docs/public/images/diagrams/`
+
+---
+
+## Diagram 1 — System Architecture
+
+> **Used on:** Landing page, Architecture Overview  
+> **Type:** Layered block diagram (vertical stack)  
+> **Inspiration:** Alokai architecture diagram  
+
+### Structure (top to bottom)
+
+```
+APPLICATION LAYER
+├── Storefront UI
+└── Framework Module
+
+COMMERCE ENGINE
+├── Unified Data Model
+├── Orchestration Engine
+└── Checkout Engine
+
+INTEGRATION LAYER
+├── Platform Adapters
+├── Payment Providers
+└── Webhook Security
+
+EXTERNAL (icons/logos below)
+├── eCommerce (Salla, Shopify, WC, Custom)
+├── Gateways (Tap, Stripe, PayPal)
+└── Events (Webhooks)
+```
+
+### Layout
+
+- 3 nested rounded containers (Application → Engine → Integration), each with a label on the left edge
+- Inside each container: full-width blocks stacked vertically
+- Integration layer has 3 blocks side-by-side
+- Below the main container: a row of small square icons (dark gray) representing external services, connected by dashed arrows
+
+### Colors
+
+| Layer | Container border | Block fill |
+|---|---|---|
+| Application | `#10b981` | `#10b981` |
+| Commerce Engine | `#3b82f6` | `#3b82f6` / `#818cf8` for Data Model |
+| Integration | `#06b6d4` | `#06b6d4` |
+| External icons | — | `#3f3f46` (zinc-700) |
+
+### Text in each block
+
+| Block | Label | Subtitle (optional) |
+|---|---|---|
+| Storefront UI | **Storefront UI** | Components, pages, layouts |
+| Framework Module | **Framework Module** | Auto-imports, composables, server routes |
+| Unified Data Model | **Unified Data Model** | 20+ domain types, shared vocabulary |
+| Orchestration Engine | **Orchestration** | Event bus, capability routing, multi-provider |
+| Checkout Engine | **Checkout Engine** | State machine, payment lifecycle |
+| Platform Adapters | **Platform Adapters** | Map any API to unified types |
+| Payment Providers | **Payment Providers** | Pluggable gateway interface |
+| Webhook Security | **Webhook Security** | Cryptographic verification |
+
+### External icons row
+
+| Icon | Label |
+|---|---|
+| 🛒 | eCommerce |
+| ⚙️ | CMS |
+| 🔍 | Search |
+| 🔐 | Auth |
+| ••• | ... |
+
+---
+
+## Diagram 2 — The Adapter Pattern
+
+> **Used on:** Architecture Overview, Philosophy page  
+> **Type:** Side-by-side comparison  
+
+### Left side: "Without Abstraction"
+
+```
+┌──────────────┐
+│ Your App     │
+└──────┬───────┘
+       │  tightly coupled
+┌──────┴───────┐
+│ Platform API │
+│ (name,       │
+│  regular_    │
+│  price...)   │
+└──────────────┘
+```
+
+- Red dashed border or ✗ badge
+- Label: **Vendor Lock-In**
+
+### Right side: "With Commerce.js"
+
+```
+┌──────────────┐
+│ Your App     │  ← writes once
+└──────┬───────┘
+       │
+┌──────┴───────┐
+│   Unified    │  ← portable interface
+│  Interface   │
+└──────┬───────┘
+       │
+┌──────┴───────┐
+│   Adapter    │  ← swappable
+└──────┬───────┘
+       │
+┌──────┴───────┐
+│  Any Platform│
+│ Salla │ Shopify │ Custom
+└──────────────┘
+```
+
+- Green border or ✓ badge
+- Label: **Platform Freedom**
+
+### Key message
+
+Arrow between the two sides: "Same app code, different backend"
+
+---
+
+## Diagram 3 — Checkout Lifecycle
+
+> **Used on:** Checkout Flow page, Quick Start  
+> **Type:** Horizontal pipeline / state rail  
+
+### States (left to right)
+
+```
+○ Start → [ Collect Info ] → [ Shipping ] → [ Process Payment ] → [ Verify & Capture ] → ◉ Complete
+                                                     │                     │
+                                                     └─────────────────────┤
+                                                                           ↓
+                                                                     ◉ Failed
+                                                                       │
+                                                                       └── retry ──→ (back to Process Payment)
+```
+
+### Node details
+
+| State | Abstract Label | Color | Shape |
+|---|---|---|---|
+| Start | ○ | `#3b82f6` | Circle |
+| Collect Info | **Collect Info** | `#3b82f6` | Rounded rect |
+| Shipping | **Shipping Details** | `#3b82f6` | Rounded rect |
+| Process Payment | **Process Payment** | `#818cf8` | Rounded rect |
+| Verify & Capture | **Verify & Capture** | `#818cf8` | Rounded rect |
+| Complete | **Order Complete** | `#10b981` | Stadium/pill |
+| Failed | **Payment Failed** | `#ef4444` | Stadium/pill |
+
+### Edges
+
+| From | To | Style | Label |
+|---|---|---|---|
+| Start | Collect Info | Solid thick | — |
+| Collect Info | Shipping | Solid thick | — |
+| Shipping | Process Payment | Solid thick | — |
+| Process Payment | Verify & Capture | Solid thick | 3DS or direct |
+| Verify & Capture | Complete | Solid thick green | Captured |
+| Verify & Capture | Failed | Dotted red | Declined |
+| Process Payment | Complete | Dashed | Webhook |
+| Process Payment | Failed | Dotted red | Webhook declined |
+| Failed | Process Payment | Thin gray | Retry |
+
+---
+
+## Diagram 4 — Payment Flow
+
+> **Used on:** Hosted Checkout page  
+> **Type:** Sequence / swim-lane diagram  
+
+### Participants
+
+| Lane | Label | Color |
+|---|---|---|
+| Left | **Merchant** | `#71717a` |
+| Center-left | **Checkout Page** | `#3b82f6` |
+| Center-right | **Payment Gateway** | `#06b6d4` |
+| Right | **Customer** | `#10b981` |
+
+### Steps
+
+| # | From | To | Message | Style |
+|---|---|---|---|---|
+| 1 | Merchant | Checkout Page | Create Session | Solid arrow |
+| 2 | Checkout Page | Merchant | Session URL | Dashed return |
+| 3 | Merchant | Customer | Redirect to Checkout | Solid arrow |
+| 4 | Customer | Checkout Page | Enter Payment Details | Solid arrow |
+| 5 | Checkout Page | Gateway | Submit Payment | Solid arrow |
+| 6 | Gateway | Customer | 3D Secure Verification | Solid arrow |
+| 7 | Customer | Checkout Page | Return from 3DS | Solid arrow |
+| 8 | Checkout Page | Gateway | Confirm Payment | Solid arrow |
+| 9 | Gateway | Checkout Page | Webhook — Captured | Dashed arrow |
+| 10 | Checkout Page | Customer | Order Confirmed ✓ | Solid green |
+
+---
+
+## Diagram 5 — Domain Coverage Grid
+
+> **Used on:** Types page, Architecture Unified Types  
+> **Type:** Icon grid (4×4)  
+> **NEW — does not exist yet**  
+
+### Grid
+
+| | Col 1 | Col 2 | Col 3 | Col 4 |
+|---|---|---|---|---|
+| Row 1 | 🛍 **Catalog** | 🛒 **Cart** | 📦 **Orders** | 👤 **Customers** |
+| Row 2 | 💳 **Checkout** | ⭐ **Reviews** | 🏷 **Brands** | 🌍 **Countries** |
+| Row 3 | ❤️ **Wishlist** | 🎟 **Promotions** | 📋 **Returns** | 🏪 **Store** |
+| Row 4 | 🎁 **Gift Cards** | 📍 **Locations** | 🏭 **Wholesale** | 🔨 **Auctions** |
+
+### Status indicators
+
+- Rows 1–3: **Filled** (implemented) — solid background
+- Row 4: **Outlined** (planned) — dashed border, muted text
+
+---
+
+## Diagram 6 — Webhook Verification
+
+> **Used on:** Webhook Setup guide, Webhook Verifier package  
+> **Type:** Simple horizontal flow  
+
+### Flow
+
+```
+┌──────────────┐    payload + signature    ┌───────────────────┐    ┌──────────────┐
+│   Payment    │ ──────────────────────→   │   Cryptographic   │    │    Update     │
+│   Gateway    │                           │   Verification    │───→│    Order      │
+└──────────────┘                           └────────┬──────────┘    └──────────────┘
+                                                    │
+                                               ✗ Rejected
+                                              (401 Unauthorized)
+```
+
+### Nodes
+
+| Node | Label | Color |
+|---|---|---|
+| Payment Gateway | **Payment Gateway** | `#06b6d4` |
+| Verification | **Cryptographic Verification** | `#818cf8` |
+| Update Order | **Update Order** | `#10b981` |
+| Rejected | **Rejected** | `#ef4444` |
+
+### Edge labels
+
+- Gateway → Verification: *"payload + hashstring"*
+- Verification → Update (success): *"✓ Authentic"*
+- Verification → Rejected (failure): *"✗ Invalid Signature"*

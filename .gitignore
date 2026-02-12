@@ -26,3 +26,6 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Agent skills/config
+.agent/

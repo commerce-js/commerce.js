@@ -16,6 +16,11 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  components: [{
+    path: '~/components',
+    pathPrefix: false
+  }],
+
   content: {
     build: {
       markdown: {
@@ -23,6 +28,59 @@ export default defineNuxtConfig({
           searchDepth: 1
         }
       }
+    }
+  },
+
+  hooks: {
+    'content:file:beforeParse': async (ctx: { file: { id: string; body: string } }) => {
+      if (!ctx.file.id.endsWith('.md')) return
+
+      const mermaidBlockRegex = /```mermaid\n([\s\S]*?)```/g
+      const matches = [...ctx.file.body.matchAll(mermaidBlockRegex)]
+      if (matches.length === 0) return
+
+      const mermaid = (await import('isomorphic-mermaid')).default
+      mermaid.initialize({
+        startOnLoad: false,
+        htmlLabels: false,
+        theme: 'base',
+        securityLevel: 'strict',
+        flowchart: {
+          htmlLabels: false,
+          curve: 'linear',
+          wrappingWidth: 300,
+          padding: 20,
+          nodeSpacing: 30,
+          rankSpacing: 60,
+          useMaxWidth: true
+        },
+        themeVariables: {
+          background: 'transparent',
+          primaryColor: '#dbeafe',
+          primaryTextColor: '#1e293b',
+          primaryBorderColor: '#93c5fd',
+          lineColor: '#94a3b8',
+          secondaryColor: '#e2e8f0',
+          tertiaryColor: '#f1f5f9',
+          fontSize: '20px',
+          fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+        }
+      })
+
+      let body = ctx.file.body
+      for (const match of matches) {
+        try {
+          const diagram = match[1]
+          if (!diagram) continue
+          const id = `mermaid-${Math.random().toString(36).slice(2, 10)}`
+          const { svg } = await mermaid.render(id, diagram.trim())
+          body = body.replace(match[0], `<div class="mermaid-diagram">${svg}</div>`)
+        }
+        catch (error) {
+          console.warn(`[mermaid] Failed to render in ${ctx.file.id}:`, error)
+        }
+      }
+      ctx.file.body = body
     }
   },
 

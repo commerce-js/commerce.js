@@ -25,3 +25,110 @@
 :root {
   --ui-container: var(--container-8xl);
 }
+
+/* Mermaid diagram container */
+.mermaid-diagram {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+  padding: 2rem;
+  overflow-x: auto;
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Node text */
+.mermaid-diagram text {
+  font-family: var(--font-sans) !important;
+}
+
+/*
+ * Dark mode overrides for prerendered Mermaid SVGs.
+ *
+ * The SVGs have an embedded <style> block with #mermaid-xxxxx ID selectors
+ * that set colors from the theme. We use [id^="mermaid-"] to match the same
+ * specificity level. Flowchart nodes styled via classDef use inline `style`
+ * attributes, which have the highest specificity and are NOT affected.
+ */
+
+/* ─── All text: light on dark ─── */
+.dark .mermaid-diagram [id^="mermaid-"] text,
+.dark .mermaid-diagram [id^="mermaid-"] text tspan {
+  fill: #e2e8f0 !important;
+}
+
+/* Sequence diagram actor labels — brighter white */
+.dark .mermaid-diagram [id^="mermaid-"] text.actor,
+.dark .mermaid-diagram [id^="mermaid-"] text.actor tspan,
+.dark .mermaid-diagram [id^="mermaid-"] text.actor-box,
+.dark .mermaid-diagram [id^="mermaid-"] text.actor-box tspan {
+  fill: #f1f5f9 !important;
+}
+
+/* ─── Rects / boxes ─── */
+.dark .mermaid-diagram [id^="mermaid-"] rect.actor {
+  fill: #1e293b !important;
+  stroke: #3b82f6 !important;
+}
+
+/* ─── Lines and paths ─── */
+.dark .mermaid-diagram [id^="mermaid-"] line {
+  stroke: #475569 !important;
+}
+.dark .mermaid-diagram [id^="mermaid-"] .messageLine0,
+.dark .mermaid-diagram [id^="mermaid-"] .messageLine1 {
+  stroke: #64748b !important;
+}
+
+/* Edge paths (flowchart arrows) */
+.dark .mermaid-diagram .edgePath path,
+.dark .mermaid-diagram .transition path {
+  stroke: #64748b !important;
+}
+.dark .mermaid-diagram marker path {
+  fill: #64748b !important;
+  stroke: #64748b !important;
+}
+
+/* Edge label backgrounds (flowchart) */
+.dark .mermaid-diagram .edgeLabel rect,
+.dark .mermaid-diagram .labelBox {
+  fill: transparent !important;
+  stroke: none !important;
+}
+
+/* ─── Subgraph clusters (flowchart) ─── */
+.dark .mermaid-diagram .cluster rect {
+  fill: rgba(15, 23, 42, 0.5) !important;
+}
+.dark .mermaid-diagram .cluster span,
+.dark .mermaid-diagram .cluster text {
+  fill: #94a3b8 !important;
+  color: #94a3b8 !important;
+}
+
+/* ─── Sequence diagram extras ─── */
+.dark .mermaid-diagram [id^="mermaid-"] .activation0,
+.dark .mermaid-diagram [id^="mermaid-"] .activation1 {
+  fill: #1e293b !important;
+  stroke: #475569 !important;
+}
+.dark .mermaid-diagram [id^="mermaid-"] .note {
+  fill: #1e293b !important;
+  stroke: #475569 !important;
+}
+.dark .mermaid-diagram [id^="mermaid-"] .noteText {
+  fill: #cbd5e1 !important;
+}
+.dark .mermaid-diagram [id^="mermaid-"] .loopText {
+  fill: #94a3b8 !important;
+}
+.dark .mermaid-diagram [id^="mermaid-"] .loopLine {
+  stroke: #475569 !important;
+}
