@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@commercejs/nuxt": "workspace:*",
+    "@commercejs/platform": "workspace:*",
     "@commercejs/types": "workspace:*",
+    "@commercejs/ui": "workspace:*",
     "@nuxt/image": "2.0.0",
     "@nuxt/ui": "4.4.0",
     "nuxt": "^4.3.1",

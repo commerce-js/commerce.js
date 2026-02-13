@@ -5,7 +5,7 @@ const { t } = useLocalizedString()
 const slug = computed(() => route.params.slug as string)
 
 // Fetch all categories to find this one
-const { data: allCategories } = await useCategories()
+const { data: allCategories } = useCategories()
 
 const category = computed(() => {
   const find = (cats: any[]): any => {
@@ -28,7 +28,7 @@ const searchParams = computed(() => ({
   perPage: 12,
 }))
 
-const { data: result, status } = await useProducts(searchParams)
+const { data: result, status } = useProducts(searchParams)
 const products = computed(() => result.value?.products?.items ?? [])
 const pagination = computed(() => result.value?.products ?? { total: 0, page: 1, perPage: 12, hasMore: false })
 

@@ -13,12 +13,12 @@ const searchParams = computed(() => ({
     : undefined,
 }))
 
-const { data: result, status } = await useProducts(searchParams)
+const { data: result, status } = useProducts(searchParams)
 const products = computed(() => result.value?.products?.items ?? [])
 const pagination = computed(() => result.value?.products ?? { total: 0, page: 1, perPage: 12, hasMore: false })
 
 // Categories for sidebar filter
-const { data: categories } = await useCategories()
+const { data: categories } = useCategories()
 
 // Sort options
 const sortOptions = [

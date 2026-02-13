@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@commercejs/adapter-salla": "workspace:*",
+    "@commercejs/platform": "workspace:*",
     "@commercejs/types": "workspace:*",
     "@vueuse/core": "^14.2.0",
     "consola": "^3.4.2",

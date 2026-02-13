@@ -11,8 +11,12 @@ import type { PaymentMethod } from './payment.js'
 export interface CartItem {
   id: Id
   productId: Id
+  /** Slug for constructing product URLs (falls back to productId if not set) */
+  productSlug?: string
   variantId: Maybe<Id>
   name: LocalizedString
+  /** Display name for the selected variant (e.g. "Black / XL") */
+  variantName?: LocalizedString
   image: Maybe<Image>
   quantity: number
   /** Unit price */

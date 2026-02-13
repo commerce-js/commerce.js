@@ -6,12 +6,12 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxt/image',
     '@commercejs/nuxt',
+    '@commercejs/ui',
   ],
 
   css: ['~/assets/css/main.css'],
 
   app: {
-    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -23,17 +23,28 @@ export default defineNuxtConfig({
 
   // CommerceJS module options
   commerce: {
-    adapter: 'salla',
+    adapter: 'platform',
     apiBase: '/api/_commerce',
     apiRoutes: true,
   },
 
-  // Runtime config for Salla credentials (from .env)
+  // Runtime config for platform adapter (from .env)
   runtimeConfig: {
-    sallaToken: process.env.SALLA_TOKEN || '',
-    sallaRefreshToken: process.env.SALLA_REFRESH_TOKEN || '',
-    sallaClientId: process.env.SALLA_CLIENT_ID || '',
-    sallaClientSecret: process.env.SALLA_CLIENT_SECRET || '',
+    commerceAdapter: 'platform',
+    commerceDbPath: process.env.COMMERCE_DB_PATH || './store.db',
+  },
+
+  // Nitro server config — externalize native + platform modules
+  // @commercejs/platform must NOT be bundled by Nitro's rollup so that
+  // the Prisma singleton is shared across the server plugin and API route handlers.
+  nitro: {
+    externals: {
+      external: [
+        '@commercejs/platform',
+        'better-sqlite3',
+        '@prisma/adapter-better-sqlite3',
+      ],
+    },
   },
 
   devtools: { enabled: true },

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { en } from '@nuxt/ui/locale'
+
+const locale = extendLocale(en, { code: 'en-GB' })
+
 const { seo } = useAppConfig()
 
 const { data: navigation } = await useAsyncData('navigation', () => queryCollectionNavigation('docs'))
@@ -28,7 +32,7 @@ provide('navigation', navigation)
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="locale">
     <NuxtLoadingIndicator />
 
     <AppHeader />

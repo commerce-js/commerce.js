@@ -29,3 +29,4 @@ pnpm-debug.log*
 
 # Agent skills/config
 .agent/
+.tmp/

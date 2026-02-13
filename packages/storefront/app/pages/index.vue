@@ -2,6 +2,7 @@
 const { t } = useLocalizedString()
 
 // Fetch featured products (first page, limited)
+// await + lazy:true = blocks SSR (complete HTML), doesn't block SPA navigation
 const { data: productsResult } = await useProducts({ perPage: 8 })
 const featuredProducts = computed(() => productsResult.value?.products?.items ?? [])
 
@@ -11,7 +12,7 @@ const topCategories = computed(() => categories.value?.slice(0, 6) ?? [])
 
 // Store info
 const { store, refresh: refreshStore } = useStoreInfo()
-await refreshStore()
+refreshStore()
 
 // SEO
 useHead({
@@ -99,7 +100,7 @@ useHead({
           <NuxtLink
             v-for="cat in topCategories"
             :key="cat.id"
-            :to="`/categories/${cat.slug}`"
+            :to="`/categories/${cat.slug || cat.id}`"
             class="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-(--ui-bg-accented) border border-(--ui-border) hover:border-(--ui-primary)/50 transition-all duration-300 hover:shadow-xl hover:shadow-(--ui-primary)/5"
           >
             <!-- Category image -->

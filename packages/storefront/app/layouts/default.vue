@@ -2,7 +2,23 @@
 const { t } = useLocalizedString()
 const { data: categories } = await useCategories()
 
-const { cart, itemCount } = useCart()
+const { cart, itemCount, updateItem, removeItem, onItemAdded } = useCart()
+
+// Cart drawer state
+const cartDrawerOpen = ref(false)
+
+// Open drawer whenever an item is added to cart
+onItemAdded(() => {
+  cartDrawerOpen.value = true
+})
+
+// Drawer event handlers
+function handleDrawerUpdateQuantity(itemId: string, quantity: number) {
+  updateItem(itemId, quantity)
+}
+function handleDrawerRemove(itemId: string) {
+  removeItem(itemId)
+}
 
 // Navigation links
 const navLinks = computed(() => {
@@ -149,5 +165,13 @@ const cartBadge = computed(() =>
         </div>
       </UContainer>
     </footer>
+    <!-- Cart Drawer -->
+    <CCartDrawer
+      v-model:open="cartDrawerOpen"
+      :cart="cart"
+      :loading="false"
+      @update:quantity="handleDrawerUpdateQuantity"
+      @remove="handleDrawerRemove"
+    />
   </div>
 </template>

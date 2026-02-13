@@ -1,0 +1,41 @@
+{
+  "name": "@commercejs/ui",
+  "version": "0.1.0",
+  "description": "CommerceJS ecommerce UI components — built on Nuxt UI",
+  "repository": { "type": "git", "url": "https://github.com/commerce-js/commerce.js.git", "directory": "packages/ui" },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/module.mjs",
+  "types": "./dist/types.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/module.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "nuxt-module-build build",
+    "dev": "nuxi dev playground",
+    "typecheck": "nuxt-module-build build",
+    "clean": "rm -rf dist .nuxt"
+  },
+  "dependencies": {
+    "@commercejs/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "@nuxt/ui": ">=4.0.0"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^4.3.1",
+    "@nuxt/module-builder": "^0.8.0",
+    "@nuxt/schema": "^4.3.1",
+    "@nuxt/ui": "^4.0.0",
+    "nuxt": "^4.3.1",
+    "typescript": "^5.7.0",
+    "vue": "^3.5.0"
+  }
+}

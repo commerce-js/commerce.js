@@ -29,6 +29,8 @@
     "tailwindcss": "^4.1.18",
     "ufo": "^1.6.3",
     "unist-util-visit": "^5.1.0",
+    "@commercejs/types": "workspace:*",
+    "@commercejs/ui": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

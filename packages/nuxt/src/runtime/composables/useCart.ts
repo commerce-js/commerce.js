@@ -19,6 +19,13 @@ import { createEventHook } from '@vueuse/core'
  * </script>
  * ```
  */
+
+// Shared event hooks (module-scoped so all useCart() callers share them)
+const itemAddedHook = createEventHook<Cart>()
+const itemUpdatedHook = createEventHook<Cart>()
+const itemRemovedHook = createEventHook<Cart>()
+const errorHook = createEventHook<Error>()
+
 export function useCart() {
   const config = useRuntimeConfig()
   const apiBase = config.public.commerce?.apiBase || '/api/_commerce'
@@ -27,12 +34,6 @@ export function useCart() {
   const cart = useState<Cart | null>('commerce_cart', () => null)
   const loading = useState<boolean>('commerce_cart_loading', () => false)
   const error = useState<Error | null>('commerce_cart_error', () => null)
-
-  // Event hooks for lifecycle events
-  const itemAddedHook = createEventHook<Cart>()
-  const itemUpdatedHook = createEventHook<Cart>()
-  const itemRemovedHook = createEventHook<Cart>()
-  const errorHook = createEventHook<Error>()
 
   function handleError(err: unknown): CommerceError {
     const e = isCommerceError(err)

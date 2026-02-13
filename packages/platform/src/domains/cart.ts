@@ -45,6 +45,7 @@ export function createCartDomain(currency: string) {
       return {
         id: item.id,
         productId: item.productId,
+        productSlug: product?.slug ?? undefined,
         variantId: item.variantId ?? null,
         name: product ? localized(product.name, product.nameAr) : localized('Unknown', null),
         image: primaryImg ? img(primaryImg.url, primaryImg.altText) : null,

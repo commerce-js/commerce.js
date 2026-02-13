@@ -3,10 +3,14 @@ const { t } = useLocalizedString()
 const { formatPrice } = usePrice()
 const { cart, loading, updateItem, removeItem, refresh, itemCount, createCart, cartId } = useCart()
 
-// Fetch cart on page load
-if (cartId.value) {
-  await refresh()
-}
+// await + lazy = blocks SSR, doesn't block SPA navigation
+// getCachedData: () => undefined forces re-fetch on every visit
+await useLazyAsyncData('cart-page', async () => {
+  if (cartId.value) await refresh()
+  return true
+}, {
+  getCachedData: () => undefined,
+})
 
 const cartItems = computed(() => cart.value?.items ?? [])
 
@@ -36,22 +40,31 @@ useHead({ title: 'Cart — CommerceJS' })
       class="mb-8"
     />
 
-    <h1 class="text-2xl md:text-3xl font-bold text-(--ui-text-highlighted) mb-8">
+    <h1 class="text-2xl md:text-3xl font-bold text-highlighted mb-8">
       Shopping Cart
     </h1>
 
-    <!-- Empty cart -->
-    <div v-if="!cart || cartItems.length === 0" class="text-center py-24">
-      <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-(--ui-primary)/10 flex items-center justify-center">
-        <UIcon name="i-heroicons-shopping-cart" class="text-4xl text-(--ui-primary)" />
+    <!-- Loading cart data -->
+    <div v-if="loading && !cart" class="space-y-4">
+      <div v-for="i in 2" :key="i" class="flex gap-4 p-4 rounded-xl bg-elevated ring ring-default animate-pulse">
+        <div class="w-24 h-24 rounded-lg bg-accented" />
+        <div class="flex-1 space-y-3">
+          <div class="h-4 w-1/3 rounded bg-accented" />
+          <div class="h-3 w-1/4 rounded bg-accented" />
+          <div class="h-8 w-24 rounded bg-accented" />
+        </div>
       </div>
-      <h2 class="text-xl font-semibold text-(--ui-text-highlighted) mb-2">Your cart is empty</h2>
-      <p class="text-(--ui-text-muted) mb-6">Start shopping to add items to your cart</p>
-      <UButton to="/products" size="lg" color="primary">
-        <UIcon name="i-heroicons-shopping-bag-20-solid" class="mr-2" />
-        Browse Products
-      </UButton>
     </div>
+
+    <!-- Empty cart -->
+    <CEmptyState
+      v-else-if="!cart || cartItems.length === 0"
+      icon="i-heroicons-shopping-cart"
+      title="Your cart is empty"
+      description="Start shopping to add items to your cart"
+      action-label="Browse Products"
+      action-to="/products"
+    />
 
     <!-- Cart with items -->
     <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -60,10 +73,10 @@ useHead({ title: 'Cart — CommerceJS' })
         <div
           v-for="item in cartItems"
           :key="item.id"
-          class="flex gap-4 p-4 rounded-xl bg-(--ui-bg-elevated) border border-(--ui-border)"
+          class="flex gap-4 p-4 rounded-xl bg-elevated ring ring-default"
         >
           <!-- Item image -->
-          <NuxtLink :to="`/products/${item.productId}`" class="shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-(--ui-bg-accented)">
+          <NuxtLink :to="`/products/${item.productId}`" class="shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-accented">
             <img
               v-if="item.image"
               :src="item.image.url"
@@ -75,39 +88,24 @@ useHead({ title: 'Cart — CommerceJS' })
 
           <!-- Item details -->
           <div class="flex-1 min-w-0">
-            <NuxtLink :to="`/products/${item.productId}`" class="font-medium text-(--ui-text-highlighted) hover:text-(--ui-primary) transition-colors line-clamp-1">
+            <NuxtLink :to="`/products/${item.productId}`" class="font-medium text-highlighted hover:text-primary transition-colors line-clamp-1">
               {{ t(item.name) }}
             </NuxtLink>
 
-            <p v-if="item.variantName" class="text-xs text-(--ui-text-muted) mt-0.5">
+            <p v-if="item.variantName" class="text-xs text-muted mt-0.5">
               {{ t(item.variantName) }}
             </p>
 
-            <p class="text-sm font-semibold text-(--ui-primary) mt-1">
-              {{ formatPrice(item.price) }}
-            </p>
+            <CProductPrice v-if="item.price" :price="item.price" size="sm" class="mt-1" />
 
             <div class="flex items-center justify-between mt-3">
-              <!-- Quantity controls -->
-              <div class="flex items-center gap-1">
-                <UButton
-                  icon="i-heroicons-minus-20-solid"
-                  variant="outline"
-                  color="neutral"
-                  size="xs"
-                  :disabled="item.quantity <= 1 || loading"
-                  @click="handleUpdateQuantity(item.id, item.quantity - 1)"
-                />
-                <span class="w-8 text-center text-sm font-medium">{{ item.quantity }}</span>
-                <UButton
-                  icon="i-heroicons-plus-20-solid"
-                  variant="outline"
-                  color="neutral"
-                  size="xs"
-                  :disabled="loading"
-                  @click="handleUpdateQuantity(item.id, item.quantity + 1)"
-                />
-              </div>
+              <CQuantitySelector
+                :model-value="item.quantity"
+                :min="1"
+                :disabled="loading"
+                size="sm"
+                @update:model-value="handleUpdateQuantity(item.id, $event)"
+              />
 
               <!-- Remove -->
               <UButton
@@ -125,19 +123,19 @@ useHead({ title: 'Cart — CommerceJS' })
 
       <!-- Order summary -->
       <div class="lg:col-span-1">
-        <div class="sticky top-20 rounded-2xl bg-(--ui-bg-elevated) border border-(--ui-border) p-6 space-y-4">
-          <h3 class="font-semibold text-(--ui-text-highlighted) text-lg">Order Summary</h3>
+        <div class="sticky top-20 rounded-2xl bg-elevated ring ring-default p-6 space-y-4">
+          <h3 class="font-semibold text-highlighted text-lg">Order Summary</h3>
 
           <USeparator />
 
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
-              <span class="text-(--ui-text-muted)">Subtotal ({{ itemCount }} items)</span>
+              <span class="text-muted">Subtotal ({{ itemCount }} items)</span>
               <span class="font-medium">{{ formatPrice(subtotal) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-(--ui-text-muted)">Shipping</span>
-              <span class="text-(--ui-text-dimmed)">Calculated at checkout</span>
+              <span class="text-muted">Shipping</span>
+              <span class="text-dimmed">Calculated at checkout</span>
             </div>
           </div>
 
@@ -145,7 +143,7 @@ useHead({ title: 'Cart — CommerceJS' })
 
           <div class="flex justify-between text-lg font-bold">
             <span>Total</span>
-            <span class="text-(--ui-primary)">{{ formatPrice(total) }}</span>
+            <span class="text-primary">{{ formatPrice(total) }}</span>
           </div>
 
           <UButton
