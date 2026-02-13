@@ -97,7 +97,16 @@ export default defineNuxtConfig({
         '/'
       ],
       crawlLinks: true,
-      autoSubfolderIndex: false
+      autoSubfolderIndex: false,
+      failOnError: false,
+      ignore: [
+        '/checkout',
+        '/products',
+        '/orders',
+        '/about',
+        '/products/**',
+        '/orders/**'
+      ]
     }
   },
 
