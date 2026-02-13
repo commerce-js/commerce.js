@@ -30,6 +30,9 @@ jobs:
       - name: Build workspace dependencies
         run: pnpm turbo run build --filter='docs^...'
 
+      - name: Rebuild native modules
+        run: npm rebuild better-sqlite3
+
       - name: Build docs
         working-directory: packages/docs
         run: npx nuxt build --preset github_pages
