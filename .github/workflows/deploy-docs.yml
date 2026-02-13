@@ -8,6 +8,8 @@ on:
       - main
     paths:
       - 'packages/docs/**'
+      - 'packages/ui/**'
+      - 'packages/types/**'
 
 jobs:
   build:
@@ -23,7 +25,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build workspace dependencies
+        run: pnpm turbo run build --filter='docs^...'
 
       - name: Build docs
         working-directory: packages/docs
