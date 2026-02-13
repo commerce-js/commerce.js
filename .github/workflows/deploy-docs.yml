@@ -27,11 +27,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Rebuild native modules
-        run: pnpm rebuild better-sqlite3
-
       - name: Build workspace dependencies
         run: pnpm turbo run build --filter='docs^...'
+
+      - name: Run postinstall scripts
+        run: pnpm install --frozen-lockfile
 
       - name: Build docs
         working-directory: packages/docs
