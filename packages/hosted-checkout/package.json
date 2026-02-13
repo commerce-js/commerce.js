@@ -8,7 +8,7 @@
     "dev": "nuxt dev --port 3100",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare || true"
   },
   "dependencies": {
     "@commercejs/checkout": "workspace:*",
