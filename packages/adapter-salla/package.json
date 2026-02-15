@@ -1,8 +1,12 @@
 {
   "name": "@commercejs/adapter-salla",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Salla platform adapter for CommerceJS SDK",
-  "repository": { "type": "git", "url": "https://github.com/commerce-js/commerce.js.git", "directory": "packages/adapter-salla" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/commerce-js/commerce.js.git",
+    "directory": "packages/adapter-salla"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

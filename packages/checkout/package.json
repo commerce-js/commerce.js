@@ -1,8 +1,12 @@
 {
   "name": "@commercejs/checkout",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Universal checkout engine — framework-agnostic state machine for payment flows",
-  "repository": { "type": "git", "url": "https://github.com/commerce-js/commerce.js.git", "directory": "packages/checkout" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/commerce-js/commerce.js.git",
+    "directory": "packages/checkout"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
