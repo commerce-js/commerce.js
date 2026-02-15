@@ -1,8 +1,12 @@
 {
   "name": "@commercejs/types",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Unified Data Model types for CommerceJS SDK",
-  "repository": { "type": "git", "url": "https://github.com/commerce-js/commerce.js.git", "directory": "packages/types" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/commerce-js/commerce.js.git",
+    "directory": "packages/types"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,7 +18,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
