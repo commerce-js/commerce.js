@@ -1,16 +1,31 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Address } from '@commercejs/types'
 
 /**
  * CAddressForm — Shipping/billing address form.
- * Uses Nuxt UI form components (UInput, USelect) with GCC-specific fields.
+ * Uses Nuxt UI form components with GCC-specific fields.
+ * Country dropdown is searchable with flag avatars.
+ * City dropdown loads cities based on selected country.
  */
+
+export interface CountryItem {
+  name: string
+  flag: string | null
+  code: string
+}
 
 export interface AddressFormProps {
   /** Current address values */
   modelValue: Partial<Address>
   /** Available countries for the dropdown */
-  countries?: { label: string; value: string }[]
+  countries?: CountryItem[]
+  /** Cities for the selected country */
+  cities?: string[]
+  /** Whether countries are loading */
+  countriesLoading?: boolean
+  /** Whether cities are loading */
+  citiesLoading?: boolean
   /** Whether to show GCC-specific fields (district, nationalAddress) */
   showGccFields?: boolean
   /** Whether the form is in loading/submitting state */
@@ -25,6 +40,9 @@ export interface AddressFormProps {
 
 const props = withDefaults(defineProps<AddressFormProps>(), {
   countries: () => [],
+  cities: () => [],
+  countriesLoading: false,
+  citiesLoading: false,
   showGccFields: true,
   loading: false,
 })
@@ -41,6 +59,11 @@ function update(field: keyof Address, value: any) {
 function handleSubmit() {
   emit('submit', props.modelValue)
 }
+
+/** Find the flag URL for the currently selected country */
+const selectedCountryFlag = computed(() =>
+  props.countries.find(c => c.code === props.modelValue.country)?.flag || null,
+)
 
 // Resolve theme from app.config
 const appConfig = useAppConfig()
@@ -67,6 +90,7 @@ const slotClasses = computed(() => {
           required
           :disabled="loading"
           @update:model-value="update('firstName', $event)"
+          class="w-full"
         />
       </UFormField>
       <UFormField label="Last Name" :class="slotClasses.field">
@@ -76,6 +100,7 @@ const slotClasses = computed(() => {
           required
           :disabled="loading"
           @update:model-value="update('lastName', $event)"
+          class="w-full"
         />
       </UFormField>
     </div>
@@ -88,6 +113,7 @@ const slotClasses = computed(() => {
         type="tel"
         :disabled="loading"
         @update:model-value="update('phone', $event)"
+        class="w-full"
       />
     </UFormField>
 
@@ -99,6 +125,7 @@ const slotClasses = computed(() => {
         required
         :disabled="loading"
         @update:model-value="update('street', $event)"
+        class="w-full"
       />
     </UFormField>
 
@@ -109,18 +136,23 @@ const slotClasses = computed(() => {
         placeholder="Apartment, suite, etc. (optional)"
         :disabled="loading"
         @update:model-value="update('street2', $event)"
+        class="w-full"
       />
     </UFormField>
 
     <!-- City + State -->
     <div :class="slotClasses.row">
       <UFormField label="City" :class="slotClasses.field">
-        <UInput
+        <USelectMenu
           :model-value="modelValue.city || ''"
-          placeholder="City"
-          required
-          :disabled="loading"
+          :items="cities"
+          placeholder="Select city"
+          searchable
+          :loading="citiesLoading"
+          :disabled="loading || !modelValue.country"
+          :ui="{ content: 'min-w-[20rem]' }"
           @update:model-value="update('city', $event)"
+          class="w-full"
         />
       </UFormField>
       <UFormField label="State / Province" :class="slotClasses.field">
@@ -129,6 +161,7 @@ const slotClasses = computed(() => {
           placeholder="State"
           :disabled="loading"
           @update:model-value="update('state', $event)"
+          class="w-full"
         />
       </UFormField>
     </div>
@@ -136,14 +169,46 @@ const slotClasses = computed(() => {
     <!-- Country + Postal -->
     <div :class="slotClasses.row">
       <UFormField label="Country" :class="slotClasses.field">
-        <USelect
+        <USelectMenu
           :model-value="modelValue.country || ''"
           :items="countries"
+          value-key="code"
+          label-key="name"
           placeholder="Select country"
+          searchable
           required
+          :loading="countriesLoading"
           :disabled="loading"
+          :ui="{ content: 'min-w-[20rem]' }"
           @update:model-value="update('country', $event)"
-        />
+          class="w-full"
+        >
+          <template #leading="{ modelValue: val, ui }">
+            <UAvatar
+              v-if="val && selectedCountryFlag"
+              :src="selectedCountryFlag"
+              size="2xs"
+              :class="ui.leadingIcon()"
+            />
+            <UIcon
+              v-else
+              name="i-lucide-earth"
+              :class="ui.leadingIcon()"
+            />
+          </template>
+          <template #item-leading="{ item }">
+            <UAvatar
+              v-if="item.flag"
+              :src="item.flag"
+              size="2xs"
+            />
+            <UIcon
+              v-else
+              name="i-lucide-earth"
+              class="size-4"
+            />
+          </template>
+        </USelectMenu>
       </UFormField>
       <UFormField label="Postal Code" :class="slotClasses.field">
         <UInput
@@ -151,6 +216,7 @@ const slotClasses = computed(() => {
           placeholder="Postal code"
           :disabled="loading"
           @update:model-value="update('postalCode', $event)"
+          class="w-full"
         />
       </UFormField>
     </div>
@@ -164,6 +230,7 @@ const slotClasses = computed(() => {
             placeholder="District / Neighborhood"
             :disabled="loading"
             @update:model-value="update('district', $event)"
+            class="w-full"
           />
         </UFormField>
         <UFormField label="National Address (العنوان الوطني)">
@@ -172,6 +239,7 @@ const slotClasses = computed(() => {
             placeholder="Saudi National Address"
             :disabled="loading"
             @update:model-value="update('nationalAddress', $event)"
+            class="w-full"
           />
         </UFormField>
       </slot>

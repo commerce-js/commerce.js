@@ -17,7 +17,7 @@ import {
   findVariantById,
   findPrimaryImage,
 } from '../database/index.js'
-import { localized, discountablePrice, priceRequired, img } from './helpers.js'
+import { localized, discountablePrice, priceRequired, img, parseJsonField } from './helpers.js'
 
 export function createCartDomain(currency: string) {
   /** Build a full Cart object from cart row + items + product data */
@@ -67,8 +67,8 @@ export function createCartDomain(currency: string) {
         discount: null,
         total: priceRequired(subtotal, currency),
       },
-      shippingAddress: cartRow.shippingAddress as any ?? null,
-      billingAddress: cartRow.billingAddress as any ?? null,
+      shippingAddress: parseJsonField(cartRow.shippingAddress),
+      billingAddress: parseJsonField(cartRow.billingAddress),
       shippingMethod: null,
       paymentMethod: null,
       couponCode: cartRow.couponCode ?? null,

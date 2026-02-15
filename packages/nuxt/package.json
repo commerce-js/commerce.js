@@ -2,7 +2,11 @@
   "name": "@commercejs/nuxt",
   "version": "0.2.0",
   "description": "CommerceJS Nuxt module — composables, plugin, and auto-generated REST API",
-  "repository": { "type": "git", "url": "https://github.com/commerce-js/commerce.js.git", "directory": "packages/nuxt" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/commerce-js/commerce.js.git",
+    "directory": "packages/nuxt"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/module.mjs",
@@ -32,7 +36,9 @@
     "@commercejs/types": "workspace:*",
     "@vueuse/core": "^14.2.0",
     "consola": "^3.4.2",
-    "h3": "^1.13.0"
+    "h3": "^1.13.0",
+    "ulid": "^3.0.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@nuxt/kit": "^4.3.1",

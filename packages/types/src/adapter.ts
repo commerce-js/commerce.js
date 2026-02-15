@@ -393,6 +393,136 @@ export type AdapterDomain =
   | 'countries'
   | 'locations'
 
+// ---- Three-Tier Domain Model ----
+
+/**
+ * Tier 1: Universal domains — always present in every orchestrator.
+ *
+ * These are the minimum viable commerce operations: product catalog
+ * and store metadata. Every adapter must provide these.
+ */
+export interface UniversalDomains<
+  TProduct extends Product = Product,
+  TCategory extends Category = Category,
+  TSearchResult extends SearchResult = SearchResult,
+  TStoreInfo extends StoreInfo = StoreInfo,
+> extends CatalogAdapter<TProduct, TCategory, TSearchResult>, StoreAdapter<TStoreInfo> {}
+
+/**
+ * Tier 2: Common domains — present in most commerce platforms.
+ *
+ * These are optional sub-interfaces that adapters may or may not support.
+ * Use `orchestrator.supports('cart')` to check at runtime, or access
+ * via `orchestrator.domain('cart')` which throws if unsupported.
+ */
+export interface CommonDomains<
+  TCart extends Cart = Cart,
+  TOrder extends Order = Order,
+  TCustomer extends Customer = Customer,
+  TWishlist extends Wishlist = Wishlist,
+> {
+  cart?: CartAdapter<TCart>
+  checkout?: CheckoutAdapter<TCart, TOrder>
+  orders?: OrderAdapter<TOrder>
+  customers?: CustomerAdapter<TCustomer>
+  wishlist?: WishlistAdapter<TWishlist>
+  reviews?: ReviewAdapter
+  promotions?: PromotionAdapter
+  brands?: BrandAdapter
+  countries?: CountryAdapter
+  locations?: LocationAdapter
+}
+
+/**
+ * Tier 3: Specialized domains — niche features.
+ *
+ * Only present in specific platforms or custom implementations.
+ */
+export interface SpecializedDomains {
+  returns?: ReturnAdapter
+  wholesale?: WholesaleAdapter
+  auctions?: AuctionAdapter
+  rentals?: RentalAdapter
+  giftCards?: GiftCardAdapter
+}
+
+/** Union of all optional domain keys (Tier 2 + Tier 3) */
+export type OrchestratorDomain = keyof CommonDomains & keyof SpecializedDomains extends never
+  ? keyof CommonDomains | keyof SpecializedDomains
+  : keyof CommonDomains | keyof SpecializedDomains
+
+/** Map from domain key to its adapter interface */
+export type DomainMap<
+  TCart extends Cart = Cart,
+  TOrder extends Order = Order,
+  TCustomer extends Customer = Customer,
+  TWishlist extends Wishlist = Wishlist,
+> = CommonDomains<TCart, TOrder, TCustomer, TWishlist> & SpecializedDomains
+
+/**
+ * CommerceOrchestrator — the evolution of CommerceAdapter.
+ *
+ * Unlike `CommerceAdapter` which requires all 16 sub-interfaces,
+ * the orchestrator has only `CatalogAdapter` and `StoreAdapter` as
+ * required (Tier 1). All other domains live in `domains` and are
+ * accessed via the `supports()` type guard or `domain()` accessor.
+ *
+ * @example
+ * ```ts
+ * const orch = createCompositeOrchestrator({ ... })
+ *
+ * // Type-safe domain access with narrowing
+ * if (orch.supports('cart')) {
+ *   const cart = await orch.domain('cart').createCart()
+ * }
+ *
+ * // Or direct access (throws if unsupported)
+ * const cart = await orch.domain('cart').createCart()
+ * ```
+ */
+export interface CommerceOrchestrator<
+  TProduct extends Product = Product,
+  TCategory extends Category = Category,
+  TSearchResult extends SearchResult = SearchResult,
+  TCart extends Cart = Cart,
+  TOrder extends Order = Order,
+  TCustomer extends Customer = Customer,
+  TWishlist extends Wishlist = Wishlist,
+  TStoreInfo extends StoreInfo = StoreInfo,
+> extends UniversalDomains<TProduct, TCategory, TSearchResult, TStoreInfo> {
+  /** Unique orchestrator/adapter identifier */
+  readonly name: string
+
+  /** All registered optional domains */
+  readonly domains: Partial<DomainMap<TCart, TOrder, TCustomer, TWishlist>>
+
+  /**
+   * Check whether a domain is available at runtime.
+   *
+   * @example
+   * ```ts
+   * if (orch.supports('cart')) {
+   *   // TypeScript knows orch.domains.cart is defined
+   *   const cart = await orch.domain('cart').createCart()
+   * }
+   * ```
+   */
+  supports<D extends keyof DomainMap>(domain: D): boolean
+
+  /**
+   * Get a domain adapter. Throws `CommerceError` with code 'NOT_SUPPORTED'
+   * if the domain is not available.
+   *
+   * @throws {CommerceError} with code 'NOT_SUPPORTED' if domain is missing
+   */
+  domain<D extends keyof DomainMap<TCart, TOrder, TCustomer, TWishlist>>(
+    domain: D,
+  ): NonNullable<DomainMap<TCart, TOrder, TCustomer, TWishlist>[D]>
+
+  /** Legacy compatibility — list of supported domain names */
+  readonly capabilities: AdapterDomain[]
+}
+
 // ---- Composed Adapter ----
 
 /**

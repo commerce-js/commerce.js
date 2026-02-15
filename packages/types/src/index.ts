@@ -86,6 +86,12 @@ export type { GiftCard, GiftCardStatus, GiftCardTransaction, PurchaseGiftCardInp
 // Adapter contract (sub-interfaces + composed)
 export type {
   CommerceAdapter,
+  CommerceOrchestrator,
+  UniversalDomains,
+  CommonDomains,
+  SpecializedDomains,
+  DomainMap,
+  OrchestratorDomain,
   CatalogAdapter,
   CartAdapter,
   CheckoutAdapter,
@@ -108,3 +114,24 @@ export type {
   AddToCartInput,
   AdapterDomain,
 } from './adapter.js'
+
+// Notification Provider
+export type {
+  NotificationProvider,
+  NotificationChannel,
+  NotificationMessage,
+  NotificationResult,
+  NotificationRule,
+} from './notification.js'
+
+// Analytics Provider
+export type { AnalyticsProvider } from './analytics.js'
+
+// Tax Provider
+export type {
+  TaxProvider,
+  TaxCalculationInput,
+  TaxLineItem,
+  TaxResult,
+  TaxLineItemResult,
+} from './tax.js'

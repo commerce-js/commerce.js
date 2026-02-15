@@ -47,6 +47,19 @@ export function img(url: string, altText: string | null): Image {
   }
 }
 
+/**
+ * Safely parse a JSON field from the database.
+ * SQLite stores JSON as text — this handles string, object, and null values.
+ */
+export function parseJsonField(value: unknown): any {
+  if (value == null) return null
+  if (typeof value === 'string') {
+    try { return JSON.parse(value) }
+    catch { return value }
+  }
+  return value
+}
+
 /** Generate an order number like ORD-20260211-XXXX */
 export function generateOrderNumber(): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')

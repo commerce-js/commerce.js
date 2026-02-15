@@ -10,6 +10,7 @@ import type {
   Address,
 } from '@commercejs/types'
 import {
+  findCart,
   updateCart,
   deleteCart,
   findProductById,
@@ -19,7 +20,7 @@ import {
   findOrderById,
   findOrderItems,
 } from '../database/index.js'
-import { generateOrderNumber, localized, price, priceRequired, img } from './helpers.js'
+import { generateOrderNumber, localized, price, priceRequired, img, parseJsonField } from './helpers.js'
 import { createCartDomain } from './cart.js'
 
 export function createCheckoutDomain(currency: string) {
@@ -95,12 +96,19 @@ export function createCheckoutDomain(currency: string) {
         throw new Error('Cannot place order with empty cart')
       }
 
+      // Look up selected shipping/payment methods by ID from cart row
+      const cartRow = await findCart(cartId)
+      const shippingMethods = await this.getShippingMethods(cartId)
+      const paymentMethods = await this.getPaymentMethods(cartId)
+      const selectedShipping = shippingMethods.find(m => m.id === cartRow?.shippingMethodId) ?? null
+      const selectedPayment = paymentMethods.find(m => m.id === cartRow?.paymentMethodId) ?? null
+
       const now = new Date().toISOString()
       const orderId = crypto.randomUUID()
       const orderNumber = generateOrderNumber()
 
       const subtotal = cart.totals.subtotal.amount
-      const shippingCost = cart.totals.shipping?.amount ?? 0
+      const shippingCost = selectedShipping?.price.amount ?? cart.totals.shipping?.amount ?? 0
       const tax = cart.totals.tax?.amount ?? 0
       const discount = cart.totals.discount?.amount ?? 0
       const total = subtotal + shippingCost + tax - discount
@@ -118,8 +126,8 @@ export function createCheckoutDomain(currency: string) {
         currency,
         shippingAddress: cart.shippingAddress as any,
         billingAddress: cart.billingAddress as any,
-        shippingMethod: cart.shippingMethod?.name ? JSON.stringify(cart.shippingMethod.name) : null,
-        paymentMethod: cart.paymentMethod?.name ? JSON.stringify(cart.paymentMethod.name) : null,
+        shippingMethod: selectedShipping?.name ? JSON.stringify(selectedShipping.name) : null,
+        paymentMethod: selectedPayment?.name ? JSON.stringify(selectedPayment.name) : null,
         requiresShipping: true,
         createdAt: now,
         updatedAt: now,
@@ -180,13 +188,13 @@ export function createCheckoutDomain(currency: string) {
           discount: price(order.discount, currency),
           total: priceRequired(order.total, currency),
         },
-        shippingAddress: order.shippingAddress as any ?? null,
-        billingAddress: order.billingAddress as any ?? null,
+        shippingAddress: parseJsonField(order.shippingAddress),
+        billingAddress: parseJsonField(order.billingAddress),
         shippingMethod: order.shippingMethod
-          ? { id: 'default', name: localized(order.shippingMethod, null), provider: 'custom', price: priceRequired(0, currency), estimatedDays: { min: 1, max: 7 }, cashOnDelivery: false }
+          ? (() => { const n = parseJsonField(order.shippingMethod); return { id: 'default', name: typeof n === 'object' ? localized(n.en, n.ar) : localized(n, null), provider: 'custom', price: priceRequired(0, currency), estimatedDays: { min: 1, max: 7 }, cashOnDelivery: false } })()
           : null,
         paymentMethod: order.paymentMethod
-          ? { id: 'default', type: 'card', name: localized(order.paymentMethod, null), provider: 'platform', installments: null, icon: null }
+          ? (() => { const n = parseJsonField(order.paymentMethod); return { id: 'default', type: 'card', name: typeof n === 'object' ? localized(n.en, n.ar) : localized(n, null), provider: 'platform', installments: null, icon: null } })()
           : null,
         trackingNumber: order.trackingNumber ?? null,
         trackingUrl: order.trackingUrl ?? null,

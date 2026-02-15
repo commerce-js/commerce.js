@@ -1,20 +1,21 @@
-import { useState, readonly } from '#imports'
+import { useState, readonly, useRuntimeConfig } from '#imports'
 import type {
   Address,
+  Cart,
   Order,
   ShippingMethod,
   PaymentMethod,
 } from '@commercejs/types'
 import { CommerceError, isCommerceError } from '@commercejs/types'
 import { createEventHook } from '@vueuse/core'
-import { useAdapter } from './useAdapter'
 import { useCart } from './useCart'
 
 /**
  * Checkout flow composable.
  * Manages the checkout process step by step.
  *
- * Exposes lifecycle event hooks for order placement analytics, etc.
+ * Uses server API routes (`/api/_commerce/checkout/*`) so it works on both
+ * SSR and client-side navigation — same pattern as `useCart`.
  *
  * @example
  * ```vue
@@ -34,7 +35,8 @@ import { useCart } from './useCart'
  * ```
  */
 export function useCheckout() {
-  const adapter = useAdapter()
+  const config = useRuntimeConfig()
+  const apiBase = config.public.commerce?.apiBase || '/api/_commerce'
   const { cart, cartId } = useCart()
 
   const shippingMethods = useState<ShippingMethod[]>('commerce_shipping_methods', () => [])
@@ -75,7 +77,7 @@ export function useCheckout() {
     loading.value = true
     error.value = null
     try {
-      shippingMethods.value = await adapter.getShippingMethods(id)
+      shippingMethods.value = await $fetch<ShippingMethod[]>(`${apiBase}/checkout/shipping-methods/${id}`)
     }
     catch (err) {
       throw handleError(err)
@@ -93,7 +95,7 @@ export function useCheckout() {
     loading.value = true
     error.value = null
     try {
-      paymentMethods.value = await adapter.getPaymentMethods(id)
+      paymentMethods.value = await $fetch<PaymentMethod[]>(`${apiBase}/checkout/payment-methods/${id}`)
     }
     catch (err) {
       throw handleError(err)
@@ -111,8 +113,10 @@ export function useCheckout() {
     loading.value = true
     error.value = null
     try {
-      const updatedCart = await adapter.setShippingAddress(id, address)
-      // Update the cart state via useState directly since useCart's cart is readonly
+      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout/set-shipping-address`, {
+        method: 'POST',
+        body: { cartId: id, address },
+      })
       useState<typeof updatedCart>('commerce_cart').value = updatedCart
     }
     catch (err) {
@@ -131,7 +135,10 @@ export function useCheckout() {
     loading.value = true
     error.value = null
     try {
-      const updatedCart = await adapter.setBillingAddress(id, address)
+      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout/set-billing-address`, {
+        method: 'POST',
+        body: { cartId: id, address },
+      })
       useState<typeof updatedCart>('commerce_cart').value = updatedCart
     }
     catch (err) {
@@ -150,7 +157,10 @@ export function useCheckout() {
     loading.value = true
     error.value = null
     try {
-      const updatedCart = await adapter.setShippingMethod(id, methodId)
+      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout/set-shipping-method`, {
+        method: 'POST',
+        body: { cartId: id, methodId },
+      })
       useState<typeof updatedCart>('commerce_cart').value = updatedCart
     }
     catch (err) {
@@ -169,7 +179,10 @@ export function useCheckout() {
     loading.value = true
     error.value = null
     try {
-      const updatedCart = await adapter.setPaymentMethod(id, methodId)
+      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout/set-payment-method`, {
+        method: 'POST',
+        body: { cartId: id, methodId },
+      })
       useState<typeof updatedCart>('commerce_cart').value = updatedCart
     }
     catch (err) {
@@ -189,7 +202,10 @@ export function useCheckout() {
     loading.value = true
     error.value = null
     try {
-      const order = await adapter.placeOrder(id)
+      const order = await $fetch<Order>(`${apiBase}/checkout/place-order`, {
+        method: 'POST',
+        body: { cartId: id },
+      })
       // Clear cart state after successful order
       useState('commerce_cart').value = null
       cartId.value = ''

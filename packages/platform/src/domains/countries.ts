@@ -13,7 +13,9 @@ export function createCountriesDomain() {
       return rows.map((row: any) => ({
         id: row.id,
         code: row.code,
+        iso3: row.iso3 ?? null,
         name: localized(row.name, row.nameAr),
+        flag: row.flag ?? null,
         callingCode: row.callingCode ?? null,
         currency: row.currency ?? null,
         capital: row.capital ?? null,

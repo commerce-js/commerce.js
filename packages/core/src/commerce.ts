@@ -46,6 +46,9 @@ import type {
   OrderStatusInfo,
   OrderHistoryEntry,
   UpdateOrderStatusInput,
+  NotificationProvider,
+  NotificationRule,
+  AnalyticsProvider,
 } from '@commercejs/types'
 import { CommerceError } from '@commercejs/types'
 import { CommerceEventBus } from './event-bus.js'
@@ -73,6 +76,15 @@ export interface CommerceConfig {
 
   /** Webhook HMAC signing function */
   sign?: (payload: string, secret: string) => string | Promise<string>
+
+  /** Notification providers keyed by ID */
+  notifications?: Record<string, NotificationProvider>
+
+  /** Notification rules — event → channel → provider dispatch */
+  notificationRules?: NotificationRule[]
+
+  /** Analytics providers (all receive all events) */
+  analytics?: AnalyticsProvider[]
 }
 
 // ---- Commerce Instance ----
@@ -205,6 +217,46 @@ export function createCommerce(config: CommerceConfig): CommerceInstance {
         sign: config.sign,
       })
     : null
+
+  // Wire up notification rules
+  const notificationCleanups: Array<() => void> = []
+  if (config.notificationRules?.length && config.notifications) {
+    for (const rule of config.notificationRules) {
+      const provider = config.notifications[rule.provider]
+      if (!provider) continue
+
+      const cleanup = events.on(rule.event as keyof CommerceEvents & string, async (payload: unknown) => {
+        const message = rule.buildMessage(payload)
+        if (message) {
+          try {
+            await provider.send(rule.channel, {
+              ...message,
+              template: message.template ?? rule.template,
+            })
+          } catch {
+            // Notification failures are non-fatal — log but don't throw
+          }
+        }
+      })
+      notificationCleanups.push(cleanup)
+    }
+  }
+
+  // Wire up analytics auto-tracking
+  const analyticsCleanups: Array<() => void> = []
+  if (config.analytics?.length) {
+    // Subscribe to wildcard to track all commerce events
+    const cleanup = events.onAny((event: string, payload: unknown) => {
+      for (const provider of config.analytics!) {
+        try {
+          provider.track(event, payload as Record<string, unknown>)
+        } catch {
+          // Analytics failures are non-fatal
+        }
+      }
+    })
+    analyticsCleanups.push(cleanup)
+  }
 
   // ---- Helpers ----
 
@@ -568,6 +620,8 @@ export function createCommerce(config: CommerceConfig): CommerceInstance {
     destroy() {
       events.removeAllListeners()
       webhookDispatcher?.unsubscribe()
+      notificationCleanups.forEach(fn => fn())
+      analyticsCleanups.forEach(fn => fn())
     },
   }
 
