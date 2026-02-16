@@ -131,7 +131,7 @@
 
 ---
 
-## 🎯 Phase 4: Universal Checkout + Second Adapter
+## ✅ Phase 4: Universal Checkout + Second Adapter *(In Progress)*
 
 ### Universal Checkout (`@commercejs/checkout`)
 - [x] Checkout state machine (cart → address → shipping → payment → confirm)
@@ -139,10 +139,12 @@
 - [ ] Channel-agnostic (web, mobile, POS, AI agent)
 - [ ] Embeddable with single line of code
 
-### Second Adapter: Medusa (`@commercejs/adapter-medusa`)
-- [ ] Full storefront API (cart, checkout, customer built-in)
-- [ ] Proves portability of the type system
-- [ ] Reference "full-stack" adapter
+### Second Adapter: Medusa (`@commercejs/adapter-medusa`) ✅
+- [x] Full storefront API (7 domains: catalog, cart, checkout, customers, orders, store, countries)
+- [x] Proves portability of the type system — 7 mapper modules, 25+ raw Medusa types
+- [x] HTTP client with publishable API key + JWT auth
+- [x] Contract test suite — 44 tests, all passing
+- [x] Build verification — clean TypeScript compilation
 
 ---
 
@@ -180,6 +182,52 @@
 
 ---
 
+## 🎯 Phase 7: CommerceJS Cloud
+
+> Hosted commerce platform — get merchants from zero to production in minutes.
+> Inspired by Medusa Cloud but built around CommerceJS's composable architecture.
+
+### Pricing Model
+- **No GMV fees** — pay only for infrastructure
+- Unlimited orders, products, sales channels
+- Three tiers: **Starter** / **Pro** / **Enterprise**
+
+### Cloud Dashboard (`cloud.commercejs.org`)
+- [ ] Project management UI (create, configure, monitor)
+- [ ] GitHub integration — push-to-deploy from any branch
+- [ ] Environment management (production, staging, preview)
+- [ ] Preview environments for every PR (sandboxed app + branched DB)
+- [ ] Environment variables management
+- [ ] Real-time logs and application health monitoring
+- [ ] Usage metrics and billing dashboard
+
+### Managed Infrastructure
+- [ ] One-click deploy of CommerceJS backend + storefront
+- [ ] Auto-provisioned Postgres database per environment
+- [ ] Auto-provisioned Redis / key-value cache
+- [ ] S3 object storage per environment (media, assets)
+- [ ] Automatic database migrations on deploy
+- [ ] Auto-scaling based on traffic (dynamic compute)
+- [ ] Global CDN / edge network for storefront hosting
+- [ ] SSL/TLS certificates (auto-provisioned)
+- [ ] Zero-downtime deployments
+- [ ] Automatic backups with point-in-time recovery
+
+### Built-in Services
+- [ ] **CommerceJS Cache** — integrated caching layer for API responses (cart, catalog)
+- [ ] **CommerceJS Emails** — built-in transactional emails (order confirmations, shipping updates, password resets) with custom domain support and delivery tracking
+- [ ] **CommerceJS Admin** — hosted admin dashboard (unlimited users, no per-seat fees)
+- [ ] Data import/export tooling (DB dumps, seed data for previews)
+
+### Developer Experience
+- [ ] `commercejs deploy` CLI command
+- [ ] Monorepo support (backend + storefront in one repo)
+- [ ] Build logs and deploy history
+- [ ] Seamless adapter configuration (connect any adapter via env vars)
+- [ ] Pre-configured commerce stack (app, admin, storefront, DB, cache, storage)
+
+---
+
 ## ✅ Completed
 
 ### Libraries (published to npm)
@@ -187,6 +235,7 @@
 - [x] `@commercejs/core` — `createCommerce()`, EventBus, WebhookDispatcher, Orchestrator factories
 - [x] `@commercejs/nuxt` — Nuxt module, 16 composables, 46 auto-discovered REST routes, Zod validation, ULID context
 - [x] `@commercejs/adapter-salla` — catalog, orders, customers, reviews, promotions, store info, brands, countries, locations
+- [x] `@commercejs/adapter-medusa` — Medusa V2 storefront API (catalog, cart, checkout, customers, orders, store, countries) — 44 contract tests
 - [x] `@commercejs/checkout` — checkout state machine
 - [x] `@commercejs/payment-tap` — Tap Payments provider
 - [x] `@commercejs/webhook-verifier` — cryptographic webhook verification
@@ -219,3 +268,5 @@
 - **2026-02-16**: Fixed storefront build — removed broken relative imports in 46 _commerce handlers, switched to Nitro auto-imports via addServerScanDir.
 - **2026-02-16**: T06 complete — built and published `@commercejs/notification-resend` (Resend email, 9 tests) and `@commercejs/analytics-ga` (GA4 with 11 event mappings, 12 tests). Phase 3 fully complete.
 - **2026-02-16**: All 14 package READMEs created/updated — 4 new (`core`, `notification-resend`, `analytics-ga`, `ui`), 3 rewritten from boilerplate (`hosted-checkout`, `storefront`, `docs`), 3 updated (`types`, `nuxt`, root). Root README updated with new packages.
+- **2026-02-16**: Added Phase 7 — CommerceJS Cloud (hosted platform). Inspired by Medusa Cloud: GitHub push-to-deploy, preview environments, auto-scaling, built-in cache/email/admin, zero GMV fees.
+- **2026-02-16**: Phase 4 Medusa adapter complete — `@commercejs/adapter-medusa` implements 7 domains (catalog, cart, checkout, customers, orders, store, countries) with 7 mapper modules, HTTP client (publishable API key + JWT auth), and 44 passing contract tests. Proves composability of the type system with a second, architecturally distinct backend.
