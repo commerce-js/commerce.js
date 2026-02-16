@@ -1,5 +1,15 @@
 # @commercejs/platform
 
+## 0.3.0
+
+### Minor Changes
+
+- [`4862435`](https://github.com/commerce-js/commerce.js/commit/486243593c6fea617f5c1626af5484a0ea386ce8) Thanks [@masterde](https://github.com/masterde)! - Add Neon Postgres driver and async adapter auto-detection
+
+  - Neon driver: `initPrismaNeon()` using `@neondatabase/serverless` + `@prisma/adapter-neon`
+  - `createPlatformAdapter()` is now async with automatic driver detection from `DATABASE_URL`
+  - New config options: `driver` (`'sqlite'` | `'neon'`) and `connectionString`
+
 ## 0.2.1
 
 ### Patch Changes
