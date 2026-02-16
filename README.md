@@ -52,7 +52,10 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 | [`@commercejs/nuxt`](packages/nuxt) | [![npm](https://img.shields.io/npm/v/@commercejs/nuxt?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/nuxt) | Nuxt module — composables, plugin, and auto-generated REST API |
 | [`@commercejs/ui`](packages/ui) | [![npm](https://img.shields.io/npm/v/@commercejs/ui?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/ui) | 30+ eCommerce UI components built on Nuxt UI |
 | [`@commercejs/notification-resend`](packages/notification-resend) | [![npm](https://img.shields.io/npm/v/@commercejs/notification-resend?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/notification-resend) | Resend email notification provider |
+| [`@commercejs/notification-smtp`](packages/notification-smtp) | [![npm](https://img.shields.io/npm/v/@commercejs/notification-smtp?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/notification-smtp) | SMTP email notification provider |
 | [`@commercejs/analytics-ga`](packages/analytics-ga) | [![npm](https://img.shields.io/npm/v/@commercejs/analytics-ga?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/analytics-ga) | Google Analytics 4 provider |
+| [`@commercejs/cloud`](packages/cloud) | [![npm](https://img.shields.io/npm/v/@commercejs/cloud?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/cloud) | Cloud infrastructure orchestration |
+| [`@commercejs/cli`](packages/cli) | [![npm](https://img.shields.io/npm/v/@commercejs/cli?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/cli) | CLI tool — deploy, init, env |
 
 ### Applications (private)
 
@@ -61,6 +64,7 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 | [`hosted-checkout`](apps/hosted-checkout) | Deployable checkout app with embedded Tap card elements |
 | [`storefront`](apps/storefront) | Reference storefront built with Nuxt |
 | [`docs`](apps/docs) | Documentation site — [commerce.js.org](https://commerce.js.org) |
+| [`dashboard`](apps/dashboard) | Cloud dashboard — [commercejs.cloud](https://commercejs.cloud) |
 
 ## Architecture
 

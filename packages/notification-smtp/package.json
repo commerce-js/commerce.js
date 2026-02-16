@@ -1,0 +1,39 @@
+{
+  "name": "@commercejs/notification-smtp",
+  "version": "0.1.0",
+  "description": "SMTP email notification provider for CommerceJS",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/commerce-js/commerce.js.git",
+    "directory": "packages/notification-smtp"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@commercejs/types": "workspace:*",
+    "nodemailer": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^6.4.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.0"
+  }
+}
