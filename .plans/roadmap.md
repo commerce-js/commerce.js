@@ -150,10 +150,14 @@
 
 ## 🎯 Phase 5: DX & Developer Tools
 
-- [ ] OpenAPI 3.1 spec auto-generation from routes + types
+- [ ] OpenAPI spec via Nitro `experimental.openAPI`
+  - [ ] Enable in `@commercejs/nuxt` module config (auto-generates `/_openapi.json`, `/_scalar`, `/_swagger`)
+  - [ ] Add `defineRouteMeta` with tags, descriptions, and parameters to all 50+ server routes
+  - [ ] Configure Scalar UI theme to match CommerceJS branding
+  - [ ] Pre-render spec in production mode for docs site integration
 - [ ] CLI tool for adapter scaffolding + contract testing
 - [x] Package READMEs — all 14 packages documented
-- [ ] Postman collection
+- [ ] Postman collection (can be auto-generated from OpenAPI spec)
 
 ---
 
