@@ -9,7 +9,7 @@
   <a href="https://github.com/commerce-js/commerce.js/actions/workflows/release.yml"><img src="https://github.com/commerce-js/commerce.js/actions/workflows/release.yml/badge.svg" alt="Release"></a>
   <a href="https://www.npmjs.com/org/commercejs"><img src="https://img.shields.io/badge/npm-%40commercejs-CB3837?logo=npm&logoColor=white" alt="npm"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript"></a>
-  <a href="https://nuxt.com/"><img src="https://img.shields.io/badge/Nuxt-00DC82?logo=nuxt.js&logoColor=white" alt="Nuxt"></a>
+  <a href="https://nuxt.com/"><img src="https://img.shields.io/badge/Nuxt-18181B?logo=nuxt" alt="Nuxt"></a>
   <a href="https://turbo.build/"><img src="https://img.shields.io/badge/Turborepo-EF4444?logo=turborepo&logoColor=white" alt="Turborepo"></a>
   <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-F69220?logo=pnpm&logoColor=white" alt="pnpm"></a>
   <a href="https://commerce.js.org"><img src="https://img.shields.io/badge/Docs-commerce.js.org-blue?logo=readthedocs&logoColor=white" alt="Docs"></a>
@@ -49,6 +49,9 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 | [`@commercejs/adapter-salla`](packages/adapter-salla) | [![npm](https://img.shields.io/npm/v/@commercejs/adapter-salla?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/adapter-salla) | Salla platform adapter |
 | [`@commercejs/platform`](packages/platform) | [![npm](https://img.shields.io/npm/v/@commercejs/platform?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/platform) | Built-in commerce engine — SQLite-powered, zero-config |
 | [`@commercejs/nuxt`](packages/nuxt) | [![npm](https://img.shields.io/npm/v/@commercejs/nuxt?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/nuxt) | Nuxt module — composables, plugin, and auto-generated REST API |
+| [`@commercejs/ui`](packages/ui) | [![npm](https://img.shields.io/npm/v/@commercejs/ui?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/ui) | 30+ eCommerce UI components built on Nuxt UI |
+| [`@commercejs/notification-resend`](packages/notification-resend) | [![npm](https://img.shields.io/npm/v/@commercejs/notification-resend?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/notification-resend) | Resend email notification provider |
+| [`@commercejs/analytics-ga`](packages/analytics-ga) | [![npm](https://img.shields.io/npm/v/@commercejs/analytics-ga?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/analytics-ga) | Google Analytics 4 provider |
 
 ### Applications (private)
 
@@ -242,6 +245,9 @@ commerce.js/
 │   ├── adapter-salla/       # Salla platform adapter
 │   ├── platform/            # Built-in commerce engine (SQLite)
 │   ├── nuxt/                # Nuxt module
+│   ├── ui/                  # eCommerce UI components
+│   ├── notification-resend/ # Resend email provider
+│   ├── analytics-ga/        # Google Analytics 4 provider
 │   ├── hosted-checkout/     # Deployable checkout app
 │   ├── storefront/          # Reference storefront
 │   └── docs/                # Documentation site

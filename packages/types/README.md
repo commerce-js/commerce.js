@@ -64,6 +64,23 @@ const cart: Cart = await adapter.getCart(cartId)
 - `Price` / `DiscountablePrice` — monetary values
 - `CommerceError` — typed error class with error codes
 
+### Orchestrator Types
+
+Types for multi-adapter composition:
+
+- `AdapterDomain` — union of all domain names (`catalog`, `cart`, `checkout`, etc.)
+- `CommerceOrchestrator` — orchestrator interface with capability checking
+- `CompositeOrchestratorConfig` — source mapping for multi-adapter setups
+
+### Provider Interfaces
+
+| Interface | Purpose |
+|---|---|
+| `PaymentProvider` | Payment session lifecycle (create, get, refund) |
+| `NotificationProvider` | Multi-channel notification delivery (email, SMS, push) |
+| `AnalyticsProvider` | Event tracking, user identification, page views |
+| `TaxProvider` | Tax calculation for line items |
+
 ## Documentation
 
 Full docs at [commerce.js.org](https://commerce.js.org)

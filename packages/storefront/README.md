@@ -1,75 +1,43 @@
-# Nuxt Minimal Starter
+# CommerceJS Storefront
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Reference storefront built with Nuxt — a fully functional eCommerce frontend powered by CommerceJS.
+
+## Overview
+
+The storefront is a Nuxt application that demonstrates how to build a complete eCommerce frontend using the CommerceJS ecosystem. It uses `@commercejs/nuxt` for auto-imported composables, `@commercejs/ui` for pre-built commerce components, and connects to a platform adapter for data.
+
+## Features
+
+- **Full product catalog** — Browse, search, and filter products
+- **Shopping cart** — Add, update, and remove items with a slide-out cart drawer
+- **Checkout flow** — Multi-step checkout with address forms and payment
+- **Customer accounts** — Login, registration, order history, saved addresses
+- **Wishlist** — Save and manage favorite products
+- **Reviews** — View and submit product reviews
+- **Responsive design** — Mobile-first layout
+- **Dark mode** — Full dark mode support
+- **SEO optimized** — Meta tags, structured data, semantic HTML
 
 ## Setup
 
-Make sure to install dependencies:
-
 ```bash
-# npm
-npm install
-
-# pnpm
+# From the monorepo root
 pnpm install
 
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
+# Start dev server
+cd packages/storefront
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+## Dependencies
 
-Build the application for production:
+| Package | Role |
+|---|---|
+| `@commercejs/nuxt` | Nuxt module — composables + auto-generated API |
+| `@commercejs/ui` | Pre-built commerce UI components |
+| `@commercejs/types` | Shared types |
+| `@commercejs/adapter-salla` | Salla platform adapter |
 
-```bash
-# npm
-npm run build
+## License
 
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+[MIT](../../LICENSE)

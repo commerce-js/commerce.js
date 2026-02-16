@@ -1,75 +1,47 @@
-# Nuxt Minimal Starter
+# CommerceJS Hosted Checkout
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Deployable checkout application with embedded Tap card elements — works as a standalone payment page for any CommerceJS-powered store.
+
+## Overview
+
+The hosted checkout is a Nuxt application that provides a complete, drop-in checkout experience. Merchants redirect customers here to collect payment details, process cards via Tap Payments (with 3DS support), and handle payment callbacks. It uses the `@commercejs/checkout` state machine and `@commercejs/payment-tap` provider under the hood.
+
+## Features
+
+- **Embedded card form** — Tap card elements render inline (no redirect to Tap)
+- **3DS support** — Handles full 3D Secure flow with redirect and callback
+- **Webhook verification** — Validates Tap webhook signatures for payment confirmation
+- **Responsive design** — Mobile-first, works on any device
+- **Error handling** — Displays user-friendly error messages for declined cards and API failures
 
 ## Setup
 
-Make sure to install dependencies:
-
 ```bash
-# npm
-npm install
-
-# pnpm
+# From the monorepo root
 pnpm install
 
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
+# Start dev server
+cd packages/hosted-checkout
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+## Environment Variables
 
-Build the application for production:
+| Variable | Description |
+|---|---|
+| `TAP_SECRET_KEY` | Tap secret key (`sk_test_...` or `sk_live_...`) |
+| `TAP_PUBLISHABLE_KEY` | Tap publishable key (`pk_test_...` or `pk_live_...`) |
+| `WEBHOOK_SECRET` | Secret for verifying Tap webhook signatures |
 
-```bash
-# npm
-npm run build
+## Dependencies
 
-# pnpm
-pnpm build
+| Package | Role |
+|---|---|
+| `@commercejs/checkout` | Checkout state machine |
+| `@commercejs/payment-tap` | Tap Payments provider |
+| `@commercejs/webhook-verifier` | Webhook signature verification |
+| `@commercejs/types` | Shared types |
 
-# yarn
-yarn build
+## License
 
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+[MIT](../../LICENSE)

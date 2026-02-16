@@ -3,7 +3,7 @@
 CommerceJS Nuxt module — composables, plugin, and auto-generated REST API.
 
 [![npm](https://img.shields.io/npm/v/@commercejs/nuxt?color=CB3837)](https://www.npmjs.com/package/@commercejs/nuxt)
-[![Nuxt](https://img.shields.io/badge/Nuxt-00DC82?logo=nuxt.js&logoColor=white)](https://nuxt.com/)
+[![Nuxt](https://img.shields.io/badge/Nuxt-18181B?logo=nuxt)](https://nuxt.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
