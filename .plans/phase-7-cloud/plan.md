@@ -46,7 +46,7 @@
 
 ## Proposed Changes
 
-### Milestone 1: Cloud + CLI
+### Milestone 1: Cloud + CLI ✅ (scaffold)
 
 The core library that orchestrates Cloudflare + Neon APIs to deploy and manage stores.
 
@@ -118,7 +118,7 @@ CLI tool: `commercejs deploy`, `commercejs init`, `commercejs env`.
 
 ---
 
-### Milestone 2: Platform Adapter Cloud Driver
+### Milestone 2: Platform Adapter Cloud Driver ✅ (scaffold)
 
 Make `@commercejs/platform` work natively on Cloudflare with Neon Postgres.
 
@@ -139,13 +139,13 @@ Make `@commercejs/platform` work natively on Cloudflare with Neon Postgres.
 
 ---
 
-### Milestone 3: Cloud Dashboard MVP
+### Milestone 3: Cloud Dashboard MVP ✅ (scaffold)
 
 Nuxt app at `cloud.commercejs.org` — the management UI.
 
 ---
 
-#### [NEW] packages/dashboard/
+#### [NEW] apps/dashboard/
 
 Full Nuxt 4 application with Nuxt UI components.
 
@@ -167,7 +167,7 @@ Full Nuxt 4 application with Nuxt UI components.
 
 ---
 
-### Milestone 4: GitHub Integration + Preview Environments
+### Milestone 4: GitHub Integration + Preview Environments ✅ (scaffold)
 
 ---
 
