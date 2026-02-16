@@ -47,6 +47,7 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 | [`@commercejs/payment-tap`](packages/payment-tap) | [![npm](https://img.shields.io/npm/v/@commercejs/payment-tap?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/payment-tap) | Tap Payments provider — redirect-based, PCI-free |
 | [`@commercejs/webhook-verifier`](packages/webhook-verifier) | [![npm](https://img.shields.io/npm/v/@commercejs/webhook-verifier?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/webhook-verifier) | Cryptographic webhook signature verification |
 | [`@commercejs/adapter-salla`](packages/adapter-salla) | [![npm](https://img.shields.io/npm/v/@commercejs/adapter-salla?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/adapter-salla) | Salla platform adapter |
+| [`@commercejs/adapter-medusa`](packages/adapter-medusa) | [![npm](https://img.shields.io/npm/v/@commercejs/adapter-medusa?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/adapter-medusa) | Medusa V2 platform adapter |
 | [`@commercejs/platform`](packages/platform) | [![npm](https://img.shields.io/npm/v/@commercejs/platform?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/platform) | Built-in commerce engine — SQLite-powered, zero-config |
 | [`@commercejs/nuxt`](packages/nuxt) | [![npm](https://img.shields.io/npm/v/@commercejs/nuxt?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/nuxt) | Nuxt module — composables, plugin, and auto-generated REST API |
 | [`@commercejs/ui`](packages/ui) | [![npm](https://img.shields.io/npm/v/@commercejs/ui?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/ui) | 30+ eCommerce UI components built on Nuxt UI |
@@ -68,10 +69,12 @@ graph TD
     A["@commercejs/types"] --> B["@commercejs/checkout"]
     A --> C["@commercejs/payment-tap"]
     A --> D["@commercejs/adapter-salla"]
+    A --> D2["@commercejs/adapter-medusa"]
     A --> E["@commercejs/webhook-verifier"]
     A --> H["@commercejs/core"]
     A --> I["@commercejs/platform"]
     D --> H
+    D2 --> H
     C --> H
     I --> H
     B --> F["hosted-checkout"]
@@ -83,6 +86,7 @@ graph TD
     style B fill:#10B981,color:#fff
     style C fill:#8B5CF6,color:#fff
     style D fill:#F59E0B,color:#000
+    style D2 fill:#F97316,color:#000
     style E fill:#EF4444,color:#fff
     style F fill:#6366F1,color:#fff
     style G fill:#EC4899,color:#fff
@@ -192,14 +196,29 @@ await session.initialize({
 ### Using the Salla adapter
 
 ```typescript
-import { createSallaAdapter } from '@commercejs/adapter-salla'
+import { SallaAdapter } from '@commercejs/adapter-salla'
 
-const adapter = createSallaAdapter({
+const adapter = new SallaAdapter({
   accessToken: process.env.SALLA_TOKEN!,
 })
 
 const products = await adapter.getProducts({ limit: 10 })
 const cart = await adapter.getCart(cartId)
+```
+
+### Using the Medusa adapter
+
+```typescript
+import { MedusaAdapter } from '@commercejs/adapter-medusa'
+
+const adapter = new MedusaAdapter({
+  baseUrl: 'http://localhost:9000',
+  publishableApiKey: process.env.MEDUSA_KEY!,
+})
+
+const products = await adapter.getProducts({ query: 'shirt' })
+const cart = await adapter.createCart()
+await adapter.addToCart(cart.id, { productId: 'prod_01', variantId: 'var_01', quantity: 1 })
 ```
 
 ### Using the built-in platform engine
@@ -243,6 +262,7 @@ commerce.js/
 │   ├── payment-tap/         # Tap Payments provider
 │   ├── webhook-verifier/    # Webhook signature verification
 │   ├── adapter-salla/       # Salla platform adapter
+│   ├── adapter-medusa/      # Medusa V2 platform adapter
 │   ├── platform/            # Built-in commerce engine (SQLite)
 │   ├── nuxt/                # Nuxt module
 │   ├── ui/                  # eCommerce UI components
