@@ -46,7 +46,7 @@ export default defineAppConfig({
     title: 'Table of Contents',
     bottom: {
       title: 'Community',
-      edit: 'https://github.com/commerce-js/commerce.js/edit/main/packages/docs/content',
+      edit: 'https://github.com/commerce-js/commerce.js/edit/main/apps/docs/content',
       links: [{
         icon: 'i-lucide-star',
         label: 'Star on GitHub',

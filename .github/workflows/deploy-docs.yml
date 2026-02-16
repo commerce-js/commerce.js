@@ -7,7 +7,7 @@ on:
     branches:
       - main
     paths:
-      - 'packages/docs/**'
+      - 'apps/docs/**'
       - 'packages/ui/**'
       - 'packages/types/**'
 
@@ -34,7 +34,7 @@ jobs:
         run: npm rebuild better-sqlite3
 
       - name: Build docs
-        working-directory: packages/docs
+        working-directory: apps/docs
         run: |
           npx nuxt build --preset github_pages || true
           # Verify build output was generated (prerender 404s from demo links are non-fatal)
@@ -43,7 +43,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: packages/docs/.output/public
+          path: apps/docs/.output/public
 
   deploy:
     needs: build

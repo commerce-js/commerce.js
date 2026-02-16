@@ -25,7 +25,7 @@ The storefront is a Nuxt application that demonstrates how to build a complete e
 pnpm install
 
 # Start dev server
-cd packages/storefront
+cd apps/storefront
 pnpm dev
 ```
 

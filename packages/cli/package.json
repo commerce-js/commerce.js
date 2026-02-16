@@ -1,0 +1,43 @@
+{
+  "name": "@commercejs/cli",
+  "version": "0.1.0",
+  "description": "CommerceJS CLI — deploy, init, and manage commerce stores from the terminal",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/commerce-js/commerce.js.git",
+    "directory": "packages/cli"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "commercejs": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/cli.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@commercejs/cloud": "workspace:*",
+    "citty": "^0.1.6",
+    "consola": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.8.3"
+  }
+}

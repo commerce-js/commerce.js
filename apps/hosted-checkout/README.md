@@ -21,7 +21,7 @@ The hosted checkout is a Nuxt application that provides a complete, drop-in chec
 pnpm install
 
 # Start dev server
-cd packages/hosted-checkout
+cd apps/hosted-checkout
 pnpm dev
 ```
 

@@ -24,7 +24,7 @@ Built with [Nuxt Content](https://content.nuxt.com/) and [Nuxt UI](https://ui.nu
 pnpm install
 
 # Start docs dev server
-cd packages/docs
+cd apps/docs
 pnpm dev
 ```
 

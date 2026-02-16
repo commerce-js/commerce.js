@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import type { CommerceAdapter, AdapterDomain } from '@commercejs/types'
-import type { PlatformConfig } from './types.js'
+import type { PlatformConfig, DatabaseDriver } from './types.js'
 import { createCatalogDomain } from './domains/catalog.js'
 import { createCartDomain } from './domains/cart.js'
 import { createCheckoutDomain } from './domains/checkout.js'
@@ -25,23 +25,93 @@ import {
 } from './domains/not-supported.js'
 
 /**
+ * Detect the database driver from configuration or environment.
+ *
+ * Priority:
+ * 1. Explicit `config.driver` value
+ * 2. `DATABASE_URL` env var — if starts with `postgres://` or `postgresql://`, use Neon
+ * 3. Default to SQLite
+ */
+function detectDriver(config: PlatformConfig): DatabaseDriver {
+  if (config.driver) return config.driver
+
+  const dbUrl = config.connectionString ?? globalThis.process?.env?.DATABASE_URL ?? ''
+  if (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://')) {
+    return 'neon'
+  }
+  return 'sqlite'
+}
+
+/**
+ * Initialize the database based on the detected driver.
+ *
+ * This auto-initializes the correct Prisma client so consumers
+ * don't need to call `initPrisma()` / `initPrismaNeon()` manually.
+ *
+ * If the database is already initialized (e.g. via explicit `initPrisma()`
+ * call in test setup), this is a no-op.
+ */
+async function initDatabase(driver: DatabaseDriver, connectionString?: string) {
+  // Check if already initialized — don't stomp on existing setup
+  try {
+    const { getDb } = await import('./database/prisma/client.js')
+    getDb() // Throws if not initialized
+    return // Already initialized — skip
+  } catch {
+    // Not initialized yet — continue
+  }
+
+  if (driver === 'neon') {
+    const { initPrismaNeon } = await import('./database/neon/client.js')
+    if (!connectionString) {
+      connectionString = globalThis.process?.env?.DATABASE_URL
+    }
+    if (!connectionString) {
+      throw new Error(
+        'Neon driver requires a connection string. Pass `connectionString` in config or set DATABASE_URL env var.',
+      )
+    }
+    return initPrismaNeon(connectionString)
+  }
+
+  // Default: SQLite
+  const { initPrisma } = await import('./database/prisma/client.js')
+  return initPrisma(connectionString ?? ':memory:')
+}
+
+/**
  * Create a PlatformAdapter — the native CommerceJS commerce engine.
  *
- * Before calling this, initialize the database driver:
+ * Supports automatic driver detection:
  *
- * @example Drizzle (default — used for development/testing)
+ * @example Auto-detect (recommended)
  * ```ts
- * import { initDrizzle, migrateDrizzle } from '@commercejs/platform/drizzle'
- * import { createPlatformAdapter } from '@commercejs/platform'
+ * // Uses DATABASE_URL env var to pick sqlite or neon
+ * const adapter = await createPlatformAdapter({ currency: 'SAR' })
+ * ```
  *
- * const db = initDrizzle('./store.db')
- * migrateDrizzle(db)
+ * @example Explicit Neon (cloud)
+ * ```ts
+ * const adapter = await createPlatformAdapter({
+ *   driver: 'neon',
+ *   connectionString: process.env.DATABASE_URL,
+ * })
+ * ```
  *
- * const adapter = createPlatformAdapter({ currency: 'SAR' })
+ * @example Explicit SQLite (local dev)
+ * ```ts
+ * const adapter = await createPlatformAdapter({
+ *   driver: 'sqlite',
+ *   connectionString: './store.db',
+ * })
  * ```
  */
-export function createPlatformAdapter(config: PlatformConfig = {}): CommerceAdapter {
+export async function createPlatformAdapter(config: PlatformConfig = {}): Promise<CommerceAdapter> {
   const currency = config.currency ?? 'SAR'
+  const driver = detectDriver(config)
+
+  // Auto-initialize the database
+  await initDatabase(driver, config.connectionString)
 
   const catalog = createCatalogDomain(currency)
   const cart = createCartDomain(currency)

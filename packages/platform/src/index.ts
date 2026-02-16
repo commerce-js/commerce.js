@@ -15,6 +15,10 @@ export { initDrizzle, getDrizzleDb, migrateDrizzle, initPrisma, getPrismaDb, mig
 export type { DrizzleDatabase } from './database/drizzle/client.js'
 export type { PrismaDatabase } from './database/prisma/client.js'
 
+// Database — Neon (Cloud)
+export { initPrismaNeon, getNeonDb, migrateNeon } from './database/index.js'
+export type { NeonDatabase } from './database/neon/client.js'
+
 // Seed
 export { seedDrizzle } from './database/drizzle/seed.js'
 export { seedPrisma } from './database/prisma/seed.js'

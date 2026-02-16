@@ -58,9 +58,9 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 
 | App | Description |
 |-----|-------------|
-| [`hosted-checkout`](packages/hosted-checkout) | Deployable checkout app with embedded Tap card elements |
-| [`storefront`](packages/storefront) | Reference storefront built with Nuxt |
-| [`docs`](packages/docs) | Documentation site — [commerce.js.org](https://commerce.js.org) |
+| [`hosted-checkout`](apps/hosted-checkout) | Deployable checkout app with embedded Tap card elements |
+| [`storefront`](apps/storefront) | Reference storefront built with Nuxt |
+| [`docs`](apps/docs) | Documentation site — [commerce.js.org](https://commerce.js.org) |
 
 ## Architecture
 
@@ -121,10 +121,10 @@ pnpm turbo run build
 
 ```bash
 # Run the docs site locally
-cd packages/docs && pnpm dev
+cd apps/docs && pnpm dev
 
 # Run the storefront locally
-cd packages/storefront && pnpm dev
+cd apps/storefront && pnpm dev
 
 # Run tests
 pnpm turbo run test

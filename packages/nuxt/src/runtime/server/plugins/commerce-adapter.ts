@@ -16,12 +16,18 @@ async function initAdapter(): Promise<CommerceAdapter> {
   const adapterName = process.env.COMMERCE_ADAPTER || process.env.NUXT_COMMERCE_ADAPTER || 'salla'
 
   if (adapterName === 'platform') {
-    // Platform adapter — native CommerceJS engine (Prisma + SQLite)
+    // Platform adapter — native CommerceJS engine
+    // Auto-detects driver from DATABASE_URL (sqlite or neon)
     const platform = await import('@commercejs/platform')
-    const { initPrisma, migratePrisma, seedPrisma, createPlatformAdapter } = platform
+    const { createPlatformAdapter, migratePrisma, seedPrisma } = platform
 
     const dbPath = process.env.COMMERCE_DB_PATH || process.env.NUXT_COMMERCE_DB_PATH || './store.db'
-    initPrisma(dbPath)
+
+    _adapter = await createPlatformAdapter({
+      currency: process.env.COMMERCE_CURRENCY || 'SAR',
+      connectionString: dbPath,
+    })
+
     await migratePrisma()
 
     // Auto-seed if the database is fresh (no products yet)
@@ -30,10 +36,6 @@ async function initAdapter(): Promise<CommerceAdapter> {
     } catch {
       // Already seeded — ignore
     }
-
-    _adapter = createPlatformAdapter({
-      currency: process.env.COMMERCE_CURRENCY || 'SAR',
-    })
   } else {
     // Salla adapter (default)
     const { SallaAdapter } = await import('@commercejs/adapter-salla')
