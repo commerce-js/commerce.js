@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/cloud",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CommerceJS Cloud — infrastructure orchestration for deploying commerce stores on Cloudflare",
   "repository": {
     "type": "git",
