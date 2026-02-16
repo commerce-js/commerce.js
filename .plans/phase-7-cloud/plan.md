@@ -141,7 +141,7 @@ Make `@commercejs/platform` work natively on Cloudflare with Neon Postgres.
 
 ### Milestone 3: Cloud Dashboard MVP ✅ (scaffold)
 
-Nuxt app at `cloud.commercejs.org` — the management UI.
+Nuxt app at `commercejs.cloud` — the management UI.
 
 ---
 

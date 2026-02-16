@@ -192,7 +192,7 @@
 - Unlimited orders, products, sales channels
 - Three tiers: **Starter** / **Pro** / **Enterprise**
 
-### Cloud Dashboard (`cloud.commercejs.org`)
+### Cloud Dashboard (`commercejs.cloud`)
 - [ ] Project management UI (create, configure, monitor)
 - [ ] GitHub integration — push-to-deploy from any branch
 - [ ] Environment management (production, staging, preview)
