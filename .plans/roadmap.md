@@ -243,6 +243,7 @@
 - [x] `@commercejs/cloud` — cloud infrastructure orchestration (Cloudflare, Neon, GitHub, Billing providers)
 - [x] `@commercejs/cli` — CLI tool (`deploy`, `init`, `env` commands)
 - [x] `@commercejs/notification-resend` — Resend email notification provider (9 tests)
+- [x] `@commercejs/notification-smtp` — SMTP email notification provider (11 tests)
 - [x] `@commercejs/analytics-ga` — Google Analytics 4 provider (12 tests)
 
 ### Applications (private)
@@ -275,3 +276,4 @@
 - **2026-02-16**: Added Phase 7 — CommerceJS Cloud (hosted platform). Inspired by Medusa Cloud: GitHub push-to-deploy, preview environments, auto-scaling, built-in cache/email/admin, zero GMV fees.
 - **2026-02-16**: Phase 4 Medusa adapter complete — `@commercejs/adapter-medusa` implements 7 domains (catalog, cart, checkout, customers, orders, store, countries) with 7 mapper modules, HTTP client (publishable API key + JWT auth), and 44 passing contract tests. Proves composability of the type system with a second, architecturally distinct backend.
 - **2026-02-16**: Phase 7 Cloud scaffold — built `@commercejs/cloud` (types, 4 providers, deploy orchestrator, webhook handler, preview manager), `@commercejs/cli` (3 commands), Neon Postgres driver for `@commercejs/platform` (async auto-detection from DATABASE_URL), dashboard MVP (login, projects, billing). Monorepo restructured: apps moved to `apps/` directory. Published cloud + cli to npm for trusted publisher setup.
+- **2026-02-16**: Built and published `@commercejs/notification-smtp` — SMTP email provider using nodemailer (Gmail, SES, Mailgun, Postfix). 11 tests. Docs page added. Trusted publisher configured.
