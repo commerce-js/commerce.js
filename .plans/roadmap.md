@@ -121,13 +121,13 @@
 - [x] `NotificationProvider` interface (`send()`, channels: email/sms/push/whatsapp/telegram)
 - [x] `NotificationRule` config (event → channel → template mapping)
 - [x] Event bus wiring in `createCommerce()`
-- [ ] Reference provider: `@commercejs/notification-resend` *(deferred)*
+- [x] Reference provider: `@commercejs/notification-resend` — 9 tests, published to npm
 
 ### 3e: Analytics & Tax Providers
 - [x] `AnalyticsProvider` interface (track, identify, page)
 - [x] Auto-track all commerce events via `onAny()` wildcard
 - [x] `TaxProvider` interface (calculate, commit, void)
-- [ ] Reference provider: `@commercejs/analytics-ga` *(deferred)*
+- [x] Reference provider: `@commercejs/analytics-ga` — 12 tests, published to npm
 
 ---
 
@@ -150,7 +150,7 @@
 
 - [ ] OpenAPI 3.1 spec auto-generation from routes + types
 - [ ] CLI tool for adapter scaffolding + contract testing
-- [ ] READMEs and getting started guide
+- [x] Package READMEs — all 14 packages documented
 - [ ] Postman collection
 
 ---
@@ -191,6 +191,8 @@
 - [x] `@commercejs/payment-tap` — Tap Payments provider
 - [x] `@commercejs/webhook-verifier` — cryptographic webhook verification
 - [x] `@commercejs/platform` — built-in commerce engine (SQLite/Drizzle)
+- [x] `@commercejs/notification-resend` — Resend email notification provider (9 tests)
+- [x] `@commercejs/analytics-ga` — Google Analytics 4 provider (12 tests)
 
 ### Applications (private)
 - [x] `storefront` — reference Nuxt storefront (homepage, products, categories, cart, checkout)
@@ -213,5 +215,7 @@
 - **2026-02-15**: Synced roadmap with actual codebase — Phase 1 marked complete
 - **2026-02-15**: Major update — added Phase 2 (SDK Quality), Phase 3 (Architecture Evolution). Added Domains vs Providers distinction, notifications, analytics, composition patterns.
 - **2026-02-15**: Phase 2 complete — defineCommerceHandler, Zod validation (18 schemas), addServerScanDir, composable improvements, ULID context
-- **2026-02-16**: Phase 3 complete (T01-T05) — three-tier orchestrator, composite/fallback factories, notification/analytics/tax providers, event bus wiring. T06 reference providers deferred.
+- **2026-02-16**: Phase 3 complete (T01-T05) — three-tier orchestrator, composite/fallback factories, notification/analytics/tax providers, event bus wiring.
 - **2026-02-16**: Fixed storefront build — removed broken relative imports in 46 _commerce handlers, switched to Nitro auto-imports via addServerScanDir.
+- **2026-02-16**: T06 complete — built and published `@commercejs/notification-resend` (Resend email, 9 tests) and `@commercejs/analytics-ga` (GA4 with 11 event mappings, 12 tests). Phase 3 fully complete.
+- **2026-02-16**: All 14 package READMEs created/updated — 4 new (`core`, `notification-resend`, `analytics-ga`, `ui`), 3 rewritten from boilerplate (`hosted-checkout`, `storefront`, `docs`), 3 updated (`types`, `nuxt`, root). Root README updated with new packages.

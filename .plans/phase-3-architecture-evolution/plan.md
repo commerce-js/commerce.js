@@ -132,12 +132,18 @@ createCommerce({
 
 **Goal:** Analytics tracking and tax calculation as providers.
 
-### T06: Reference Providers
+### T06: Reference Providers ✅
 
 **Goal:** Build at least one reference implementation for each provider type.
 
-- `@commercejs/notification-resend` — Resend for email
-- `@commercejs/analytics-ga` — Google Analytics 4
+- `@commercejs/notification-resend` — Resend email provider
+  - `createResendProvider()` with lazy client init, configurable `from`/`replyTo`, template support via `X-Template-Id` header
+  - Error handling: never throws, returns `{ success, error }` for all failures
+  - 9 unit tests, published to npm, Trusted Publishing configured
+- `@commercejs/analytics-ga` — Google Analytics 4 provider
+  - `createGA4Provider()` with automatic mapping of 11 CommerceJS events to GA4 recommended events
+  - SSR-safe (no-ops when `gtag` unavailable), optional debug mode
+  - 12 unit tests, published to npm, Trusted Publishing configured
 
 ---
 
@@ -147,7 +153,8 @@ createCommerce({
 - [x] Existing contract tests pass with `CommerceOrchestrator` (backward compatible)
 - [x] New tests: composite orchestrator routes domains correctly (2 tests)
 - [x] New tests: platform fallback fills gaps (5 tests)
-- [ ] New tests: notification rules fire on events (deferred — T06)
+- [x] New tests: notification-resend provider (9 tests — metadata, send, errors, channels, templates)
+- [x] New tests: analytics-ga provider (12 tests — event mapping, identify, page, SSR safety, debug)
 
 ### Manual
 - [ ] Configure composite orchestrator in storefront
@@ -160,5 +167,7 @@ createCommerce({
 ## Change Log
 
 - **2026-02-15**: Phase 3 plan created from v6 API/SDK Evaluation
-- **2026-02-16**: T01-T05 implemented and verified. T06 (reference providers) deferred. 11 new tests added (51 total core tests pass). Storefront build fix: removed broken relative imports in 46 `_commerce/` handlers, switched to Nitro auto-imports.
+- **2026-02-16**: T01-T05 implemented and verified. 11 new tests added (51 total core tests pass). Storefront build fix: removed broken relative imports in 46 `_commerce/` handlers, switched to Nitro auto-imports.
+- **2026-02-16**: T06 complete — `@commercejs/notification-resend` (9 tests) and `@commercejs/analytics-ga` (12 tests) built, tested, and published to npm. Docs pages added. Phase 3 fully done.
+- **2026-02-16**: All 14 package READMEs created/updated (4 new, 3 rewritten, 3 updated). Root README updated with new packages.
 <!-- META_INFORMATION -->
