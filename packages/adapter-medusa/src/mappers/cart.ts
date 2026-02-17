@@ -60,6 +60,7 @@ export function mapMedusaCart(c: MedusaCart): Cart {
         id: c.shipping_methods[0].id,
         name: { ar: c.shipping_methods[0].name ?? 'Standard', en: c.shipping_methods[0].name ?? 'Standard' },
         provider: 'custom' as const,
+        fulfillmentType: 'shipping' as const,
         estimatedDays: { min: 3, max: 7 },
         price: price(c.shipping_methods[0].amount, currency),
         cashOnDelivery: false,

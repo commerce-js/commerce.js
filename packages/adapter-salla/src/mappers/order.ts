@@ -98,6 +98,7 @@ export function mapSallaOrder(raw: SallaRawOrder, locale: string = 'ar'): Order 
           id: 'salla-shipping',
           name: toLocalized(raw.shipping.company, locale),
           provider: 'custom',
+          fulfillmentType: 'shipping' as const,
           estimatedDays: { min: 0, max: 0 },
           price: toPrice(shippingCost, currency),
           cashOnDelivery: false,

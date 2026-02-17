@@ -20,6 +20,7 @@ export function mapMedusaShippingOption(opt: MedusaShippingOption, currency: str
     id: opt.id,
     name: { ar: opt.name, en: opt.name },
     provider: opt.provider_id ?? 'custom',
+    fulfillmentType: 'shipping',
     estimatedDays: { min: 3, max: 7 },
     price: price(opt.amount, currency),
     cashOnDelivery: false,

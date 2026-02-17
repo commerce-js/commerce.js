@@ -21,6 +21,7 @@
 │  ├─ payments: { tap, stripe, ... }                           │
 │  ├─ notifications: { email, sms, push, whatsapp, ... }       │
 │  ├─ analytics: { ga, segment, ... }                          │
+│  ├─ delivery: { armada, parcel, ... }                        │
 │  ├─ tax: TaxProvider                                         │
 │  └─ search: SearchProvider                                   │
 │                                                              │
@@ -235,13 +236,15 @@
 ## ✅ Completed
 
 ### Libraries (published to npm)
-- [x] `@commercejs/types` — 26+ domain types, 18+ sub-adapter interfaces
+- [x] `@commercejs/types` — 26+ domain types, 18+ sub-adapter interfaces, `FulfillmentType`, `DeliveryProvider`
 - [x] `@commercejs/core` — `createCommerce()`, EventBus, WebhookDispatcher, Orchestrator factories
 - [x] `@commercejs/nuxt` — Nuxt module, 16 composables, 46 auto-discovered REST routes, Zod validation, ULID context
 - [x] `@commercejs/adapter-salla` — catalog, orders, customers, reviews, promotions, store info, brands, countries, locations
 - [x] `@commercejs/adapter-medusa` — Medusa V2 storefront API (catalog, cart, checkout, customers, orders, store, countries) — 44 contract tests
 - [x] `@commercejs/checkout` — checkout state machine
 - [x] `@commercejs/payment-tap` — Tap Payments provider
+- [x] `@commercejs/delivery-armada` — Armada last-mile delivery provider (19 tests)
+- [x] `@commercejs/delivery-parcel` — Parcel delivery provider with OAuth2 (23 tests)
 - [x] `@commercejs/webhook-verifier` — cryptographic webhook verification
 - [x] `@commercejs/platform` — built-in commerce engine (SQLite/Drizzle + Neon Postgres)
 - [x] `@commercejs/cloud` — cloud infrastructure orchestration (Cloudflare, Neon, GitHub, Billing providers)
@@ -281,3 +284,5 @@
 - **2026-02-16**: Phase 4 Medusa adapter complete — `@commercejs/adapter-medusa` implements 7 domains (catalog, cart, checkout, customers, orders, store, countries) with 7 mapper modules, HTTP client (publishable API key + JWT auth), and 44 passing contract tests. Proves composability of the type system with a second, architecturally distinct backend.
 - **2026-02-16**: Phase 7 Cloud scaffold — built `@commercejs/cloud` (types, 4 providers, deploy orchestrator, webhook handler, preview manager), `@commercejs/cli` (3 commands), Neon Postgres driver for `@commercejs/platform` (async auto-detection from DATABASE_URL), dashboard MVP (login, projects, billing). Monorepo restructured: apps moved to `apps/` directory. Published cloud + cli to npm for trusted publisher setup.
 - **2026-02-16**: Built and published `@commercejs/notification-smtp` — SMTP email provider using nodemailer (Gmail, SES, Mailgun, Postfix). 11 tests. Docs page added. Trusted publisher configured.
+- **2026-02-17**: Added `FulfillmentType` to `ShippingMethod` — new union type (`'shipping' | 'local_delivery' | 'pickup'`) and optional `estimatedMinutes` field. Updated 10 files across types, both adapters (Salla + Medusa), platform engine, and storefront. Enables explicit differentiation between courier shipping, on-demand delivery (Armada/Parcel), and in-store pickup. All typechecks pass, 37/37 checkout tests green.
+- **2026-02-17**: Built `@commercejs/delivery-armada` and `@commercejs/delivery-parcel` — two last-mile delivery providers implementing the `DeliveryProvider` interface. Armada uses token-based auth (19 tests), Parcel uses OAuth2 client_credentials with auto-refresh (23 tests). Both include estimate, create, get, cancel, and webhook verification. All 42 tests green, typecheck clean.

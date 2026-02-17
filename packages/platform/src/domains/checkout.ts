@@ -33,6 +33,7 @@ export function createCheckoutDomain(currency: string) {
           id: 'standard',
           name: localized('Standard Shipping', 'شحن عادي'),
           provider: 'custom',
+          fulfillmentType: 'shipping' as const,
           price: priceRequired(15, currency),
           estimatedDays: { min: 5, max: 7 },
           cashOnDelivery: false,
@@ -41,6 +42,7 @@ export function createCheckoutDomain(currency: string) {
           id: 'express',
           name: localized('Express Shipping', 'شحن سريع'),
           provider: 'custom',
+          fulfillmentType: 'shipping' as const,
           price: priceRequired(35, currency),
           estimatedDays: { min: 1, max: 2 },
           cashOnDelivery: false,
@@ -191,7 +193,7 @@ export function createCheckoutDomain(currency: string) {
         shippingAddress: parseJsonField(order.shippingAddress),
         billingAddress: parseJsonField(order.billingAddress),
         shippingMethod: order.shippingMethod
-          ? (() => { const n = parseJsonField(order.shippingMethod); return { id: 'default', name: typeof n === 'object' ? localized(n.en, n.ar) : localized(n, null), provider: 'custom', price: priceRequired(0, currency), estimatedDays: { min: 1, max: 7 }, cashOnDelivery: false } })()
+          ? (() => { const n = parseJsonField(order.shippingMethod); return { id: 'default', name: typeof n === 'object' ? localized(n.en, n.ar) : localized(n, null), provider: 'custom', fulfillmentType: 'shipping' as const, price: priceRequired(0, currency), estimatedDays: { min: 1, max: 7 }, cashOnDelivery: false } })()
           : null,
         paymentMethod: order.paymentMethod
           ? (() => { const n = parseJsonField(order.paymentMethod); return { id: 'default', type: 'card', name: typeof n === 'object' ? localized(n.en, n.ar) : localized(n, null), provider: 'platform', installments: null, icon: null } })()

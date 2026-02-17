@@ -56,7 +56,7 @@ export function createOrdersDomain(currency: string) {
       shippingAddress: parseJsonField(row.shippingAddress),
       billingAddress: parseJsonField(row.billingAddress),
       shippingMethod: row.shippingMethod
-        ? (() => { const n = parseJsonField(row.shippingMethod); return { id: 'default', name: typeof n === 'object' ? localized(n.en, n.ar) : localized(n, null), provider: 'custom', price: priceRequired(0, currency), estimatedDays: { min: 1, max: 7 }, cashOnDelivery: false } })()
+        ? (() => { const n = parseJsonField(row.shippingMethod); return { id: 'default', name: typeof n === 'object' ? localized(n.en, n.ar) : localized(n, null), provider: 'custom', fulfillmentType: 'shipping' as const, price: priceRequired(0, currency), estimatedDays: { min: 1, max: 7 }, cashOnDelivery: false } })()
         : null,
       paymentMethod: row.paymentMethod
         ? (() => { const n = parseJsonField(row.paymentMethod); return { id: 'default', type: 'card', name: typeof n === 'object' ? localized(n.en, n.ar) : localized(n, null), provider: 'platform', installments: null, icon: null } })()

@@ -113,4 +113,5 @@ Single line of code to embed checkout in any frontend.
 ## Change Log
 
 - **2026-02-16**: Phase 4 plan created. Medusa adapter fully implemented: 14 source files, 7 domains, 7 mappers, 44 contract tests. Checkout state machine items carried forward from prior roadmap entries.
+- **2026-02-17**: Added `FulfillmentType` to `ShippingMethod` type — `'shipping' | 'local_delivery' | 'pickup'` union + `estimatedMinutes?`. Updated all adapter mappers (Salla + Medusa), platform engine, and storefront UI. Prepares the type system for Armada/Parcel delivery provider integration.
 <!-- META_INFORMATION -->

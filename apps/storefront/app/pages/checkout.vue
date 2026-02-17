@@ -250,8 +250,16 @@ useHead({
                     <p class="font-medium text-highlighted">
                       {{ t(method.name) }}
                     </p>
-                    <p v-if="method.estimatedDays" class="text-sm text-muted">
-                      {{ method.estimatedDays.min }}–{{ method.estimatedDays.max }} business days
+                    <p class="text-sm text-muted">
+                      <template v-if="method.fulfillmentType === 'local_delivery' && method.estimatedMinutes">
+                        ~{{ method.estimatedMinutes }} min delivery
+                      </template>
+                      <template v-else-if="method.fulfillmentType === 'pickup'">
+                        Ready for pickup
+                      </template>
+                      <template v-else-if="method.estimatedDays">
+                        {{ method.estimatedDays.min }}–{{ method.estimatedDays.max }} business days
+                      </template>
                     </p>
                   </div>
                 </div>

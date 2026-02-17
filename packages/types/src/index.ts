@@ -32,7 +32,7 @@ export type { CreateOrderInput, OrderItemInput } from './order-input.js'
 export type { OrderStatusInfo, OrderHistoryEntry, UpdateOrderStatusInput } from './order-status.js'
 
 // Shipping
-export type { ShippingMethod, ShippingProvider } from './shipping.js'
+export type { ShippingMethod, ShippingProvider, FulfillmentType } from './shipping.js'
 
 // Payment
 export type { PaymentMethod, PaymentType, Installment } from './payment.js'
@@ -135,3 +135,15 @@ export type {
   TaxResult,
   TaxLineItemResult,
 } from './tax.js'
+
+// Delivery Provider (pluggable last-mile delivery)
+export type {
+  DeliveryProvider,
+  Delivery,
+  DeliveryStatus,
+  DeliveryAddress,
+  DeliveryEstimate,
+  EstimateDeliveryInput,
+  CreateDeliveryInput,
+  DeliveryWebhookEvent,
+} from './delivery-provider.js'

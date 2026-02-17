@@ -45,6 +45,8 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 | [`@commercejs/core`](packages/core) | [![npm](https://img.shields.io/npm/v/@commercejs/core?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/core) | Orchestration engine — createCommerce(), event bus, webhooks |
 | [`@commercejs/checkout`](packages/checkout) | [![npm](https://img.shields.io/npm/v/@commercejs/checkout?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/checkout) | Checkout state machine for payment flows |
 | [`@commercejs/payment-tap`](packages/payment-tap) | [![npm](https://img.shields.io/npm/v/@commercejs/payment-tap?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/payment-tap) | Tap Payments provider — redirect-based, PCI-free |
+| [`@commercejs/delivery-armada`](packages/delivery-armada) | [![npm](https://img.shields.io/npm/v/@commercejs/delivery-armada?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/delivery-armada) | Armada last-mile delivery provider |
+| [`@commercejs/delivery-parcel`](packages/delivery-parcel) | [![npm](https://img.shields.io/npm/v/@commercejs/delivery-parcel?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/delivery-parcel) | Parcel delivery provider — OAuth2, multi-region |
 | [`@commercejs/webhook-verifier`](packages/webhook-verifier) | [![npm](https://img.shields.io/npm/v/@commercejs/webhook-verifier?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/webhook-verifier) | Cryptographic webhook signature verification |
 | [`@commercejs/adapter-salla`](packages/adapter-salla) | [![npm](https://img.shields.io/npm/v/@commercejs/adapter-salla?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/adapter-salla) | Salla platform adapter |
 | [`@commercejs/adapter-medusa`](packages/adapter-medusa) | [![npm](https://img.shields.io/npm/v/@commercejs/adapter-medusa?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/adapter-medusa) | Medusa V2 platform adapter |
@@ -264,6 +266,8 @@ commerce.js/
 │   ├── core/                # Orchestration engine
 │   ├── checkout/            # Checkout state machine
 │   ├── payment-tap/         # Tap Payments provider
+│   ├── delivery-armada/     # Armada delivery provider
+│   ├── delivery-parcel/     # Parcel delivery provider
 │   ├── webhook-verifier/    # Webhook signature verification
 │   ├── adapter-salla/       # Salla platform adapter
 │   ├── adapter-medusa/      # Medusa V2 platform adapter
