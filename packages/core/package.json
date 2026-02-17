@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Commerce.js orchestration engine — createCommerce(), event bus, capability routing, webhook dispatch",
   "repository": {
     "type": "git",

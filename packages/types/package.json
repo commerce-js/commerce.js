@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/types",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Unified Data Model types for CommerceJS SDK",
   "repository": {
     "type": "git",

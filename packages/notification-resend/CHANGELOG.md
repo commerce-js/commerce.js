@@ -1,5 +1,12 @@
 # @commercejs/notification-resend
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`e72ed4a`](https://github.com/commerce-js/commerce.js/commit/e72ed4a76e85f8b81e6d285150d152562c2626b9)]:
+  - @commercejs/types@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
