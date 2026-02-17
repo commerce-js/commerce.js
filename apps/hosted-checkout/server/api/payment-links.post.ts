@@ -1,20 +1,15 @@
 // ---------------------------------------------------------------------------
-// POST /api/sessions — Create a new checkout session
+// POST /api/payment-links — Create a payment link with QR code
 // ---------------------------------------------------------------------------
-// Body: { merchantId?, amount, currency, returnUrl?, orderId?, customerInfo? }
-// Returns: { sessionId, tapPublicKey, ...CheckoutSnapshot }
+// Body: { amount, currency, merchantId?, orderId?, channel?,
+//         fulfillment?, expiresIn?, customerInfo? }
+// Returns: { sessionId, url, qrDataUrl, expiresAt }
 // ---------------------------------------------------------------------------
 
 import { CheckoutSession } from '@commercejs/checkout'
+import QRCode from 'qrcode'
 import { useTapProviderForMerchant, useTapProviderFromEnv } from '../../utils/tap'
-
-// In-memory session store (replace with Redis/KV in production)
-const sessions = new Map<string, CheckoutSession>()
-
-// Store per-session metadata (merchantId, publicKey) that isn't in CheckoutSession
-const sessionMeta = new Map<string, { merchantId?: string, tapPublicKey: string }>()
-
-let nextId = 1
+import { sessions, sessionMeta } from '../sessions/index.post'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -38,26 +33,30 @@ export default defineEventHandler(async (event) => {
     }
   }
   else {
-    // Dev/testing fallback — uses env-level keys
     const result = useTapProviderFromEnv()
     provider = result.provider
     publicKey = result.publicKey
   }
 
-  const sessionId = `cs_${Date.now()}_${nextId++}`
+  // Generate session ID
+  const sessionId = `pl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
   const appUrl = useRuntimeConfig().public.appUrl
 
+  // Default TTL: 30 minutes
+  const expiresIn = body.expiresIn ?? 30 * 60 * 1000
+
+  // Create checkout session — payment-only by default
   const session = new CheckoutSession({
     paymentProvider: provider,
     amount: body.amount,
     currency: body.currency,
-    returnUrl: body.returnUrl || `${appUrl}/${sessionId}/confirm`,
-    cancelUrl: body.cancelUrl || `${appUrl}/${sessionId}?cancelled=true`,
+    channel: body.channel ?? 'link',
+    fulfillment: body.fulfillment ?? 'none',
+    expiresIn,
+    returnUrl: `${appUrl}/pay/${sessionId}/confirm`,
+    cancelUrl: `${appUrl}/pay/${sessionId}?cancelled=true`,
     webhookUrl: `${appUrl}/api/webhooks/tap-payment`,
     orderId: body.orderId,
-    channel: body.channel,
-    fulfillment: body.fulfillment,
-    expiresIn: body.expiresIn,
   })
 
   // If customer info is provided upfront, set it
@@ -65,18 +64,28 @@ export default defineEventHandler(async (event) => {
     session.setCustomerInfo(body.customerInfo)
   }
 
+  // Store session
   sessions.set(sessionId, session)
   sessionMeta.set(sessionId, {
     merchantId: body.merchantId,
     tapPublicKey: publicKey,
   })
 
+  // Generate checkout URL + QR code
+  const checkoutUrl = `${appUrl}/pay/${sessionId}`
+  const qrDataUrl = await QRCode.toDataURL(checkoutUrl, {
+    width: 300,
+    margin: 2,
+    color: { dark: '#000000', light: '#ffffff' },
+  })
+
+  const snapshot = session.toSnapshot()
+
   return {
     sessionId,
-    tapPublicKey: publicKey,
-    ...session.toSnapshot(),
+    url: checkoutUrl,
+    qrDataUrl,
+    expiresAt: snapshot.expiresAt,
+    ...snapshot,
   }
 })
-
-// Export the sessions and meta maps so other routes can access them
-export { sessions, sessionMeta }

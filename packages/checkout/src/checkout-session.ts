@@ -4,10 +4,15 @@
 //
 // Pure TypeScript, zero framework deps. Works in Node, Edge, or browser.
 //
-// State machine:
+// State machine (fulfillment = shipping/local_delivery):
 //   idle → info → shipping → payment → confirming → complete
 //                                          ↓
 //                                       failed → payment (retry)
+//
+// State machine (fulfillment = pickup/none):
+//   idle → info → payment → confirming → complete
+//                               ↓
+//                            failed → payment (retry)
 // ---------------------------------------------------------------------------
 
 import type { Address, PaymentProvider, PaymentSession } from '@commercejs/types'
@@ -18,8 +23,37 @@ import type {
   CheckoutCustomerInfo,
   CheckoutSnapshot,
   CheckoutEvents,
+  ResolvedCheckoutConfig,
+  CheckoutChannel,
+  CheckoutFulfillment,
 } from './types.js'
-import { CHECKOUT_TRANSITIONS } from './types.js'
+import { buildTransitions } from './types.js'
+
+// ---------------------------------------------------------------------------
+// Config resolution (Options → ResolvedOptions pattern)
+// ---------------------------------------------------------------------------
+
+function resolveConfig(config: CheckoutSessionConfig): ResolvedCheckoutConfig {
+  const channel: CheckoutChannel = config.channel ?? 'web'
+  const fulfillment: CheckoutFulfillment = config.fulfillment ?? (channel === 'web' ? 'shipping' : 'none')
+
+  return {
+    paymentProvider: config.paymentProvider,
+    currency: config.currency,
+    amount: config.amount,
+    returnUrl: config.returnUrl ?? null,
+    cancelUrl: config.cancelUrl ?? null,
+    orderId: config.orderId ?? null,
+    webhookUrl: config.webhookUrl ?? null,
+    channel,
+    fulfillment,
+    expiresAt: config.expiresIn ? Date.now() + config.expiresIn : null,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CheckoutSession
+// ---------------------------------------------------------------------------
 
 /**
  * Universal checkout session — a state machine that orchestrates the
@@ -28,31 +62,44 @@ import { CHECKOUT_TRANSITIONS } from './types.js'
  * Framework-agnostic: use it in a Nuxt app, a React app, a CLI, or
  * directly on the server.
  *
- * @example
+ * @example Web checkout (full flow with shipping)
  * ```ts
- * import { CheckoutSession } from '@commercejs/checkout'
- * import { TapPaymentProvider } from '@commercejs/payment-tap'
- *
  * const session = new CheckoutSession({
  *   paymentProvider: new TapPaymentProvider({ secretKey: 'sk_test_...' }),
  *   currency: 'SAR',
  *   amount: 199.99,
- *   returnUrl: 'https://checkout.mystore.com/session123/confirm',
+ *   returnUrl: 'https://mystore.com/confirm',
  * })
  *
- * // Listen for events
- * session.on('stateChange', ({ from, to }) => console.log(`${from} → ${to}`))
- * session.on('paymentAction', ({ redirectUrl }) => window.location.href = redirectUrl)
- * session.on('complete', ({ paymentSession }) => console.log('Done!', paymentSession))
- *
- * // Walk through the flow
  * session.setCustomerInfo({ email: 'ali@example.com', firstName: 'Ali' })
  * session.setShippingAddress({ street: '...', city: 'Riyadh', ... })
  * session.setShippingMethod('standard')
  * await session.submitPayment({ sourceToken: 'tok_xxx' })
- * // → customer redirected for 3DS
- * await session.confirmPayment('chg_abc123')
- * // → session.state === 'complete'
+ * ```
+ *
+ * @example POS checkout (payment only, no address)
+ * ```ts
+ * const session = new CheckoutSession({
+ *   paymentProvider: tapProvider,
+ *   currency: 'SAR',
+ *   amount: 45.00,
+ *   channel: 'pos',
+ *   // fulfillment defaults to 'none' for POS
+ * })
+ *
+ * session.setCustomerInfo({ email: 'walk-in@pos.local' })
+ * await session.submitPayment()
+ * ```
+ *
+ * @example Restaurant with delivery
+ * ```ts
+ * const session = new CheckoutSession({
+ *   paymentProvider: tapProvider,
+ *   currency: 'SAR',
+ *   amount: 85.00,
+ *   channel: 'link',
+ *   fulfillment: 'local_delivery', // needs address, no method selection
+ * })
  * ```
  */
 export class CheckoutSession extends EventEmitter<CheckoutEvents> {
@@ -65,24 +112,20 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
   private _paymentSession: PaymentSession | null = null
   private _error: Error | null = null
 
-  // --- Config ---
+  // --- Resolved config ---
+  private readonly _config: ResolvedCheckoutConfig
   private readonly provider: PaymentProvider
+  private readonly _transitions: Record<CheckoutState, readonly CheckoutState[]>
   private _amount: number
   private _currency: string
-  private _returnUrl: string | null
-  private _cancelUrl: string | null
-  private _orderId: string | null
-  private _webhookUrl: string | null
 
   constructor(config: CheckoutSessionConfig) {
     super()
-    this.provider = config.paymentProvider
-    this._amount = config.amount
-    this._currency = config.currency
-    this._returnUrl = config.returnUrl ?? null
-    this._cancelUrl = config.cancelUrl ?? null
-    this._orderId = config.orderId ?? null
-    this._webhookUrl = config.webhookUrl ?? null
+    this._config = resolveConfig(config)
+    this.provider = this._config.paymentProvider
+    this._amount = this._config.amount
+    this._currency = this._config.currency
+    this._transitions = buildTransitions(this._config.fulfillment)
   }
 
   // ---------------------------------------------------------------------------
@@ -97,7 +140,9 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
   get paymentSession(): PaymentSession | null { return this._paymentSession }
   get amount(): number { return this._amount }
   get currency(): string { return this._currency }
-  get orderId(): string | null { return this._orderId }
+  get orderId(): string | null { return this._config.orderId }
+  get channel(): CheckoutChannel { return this._config.channel }
+  get fulfillment(): CheckoutFulfillment { return this._config.fulfillment }
   get error(): Error | null { return this._error }
 
   // ---------------------------------------------------------------------------
@@ -109,6 +154,7 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
    * Must be in `idle` state.
    */
   setCustomerInfo(info: CheckoutCustomerInfo): void {
+    this.assertNotExpired()
     this.assertTransition('info')
     this._customerInfo = info
     this.transition('info')
@@ -118,11 +164,14 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
    * Set shipping address and transition to `shipping` state.
    * Must be in `info` state.
    * Optionally set billing address (defaults to shipping address).
+   *
+   * Only available when fulfillment requires an address (shipping, local_delivery).
    */
   setShippingAddress(
     address: Omit<Address, 'id' | 'isDefault'>,
     billingAddress?: Omit<Address, 'id' | 'isDefault'>,
   ): void {
+    this.assertNotExpired()
     this.assertTransition('shipping')
     this._shippingAddress = address
     this._billingAddress = billingAddress ?? address
@@ -155,7 +204,7 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
    * Set order ID (if not provided at construction time).
    */
   setOrderId(orderId: string): void {
-    this._orderId = orderId
+    (this._config as { orderId: string | null }).orderId = orderId
   }
 
   // ---------------------------------------------------------------------------
@@ -164,7 +213,10 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
 
   /**
    * Submit payment — creates a payment session with the provider.
-   * Must be in `shipping` or `failed` (retry) state.
+   *
+   * Valid from:
+   * - `shipping` or `failed` (retry) when fulfillment requires address
+   * - `info`, `shipping`, or `failed` when fulfillment is pickup/none
    *
    * @param options - Optional overrides for the payment session
    * @returns The payment session (may include a redirectUrl for 3DS)
@@ -174,8 +226,15 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
     idempotencyKey?: string
     metadata?: Record<string, unknown>
   } = {}): Promise<PaymentSession> {
-    // Allow submission from `shipping` (normal flow) or `failed` (retry)
-    if (this._state !== 'shipping' && this._state !== 'failed') {
+    this.assertNotExpired()
+
+    // Determine valid source states based on fulfillment
+    const validStates: CheckoutState[] = ['shipping', 'failed']
+    if (this._config.fulfillment === 'pickup' || this._config.fulfillment === 'none') {
+      validStates.push('info')
+    }
+
+    if (!validStates.includes(this._state)) {
       throw new Error(`Cannot submit payment in "${this._state}" state`)
     }
 
@@ -187,7 +246,7 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
         currency: this._currency,
         sourceToken: options.sourceToken,
         idempotencyKey: options.idempotencyKey,
-        orderId: this._orderId ?? undefined,
+        orderId: this._config.orderId ?? undefined,
         customerId: undefined, // future: from customerInfo lookup
         customer: this._customerInfo
           ? {
@@ -197,9 +256,9 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
               phone: this._customerInfo.phone,
             }
           : undefined,
-        returnUrl: this._returnUrl ?? undefined,
-        cancelUrl: this._cancelUrl ?? undefined,
-        webhookUrl: this._webhookUrl ?? undefined,
+        returnUrl: this._config.returnUrl ?? undefined,
+        cancelUrl: this._config.cancelUrl ?? undefined,
+        webhookUrl: this._config.webhookUrl ?? undefined,
         metadata: options.metadata,
       })
 
@@ -236,7 +295,10 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
     catch (err) {
       const error = err instanceof Error ? err : new Error(String(err))
       this._error = error
-      this.transition('failed')
+      // Only transition to failed if not already there
+      if (this._state !== 'failed') {
+        this.transition('failed')
+      }
       this.emit('error', { error, state: this._state })
       throw error
     }
@@ -250,6 +312,8 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
    * @returns The confirmed payment session
    */
   async confirmPayment(sessionId?: string): Promise<PaymentSession> {
+    this.assertNotExpired()
+
     if (this._state !== 'payment') {
       throw new Error(`Cannot confirm payment in "${this._state}" state`)
     }
@@ -339,6 +403,11 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
   toSnapshot(): CheckoutSnapshot {
     return {
       state: this._state,
+      channel: this._config.channel,
+      fulfillment: this._config.fulfillment,
+      expiresAt: this._config.expiresAt
+        ? new Date(this._config.expiresAt).toISOString()
+        : null,
       customerInfo: this._customerInfo,
       shippingAddress: this._shippingAddress,
       billingAddress: this._billingAddress,
@@ -346,7 +415,7 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
       paymentSession: this._paymentSession,
       amount: this._amount,
       currency: this._currency,
-      orderId: this._orderId,
+      orderId: this._config.orderId,
       error: this._error?.message ?? null,
     }
   }
@@ -364,12 +433,20 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
 
   /** Assert that a transition is valid, throw if not */
   private assertTransition(to: CheckoutState): void {
-    const allowed = CHECKOUT_TRANSITIONS[this._state]
+    const allowed = this._transitions[this._state]
     if (!allowed.includes(to)) {
       throw new Error(
         `Invalid transition: "${this._state}" → "${to}". ` +
         `Allowed: [${allowed.join(', ')}]`,
       )
+    }
+  }
+
+  /** Assert that the session has not expired */
+  private assertNotExpired(): void {
+    if (this._config.expiresAt && Date.now() > this._config.expiresAt) {
+      this.emit('expired', {})
+      throw new Error('Checkout session has expired')
     }
   }
 }

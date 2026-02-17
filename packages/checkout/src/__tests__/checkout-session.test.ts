@@ -436,4 +436,224 @@ describe('CheckoutSession', () => {
         .toThrow('Invalid transition')
     })
   })
+
+  // ---- Channel-agnostic checkout ----------------------------------------
+
+  describe('channel-agnostic checkout', () => {
+    it('fulfillment: "none" skips address step (info → payment)', async () => {
+      session = new CheckoutSession(defaultConfig({ fulfillment: 'none' }))
+      session.setCustomerInfo({ email: 'ali@example.com' })
+      expect(session.state).toBe('info')
+
+      await session.submitPayment({ sourceToken: 'tok_xxx' })
+      expect(session.state).toBe('payment')
+    })
+
+    it('fulfillment: "pickup" skips address step (dine-in / food truck)', async () => {
+      session = new CheckoutSession(defaultConfig({ fulfillment: 'pickup' }))
+      session.setCustomerInfo({ email: 'ali@example.com' })
+
+      await session.submitPayment({ sourceToken: 'tok_xxx' })
+      expect(session.state).toBe('payment')
+    })
+
+    it('fulfillment: "local_delivery" requires address (food delivery)', () => {
+      session = new CheckoutSession(defaultConfig({ fulfillment: 'local_delivery' }))
+      session.setCustomerInfo({ email: 'ali@example.com' })
+
+      // Cannot skip to payment — needs address
+      expect(() => session.setShippingAddress(address)).not.toThrow()
+      expect(session.state).toBe('shipping')
+    })
+
+    it('fulfillment: "shipping" requires address + method (e-commerce)', () => {
+      session = new CheckoutSession(defaultConfig({ fulfillment: 'shipping' }))
+      session.setCustomerInfo({ email: 'ali@example.com' })
+      session.setShippingAddress(address)
+      session.setShippingMethod('standard')
+      expect(session.state).toBe('shipping')
+      expect(session.shippingMethodId).toBe('standard')
+    })
+
+    it('channel: "pos" defaults fulfillment to "none"', () => {
+      session = new CheckoutSession(defaultConfig({ channel: 'pos' }))
+      expect(session.channel).toBe('pos')
+      expect(session.fulfillment).toBe('none')
+    })
+
+    it('channel: "agent" defaults fulfillment to "none"', () => {
+      session = new CheckoutSession(defaultConfig({ channel: 'agent' }))
+      expect(session.channel).toBe('agent')
+      expect(session.fulfillment).toBe('none')
+    })
+
+    it('channel: "web" defaults fulfillment to "shipping"', () => {
+      session = new CheckoutSession(defaultConfig({ channel: 'web' }))
+      expect(session.channel).toBe('web')
+      expect(session.fulfillment).toBe('shipping')
+    })
+
+    it('explicit fulfillment overrides channel default', () => {
+      session = new CheckoutSession(defaultConfig({
+        channel: 'web',
+        fulfillment: 'pickup',
+      }))
+      expect(session.channel).toBe('web')
+      expect(session.fulfillment).toBe('pickup')
+    })
+
+    it('no-channel session defaults to web/shipping (full flow)', async () => {
+      session = new CheckoutSession(defaultConfig())
+      expect(session.channel).toBe('web')
+      expect(session.fulfillment).toBe('shipping')
+
+      // Must go through address step
+      session.setCustomerInfo({ email: 'ali@example.com' })
+      await expect(session.submitPayment()).rejects.toThrow('Cannot submit payment')
+    })
+
+    it('POS checkout completes full flow without address', async () => {
+      const provider = mockProvider({
+        createSession: vi.fn().mockResolvedValue(
+          mockPaymentSession({ status: 'captured', redirectUrl: null }),
+        ),
+      })
+      session = new CheckoutSession(defaultConfig({
+        paymentProvider: provider,
+        channel: 'pos',
+      }))
+
+      const changes: Array<{ from: string; to: string }> = []
+      session.on('stateChange', (e) => changes.push(e))
+
+      session.setCustomerInfo({ email: 'walk-in@pos.local' })
+      await session.submitPayment()
+
+      expect(session.state).toBe('complete')
+      expect(changes).toEqual([
+        { from: 'idle', to: 'info' },
+        { from: 'info', to: 'confirming' },
+        { from: 'confirming', to: 'complete' },
+      ])
+    })
+  })
+
+  // ---- Session expiry ---------------------------------------------------
+
+  describe('session expiry', () => {
+    it('throws on submitPayment after expiry', async () => {
+      vi.useFakeTimers()
+      session = new CheckoutSession(defaultConfig({
+        channel: 'pos',
+        expiresIn: 1000, // 1 second
+      }))
+      session.setCustomerInfo({ email: 'ali@example.com' })
+
+      // Advance time past expiry
+      vi.advanceTimersByTime(1500)
+
+      await expect(session.submitPayment()).rejects.toThrow('expired')
+      vi.useRealTimers()
+    })
+
+    it('emits expired event', () => {
+      vi.useFakeTimers()
+      session = new CheckoutSession(defaultConfig({
+        channel: 'pos',
+        expiresIn: 1000,
+      }))
+
+      const fn = vi.fn()
+      session.on('expired', fn)
+
+      // Advance time past expiry
+      vi.advanceTimersByTime(1500)
+
+      try { session.setCustomerInfo({ email: 'late@example.com' }) } catch {}
+
+      expect(fn).toHaveBeenCalled()
+      vi.useRealTimers()
+    })
+
+    it('does not expire when expiresIn is not set', async () => {
+      session = new CheckoutSession(defaultConfig({ channel: 'pos' }))
+      session.setCustomerInfo({ email: 'ali@example.com' })
+
+      // Should not throw even without expiry config
+      await expect(session.submitPayment({ sourceToken: 'tok_xxx' })).resolves.toBeDefined()
+    })
+  })
+
+  // ---- Snapshot with new fields ------------------------------------------
+
+  describe('snapshot (channel-agnostic fields)', () => {
+    it('includes channel and fulfillment in snapshot', () => {
+      session = new CheckoutSession(defaultConfig({ channel: 'pos' }))
+      const snap = session.toSnapshot()
+
+      expect(snap.channel).toBe('pos')
+      expect(snap.fulfillment).toBe('none')
+      expect(snap.expiresAt).toBeNull()
+    })
+
+    it('includes expiresAt as ISO string', () => {
+      session = new CheckoutSession(defaultConfig({ expiresIn: 1800000 })) // 30 min
+      const snap = session.toSnapshot()
+
+      expect(snap.expiresAt).not.toBeNull()
+      expect(new Date(snap.expiresAt!).getTime()).toBeGreaterThan(Date.now())
+    })
+  })
+
+  // ---- Webhook updates --------------------------------------------------
+
+  describe('handleWebhookUpdate', () => {
+    it('transitions to complete when payment is captured', async () => {
+      session.setCustomerInfo({ email: 'ali@example.com' })
+      session.setShippingAddress(address)
+      session.setShippingMethod('standard')
+      await session.submitPayment()
+      expect(session.state).toBe('payment')
+
+      const completeFn = vi.fn()
+      session.on('complete', completeFn)
+
+      session.handleWebhookUpdate(mockPaymentSession({ status: 'captured' }))
+
+      expect(session.state).toBe('complete')
+      expect(completeFn).toHaveBeenCalled()
+    })
+
+    it('transitions to failed when payment fails via webhook', async () => {
+      session.setCustomerInfo({ email: 'ali@example.com' })
+      session.setShippingAddress(address)
+      session.setShippingMethod('standard')
+      await session.submitPayment()
+
+      const errorFn = vi.fn()
+      session.on('error', errorFn)
+
+      session.handleWebhookUpdate(mockPaymentSession({ status: 'failed' }))
+
+      expect(session.state).toBe('failed')
+      expect(errorFn).toHaveBeenCalled()
+    })
+
+    it('does not update completed sessions', async () => {
+      const provider = mockProvider({
+        createSession: vi.fn().mockResolvedValue(
+          mockPaymentSession({ status: 'captured', redirectUrl: null }),
+        ),
+      })
+      session = new CheckoutSession(defaultConfig({ paymentProvider: provider }))
+      session.setCustomerInfo({ email: 'ali@example.com' })
+      session.setShippingAddress(address)
+      session.setShippingMethod('standard')
+      await session.submitPayment()
+      expect(session.state).toBe('complete')
+
+      session.handleWebhookUpdate(mockPaymentSession({ status: 'failed' }))
+      expect(session.state).toBe('complete') // stays complete
+    })
+  })
 })

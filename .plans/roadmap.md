@@ -137,7 +137,12 @@
 ### Universal Checkout (`@commercejs/checkout`)
 - [x] Checkout state machine (cart → address → shipping → payment → confirm)
 - [x] Payment gateway registry (pluggable providers)
-- [ ] Channel-agnostic (web, mobile, POS, AI agent)
+- [x] Channel-agnostic checkout (web, mobile, POS, AI agent)
+  - [x] Payment links in `@commercejs/hosted-checkout` — `POST /api/payment-links` returns URL + QR data
+  - [x] QR code for POS (customer scans → pays on their phone, no NFC/hardware needed)
+  - [x] Clickable link for AI agents, WhatsApp, SMS, email invoices
+  - [x] Optional shipping step — fulfillment-based (`shipping` | `local_delivery` | `pickup` | `none`)
+  - [x] Link expiry (TTL on checkout session via `expiresIn` / `assertNotExpired()`)
 - [ ] Embeddable with single line of code
 
 ### Second Adapter: Medusa (`@commercejs/adapter-medusa`) ✅
@@ -164,13 +169,14 @@
 
 ## 🎯 Phase 6: Future Vision
 
-### SoftPOS Mobile Payments
-- [ ] `@commercejs/payment-softpos` — NFC tap-to-pay provider
-- [ ] `@commercejs/payment-cash` — cash handling for POS
-- [ ] `@commercejs/pos` — POS mobile app (Capacitor/RN)
+### QR Code POS
+- [x] QR-based in-person checkout via `@commercejs/hosted-checkout` payment links *(shipped in Phase 4)*
+- [ ] Merchant-facing QR display app (web PWA or Capacitor)
+- [ ] Cash/COD payment method support
 
 ### Agentic Commerce
 - [ ] `@commercejs/mcp-server` — MCP server wrapping adapter contract
+- [x] Payment via hosted checkout payment links (agent returns link → user clicks → pays) *(shipped in Phase 4)*
 - [ ] `llms.txt` / `agents.json` discovery
 - [ ] A2A protocol support
 
