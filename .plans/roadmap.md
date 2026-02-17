@@ -22,6 +22,7 @@
 │  ├─ notifications: { email, sms, push, whatsapp, ... }       │
 │  ├─ analytics: { ga, segment, ... }                          │
 │  ├─ delivery: { armada, parcel, ... }                        │
+│  ├─ storage: StorageProvider                                  │
 │  ├─ tax: TaxProvider                                         │
 │  └─ search: SearchProvider                                   │
 │                                                              │
@@ -216,7 +217,7 @@
 - [ ] One-click deploy of CommerceJS backend + storefront
 - [ ] Auto-provisioned Postgres database per environment
 - [ ] Auto-provisioned Redis / key-value cache
-- [ ] S3 object storage per environment (media, assets)
+- [x] S3 object storage per environment (media, assets) — `@commercejs/storage-s3` provider
 - [ ] Automatic database migrations on deploy
 - [ ] Auto-scaling based on traffic (dynamic compute)
 - [ ] Global CDN / edge network for storefront hosting
@@ -258,6 +259,7 @@
 - [x] `@commercejs/notification-resend` — Resend email notification provider (9 tests)
 - [x] `@commercejs/notification-smtp` — SMTP email notification provider (11 tests)
 - [x] `@commercejs/analytics-ga` — Google Analytics 4 provider (12 tests)
+- [x] `@commercejs/storage-s3` — S3-compatible storage provider (AWS S3, R2, Spaces, MinIO) — 20 tests
 
 ### Applications (private)
 - [x] `storefront` — reference Nuxt storefront (homepage, products, categories, cart, checkout)
@@ -293,3 +295,4 @@
 - **2026-02-17**: Added `FulfillmentType` to `ShippingMethod` — new union type (`'shipping' | 'local_delivery' | 'pickup'`) and optional `estimatedMinutes` field. Updated 10 files across types, both adapters (Salla + Medusa), platform engine, and storefront. Enables explicit differentiation between courier shipping, on-demand delivery (Armada/Parcel), and in-store pickup. All typechecks pass, 37/37 checkout tests green.
 - **2026-02-17**: Built `@commercejs/delivery-armada` and `@commercejs/delivery-parcel` — two last-mile delivery providers implementing the `DeliveryProvider` interface. Armada uses token-based auth (19 tests), Parcel uses OAuth2 client_credentials with auto-refresh (23 tests). Both include estimate, create, get, cancel, and webhook verification. All 42 tests green, typecheck clean.
 - **2026-02-17**: Phase 5 OpenAPI — enabled Nitro `experimental.openAPI` in `@commercejs/nuxt` module, added `defineRouteMeta` to all 46 server routes across 13 tags (Store, Catalog, Geography, Auth, Cart, Checkout, Customer, Addresses, Orders, Reviews, Wishlist, Returns, Promotions). Scalar UI at `/_scalar`, raw spec at `/_openapi.json`. Build verified, browser tested.
+- **2026-02-18**: Built `@commercejs/storage-s3` — S3-compatible storage provider for the native platform (Commerce.js Cloud). `StorageProvider` interface in `@commercejs/types` (5 methods: upload, delete, getUrl, getPresignedUploadUrl, getPresignedDownloadUrl). Uses `aws4fetch` (2.5KB). Wired into `@commercejs/core` CommerceConfig. 20 tests, all passing.
