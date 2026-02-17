@@ -1,5 +1,12 @@
 import { countryMeta } from '../../data/country-meta'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Geography'],
+    description: 'List all countries',
+  },
+})
+
 export default defineCommerceHandler(async (_event, adapter) => {
   const countries = await adapter.getCountries()
 

@@ -86,6 +86,7 @@ export type CommerceErrorCode =
   | 'PLATFORM_ERROR'
   | 'NETWORK'
   | 'TIMEOUT'
+  | 'CONFIGURATION_ERROR'
   | 'UNKNOWN'
 
 /**

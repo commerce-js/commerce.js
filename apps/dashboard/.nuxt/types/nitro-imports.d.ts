@@ -145,5 +145,5 @@ export { getRouteRules } from 'nitropack/runtime/internal/route-rules';
 export { useEvent } from 'nitropack/runtime/internal/context';
 export { defineTask, runTask } from 'nitropack/runtime/internal/task';
 export { defineNitroErrorHandler } from 'nitropack/runtime/internal/error/utils';
-export { buildAssetsURL as __buildAssetsURL, publicAssetsURL as __publicAssetsURL } from '/home/runner/work/commerce.js/commerce.js/node_modules/.pnpm/@nuxt+nitro-server@4.3.1_yhrvhf5x2vxvebkse27is3djsu/node_modules/@nuxt/nitro-server/dist/runtime/utils/paths';
-export { defineAppConfig } from '/home/runner/work/commerce.js/commerce.js/node_modules/.pnpm/@nuxt+nitro-server@4.3.1_yhrvhf5x2vxvebkse27is3djsu/node_modules/@nuxt/nitro-server/dist/runtime/utils/config';
+export { buildAssetsURL as __buildAssetsURL, publicAssetsURL as __publicAssetsURL } from '/Users/baker/monorepos/commercejs/node_modules/.pnpm/@nuxt+nitro-server@4.3.1_yhrvhf5x2vxvebkse27is3djsu/node_modules/@nuxt/nitro-server/dist/runtime/utils/paths';
+export { defineAppConfig } from '/Users/baker/monorepos/commercejs/node_modules/.pnpm/@nuxt+nitro-server@4.3.1_yhrvhf5x2vxvebkse27is3djsu/node_modules/@nuxt/nitro-server/dist/runtime/utils/config';

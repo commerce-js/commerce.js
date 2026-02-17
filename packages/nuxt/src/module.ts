@@ -30,6 +30,12 @@ export interface CommerceModuleOptions {
    * @default true
    */
   apiRoutes?: boolean
+
+  /**
+   * Enable OpenAPI spec generation (/_openapi.json, /_scalar, /_swagger).
+   * @default true
+   */
+  openAPI?: boolean
 }
 
 const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<CommerceModuleOptions>({
@@ -43,6 +49,7 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
   defaults: {
     apiBase: '/api/_commerce',
     apiRoutes: true,
+    openAPI: true,
   },
   setup(options, nuxt) {
     const { resolve } = createResolver(import.meta.url)
@@ -92,6 +99,26 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     if (options.apiRoutes) {
       addServerScanDir(resolve('./runtime/server'))
       logger.info(`Server routes auto-discovered under ${options.apiBase}`)
+    }
+
+    // Enable OpenAPI spec generation (/_openapi.json, /_scalar, /_swagger)
+    if (options.openAPI) {
+      nuxt.options.nitro.experimental = {
+        ...nuxt.options.nitro.experimental,
+        openAPI: {
+          meta: {
+            title: 'CommerceJS API',
+            description: 'Composable commerce REST API — auto-generated from @commercejs/nuxt',
+            version: '1.0.0',
+          },
+          ui: {
+            scalar: {
+              theme: 'purple',
+            },
+          },
+        },
+      }
+      logger.info('OpenAPI spec enabled (/_openapi.json, /_scalar)')
     }
   },
 })

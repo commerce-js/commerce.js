@@ -156,10 +156,10 @@
 
 ## 🎯 Phase 5: DX & Developer Tools
 
-- [ ] OpenAPI spec via Nitro `experimental.openAPI`
-  - [ ] Enable in `@commercejs/nuxt` module config (auto-generates `/_openapi.json`, `/_scalar`, `/_swagger`)
-  - [ ] Add `defineRouteMeta` with tags, descriptions, and parameters to all 50+ server routes
-  - [ ] Configure Scalar UI theme to match CommerceJS branding
+- [x] OpenAPI spec via Nitro `experimental.openAPI`
+  - [x] Enable in `@commercejs/nuxt` module config (auto-generates `/_openapi.json`, `/_scalar`)
+  - [x] Add `defineRouteMeta` with tags, descriptions, and parameters to all 46 server routes (13 tags)
+  - [x] Configure Scalar UI theme (purple)
   - [ ] Pre-render spec in production mode for docs site integration
 - [ ] CLI tool for adapter scaffolding + contract testing
 - [x] Package READMEs — all 14 packages documented
@@ -292,3 +292,4 @@
 - **2026-02-16**: Built and published `@commercejs/notification-smtp` — SMTP email provider using nodemailer (Gmail, SES, Mailgun, Postfix). 11 tests. Docs page added. Trusted publisher configured.
 - **2026-02-17**: Added `FulfillmentType` to `ShippingMethod` — new union type (`'shipping' | 'local_delivery' | 'pickup'`) and optional `estimatedMinutes` field. Updated 10 files across types, both adapters (Salla + Medusa), platform engine, and storefront. Enables explicit differentiation between courier shipping, on-demand delivery (Armada/Parcel), and in-store pickup. All typechecks pass, 37/37 checkout tests green.
 - **2026-02-17**: Built `@commercejs/delivery-armada` and `@commercejs/delivery-parcel` — two last-mile delivery providers implementing the `DeliveryProvider` interface. Armada uses token-based auth (19 tests), Parcel uses OAuth2 client_credentials with auto-refresh (23 tests). Both include estimate, create, get, cancel, and webhook verification. All 42 tests green, typecheck clean.
+- **2026-02-17**: Phase 5 OpenAPI — enabled Nitro `experimental.openAPI` in `@commercejs/nuxt` module, added `defineRouteMeta` to all 46 server routes across 13 tags (Store, Catalog, Geography, Auth, Cart, Checkout, Customer, Addresses, Orders, Reviews, Wishlist, Returns, Promotions). Scalar UI at `/_scalar`, raw spec at `/_openapi.json`. Build verified, browser tested.
