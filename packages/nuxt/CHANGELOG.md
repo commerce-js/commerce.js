@@ -1,5 +1,25 @@
 # @commercejs/nuxt
 
+## 0.3.0
+
+### Minor Changes
+
+- [`e72ed4a`](https://github.com/commerce-js/commerce.js/commit/e72ed4a76e85f8b81e6d285150d152562c2626b9) Thanks [@masterde](https://github.com/masterde)! - feat(nuxt): add OpenAPI spec generation via Nitro experimental.openAPI
+
+  - Enable `experimental.openAPI` in module config with Scalar UI theme
+  - Add `defineRouteMeta` to all 46 server routes with tags, descriptions, and parameters
+  - Routes organized into 13 OpenAPI tags: Store, Catalog, Geography, Auth, Cart, Checkout, Customer, Addresses, Orders, Reviews, Wishlist, Returns, Promotions
+  - Auto-generated spec at `/_openapi.json`, interactive docs at `/_scalar`
+
+  fix(types): add CONFIGURATION_ERROR to CommerceErrorCode union
+
+### Patch Changes
+
+- Updated dependencies [[`e72ed4a`](https://github.com/commerce-js/commerce.js/commit/e72ed4a76e85f8b81e6d285150d152562c2626b9)]:
+  - @commercejs/types@0.2.1
+  - @commercejs/adapter-salla@0.1.2
+  - @commercejs/platform@0.3.1
+
 ## 0.2.2
 
 ### Patch Changes
