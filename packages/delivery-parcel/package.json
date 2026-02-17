@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/delivery-parcel",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Parcel last-mile delivery provider for CommerceJS",
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/delivery-armada",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Armada last-mile delivery provider for CommerceJS",
   "repository": {
     "type": "git",
