@@ -1,5 +1,14 @@
 # @commercejs/nuxt
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [[`3c539a5`](https://github.com/commerce-js/commerce.js/commit/3c539a51746d02d2643b25a5dbb041abc143928b)]:
+  - @commercejs/types@0.3.0
+  - @commercejs/adapter-salla@0.1.3
+  - @commercejs/platform@0.3.2
+
 ## 0.3.0
 
 ### Minor Changes

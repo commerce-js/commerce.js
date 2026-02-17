@@ -1,5 +1,12 @@
 # @commercejs/delivery-armada
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [[`3c539a5`](https://github.com/commerce-js/commerce.js/commit/3c539a51746d02d2643b25a5dbb041abc143928b)]:
+  - @commercejs/types@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/notification-resend",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Resend email notification provider for CommerceJS",
   "repository": {
     "type": "git",
