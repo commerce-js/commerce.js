@@ -8,7 +8,7 @@
 
 import { CheckoutSession } from '@commercejs/checkout'
 import QRCode from 'qrcode'
-import { sessions, sessionMeta } from '../sessions/index.post'
+import { sessions, sessionMeta } from './sessions/index.post'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
