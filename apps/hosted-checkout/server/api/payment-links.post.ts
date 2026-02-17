@@ -8,7 +8,6 @@
 
 import { CheckoutSession } from '@commercejs/checkout'
 import QRCode from 'qrcode'
-import { useTapProviderForMerchant, useTapProviderFromEnv } from '../../utils/tap'
 import { sessions, sessionMeta } from '../sessions/index.post'
 
 export default defineEventHandler(async (event) => {
@@ -85,7 +84,6 @@ export default defineEventHandler(async (event) => {
     sessionId,
     url: checkoutUrl,
     qrDataUrl,
-    expiresAt: snapshot.expiresAt,
     ...snapshot,
   }
 })
