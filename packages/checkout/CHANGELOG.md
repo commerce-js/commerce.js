@@ -1,5 +1,18 @@
 # @commercejs/checkout
 
+## 1.1.0
+
+### Minor Changes
+
+- [`056262f`](https://github.com/commerce-js/commerce.js/commit/056262f02a5e9868edd609e1b6104f2b7ed68475) Thanks [@masterde](https://github.com/masterde)! - Channel-agnostic checkout: support for web, POS, AI agent, and payment link channels
+
+  - Added `CheckoutChannel` type (`'web' | 'pos' | 'agent' | 'link'`)
+  - Added `CheckoutFulfillment` type (`'shipping' | 'local_delivery' | 'pickup' | 'none'`)
+  - Dynamic state transitions via `buildTransitions(fulfillment)` — skips address step for pickup/none
+  - Smart config defaults via `resolveConfig()` — POS defaults to no-shipping, web defaults to shipping
+  - Session TTL via `expiresIn` config + `assertNotExpired()` guard + `expired` event
+  - Updated `CheckoutSnapshot` with `channel`, `fulfillment`, and `expiresAt` fields
+
 ## 1.0.0
 
 ### Patch Changes
