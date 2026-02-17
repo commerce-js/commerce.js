@@ -1,1 +1,0 @@
-import{e as t,n as s,o as n,c as a,a as r}from"./Cbupl8lV.js";const o={class:"min-h-screen bg-gray-950 flex items-center justify-center"},m=t({__name:"index",setup(c){return s("/projects"),(i,e)=>(n(),a("div",o,[...e[0]||(e[0]=[r("p",{class:"text-gray-400"}," Redirecting... ",-1)])]))}});export{m as default};

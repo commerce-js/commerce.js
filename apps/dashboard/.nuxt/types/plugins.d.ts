@@ -6,16 +6,16 @@ type Decorate<T extends Record<string, any>> = { [K in keyof T as K extends stri
 type InjectionType<A extends Plugin> = A extends {default: Plugin<infer T>} ? Decorate<T> : unknown
 
 type NuxtAppInjections = 
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app/plugins/revive-payload.client.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/head/runtime/plugins/unhead.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/pages/runtime/plugins/router.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app/plugins/payload.client.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app/plugins/navigation-repaint.client.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app/plugins/check-outdated-build.client.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app/plugins/revive-payload.server.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app/plugins/chunk-reload.client.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/pages/runtime/plugins/prefetch.client.js")> &
-  InjectionType<typeof import("../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.0_change-case@5.4.4_db0@0.3.4_@electric-sql+pglite@0.3.15_b_iqdaty4x7fafoooh6yfa6f46wm/node_modules/@nuxt/ui/dist/runtime/plugins/colors.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app/plugins/revive-payload.client.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/head/runtime/plugins/unhead.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/pages/runtime/plugins/router.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app/plugins/payload.client.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app/plugins/navigation-repaint.client.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app/plugins/check-outdated-build.client.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app/plugins/revive-payload.server.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app/plugins/chunk-reload.client.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/pages/runtime/plugins/prefetch.client.js")> &
+  InjectionType<typeof import("../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.0_aws4fetch@1.0.20_change-case@5.4.4_db0@0.3.4_@electric-sq_lsgvwuiikzww5c3ye2c3t3uj2i/node_modules/@nuxt/ui/dist/runtime/plugins/colors.js")> &
   InjectionType<typeof import("../../../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.server.js")> &
   InjectionType<typeof import("../../../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js")> &
   InjectionType<typeof import("../../../../node_modules/.pnpm/@nuxt+icon@1.15.0_magicast@0.5.2_vite@7.3.1_@types+node@25.2.2_jiti@2.6.1_lightningcss@1.30.2_zypvcn3d5qi5lvkyb73jcamxvi/node_modules/@nuxt/icon/dist/runtime/plugin.js")>

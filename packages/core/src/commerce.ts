@@ -49,6 +49,11 @@ import type {
   NotificationProvider,
   NotificationRule,
   AnalyticsProvider,
+  StorageProvider,
+  UploadInput,
+  StorageUploadResult,
+  PresignedUrlOptions,
+  PresignedUrlResult,
 } from '@commercejs/types'
 import { CommerceError } from '@commercejs/types'
 import { CommerceEventBus } from './event-bus.js'
@@ -85,6 +90,9 @@ export interface CommerceConfig {
 
   /** Analytics providers (all receive all events) */
   analytics?: AnalyticsProvider[]
+
+  /** Storage provider for file uploads (required for native platform) */
+  storage?: StorageProvider
 }
 
 // ---- Commerce Instance ----
@@ -174,6 +182,13 @@ export interface CommerceInstance {
   confirmPayment(sessionId: string, providerId: string, data?: Record<string, unknown>): Promise<PaymentSession>
   getPayment(sessionId: string, providerId: string): Promise<PaymentSession>
   refundPayment(input: RefundInput, providerId: string): Promise<PaymentSession>
+
+  // ---- Storage ----
+  uploadFile(input: UploadInput): Promise<StorageUploadResult>
+  deleteFile(key: string): Promise<void>
+  getFileUrl(key: string): string
+  getPresignedUploadUrl(key: string, options?: PresignedUrlOptions): Promise<PresignedUrlResult>
+  getPresignedDownloadUrl(key: string, options?: PresignedUrlOptions): Promise<PresignedUrlResult>
 
   /** Cleanup — removes event listeners and webhook subscriptions */
   destroy(): void
@@ -613,6 +628,46 @@ export function createCommerce(config: CommerceConfig): CommerceInstance {
       const session = await provider.refund(input)
       await events.emit('payment.refunded', { session, amount: input.amount ?? session.amount })
       return session
+    },
+
+    // ---- Storage ----
+
+    async uploadFile(input) {
+      if (!config.storage) {
+        throw new CommerceError('No storage provider configured.', 'CONFIGURATION_ERROR', 500)
+      }
+      const result = await config.storage.upload(input)
+      await events.emit('file.uploaded' as keyof CommerceEvents & string, { key: result.key, url: result.url } as never)
+      return result
+    },
+
+    async deleteFile(key) {
+      if (!config.storage) {
+        throw new CommerceError('No storage provider configured.', 'CONFIGURATION_ERROR', 500)
+      }
+      await config.storage.delete(key)
+      await events.emit('file.deleted' as keyof CommerceEvents & string, { key } as never)
+    },
+
+    getFileUrl(key) {
+      if (!config.storage) {
+        throw new CommerceError('No storage provider configured.', 'CONFIGURATION_ERROR', 500)
+      }
+      return config.storage.getUrl(key)
+    },
+
+    async getPresignedUploadUrl(key, options) {
+      if (!config.storage) {
+        throw new CommerceError('No storage provider configured.', 'CONFIGURATION_ERROR', 500)
+      }
+      return config.storage.getPresignedUploadUrl(key, options)
+    },
+
+    async getPresignedDownloadUrl(key, options) {
+      if (!config.storage) {
+        throw new CommerceError('No storage provider configured.', 'CONFIGURATION_ERROR', 500)
+      }
+      return config.storage.getPresignedDownloadUrl(key, options)
     },
 
     // ---- Cleanup ----

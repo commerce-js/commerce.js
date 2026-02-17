@@ -29,19 +29,19 @@
         "../../../node_modules/.pnpm/@nuxt+schema@4.3.1/node_modules/@nuxt/schema"
       ],
       "nuxt": [
-        "../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt"
+        "../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt"
       ],
       "vite/client": [
         "../../../node_modules/.pnpm/vite@7.3.1_@types+node@25.2.2_jiti@2.6.1_lightningcss@1.30.2_terser@5.46.0_tsx@4.21.0_yaml@2.8.2/node_modules/vite/client"
       ],
       "nitropack/types": [
-        "../../../node_modules/.pnpm/nitropack@2.13.1_@electric-sql+pglite@0.3.15_better-sqlite3@12.6.2_drizzle-orm@0.38.4_@electr_znx37elztxrikqcxagxoakfla4/node_modules/nitropack/types"
+        "../../../node_modules/.pnpm/nitropack@2.13.1_@electric-sql+pglite@0.3.15_aws4fetch@1.0.20_better-sqlite3@12.6.2_drizzle-o_z6kqebsulanpyzbf6fp2foa5gi/node_modules/nitropack/types"
       ],
       "nitropack/runtime": [
-        "../../../node_modules/.pnpm/nitropack@2.13.1_@electric-sql+pglite@0.3.15_better-sqlite3@12.6.2_drizzle-orm@0.38.4_@electr_znx37elztxrikqcxagxoakfla4/node_modules/nitropack/runtime"
+        "../../../node_modules/.pnpm/nitropack@2.13.1_@electric-sql+pglite@0.3.15_aws4fetch@1.0.20_better-sqlite3@12.6.2_drizzle-o_z6kqebsulanpyzbf6fp2foa5gi/node_modules/nitropack/runtime"
       ],
       "nitropack": [
-        "../../../node_modules/.pnpm/nitropack@2.13.1_@electric-sql+pglite@0.3.15_better-sqlite3@12.6.2_drizzle-orm@0.38.4_@electr_znx37elztxrikqcxagxoakfla4/node_modules/nitropack"
+        "../../../node_modules/.pnpm/nitropack@2.13.1_@electric-sql+pglite@0.3.15_aws4fetch@1.0.20_better-sqlite3@12.6.2_drizzle-o_z6kqebsulanpyzbf6fp2foa5gi/node_modules/nitropack"
       ],
       "defu": [
         "../../../node_modules/.pnpm/defu@6.1.4/node_modules/defu"
@@ -95,19 +95,19 @@
         "../server/*"
       ],
       "#app": [
-        "../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app"
+        "../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app"
       ],
       "#app/*": [
-        "../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app/*"
+        "../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app/*"
       ],
       "vue-demi": [
-        "../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/app/compat/vue-demi"
+        "../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/app/compat/vue-demi"
       ],
       "#ui": [
-        "../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.0_change-case@5.4.4_db0@0.3.4_@electric-sql+pglite@0.3.15_b_iqdaty4x7fafoooh6yfa6f46wm/node_modules/@nuxt/ui/dist/runtime"
+        "../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.0_aws4fetch@1.0.20_change-case@5.4.4_db0@0.3.4_@electric-sq_lsgvwuiikzww5c3ye2c3t3uj2i/node_modules/@nuxt/ui/dist/runtime"
       ],
       "#ui/*": [
-        "../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.0_change-case@5.4.4_db0@0.3.4_@electric-sql+pglite@0.3.15_b_iqdaty4x7fafoooh6yfa6f46wm/node_modules/@nuxt/ui/dist/runtime/*"
+        "../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.0_aws4fetch@1.0.20_change-case@5.4.4_db0@0.3.4_@electric-sq_lsgvwuiikzww5c3ye2c3t3uj2i/node_modules/@nuxt/ui/dist/runtime/*"
       ],
       "#color-mode-options": [
         "./color-mode-options.mjs"
@@ -116,13 +116,13 @@
         "../../../node_modules/.pnpm/vue-router@4.6.4_vue@3.5.28_typescript@5.9.3_/node_modules/vue-router"
       ],
       "#unhead/composables": [
-        "../../../node_modules/.pnpm/nuxt@4.3.1_wlty37ntipotk776e4zmab7354/node_modules/nuxt/dist/head/runtime/composables"
+        "../../../node_modules/.pnpm/nuxt@4.3.1_kk67b5coabensktfk7qjeykfli/node_modules/nuxt/dist/head/runtime/composables"
       ],
       "#imports": [
         "./imports"
       ],
       "#app-manifest": [
-        "./manifest/meta/93696922-d43e-4ef8-9330-95c08bdcc262.json"
+        "./manifest/meta/ae3fe6fa-acfa-4e60-a97d-127ef2da1de6.json"
       ],
       "#build": [
         "."

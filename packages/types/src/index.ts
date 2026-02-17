@@ -147,3 +147,12 @@ export type {
   CreateDeliveryInput,
   DeliveryWebhookEvent,
 } from './delivery-provider.js'
+
+// Storage Provider (pluggable object storage for native platform)
+export type {
+  StorageProvider,
+  StorageUploadResult,
+  UploadInput,
+  PresignedUrlOptions,
+  PresignedUrlResult,
+} from './storage-provider.js'

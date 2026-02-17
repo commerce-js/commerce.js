@@ -30,3 +30,6 @@ pnpm-debug.log*
 # Agent skills/config
 .agent/
 .tmp/
+
+# Design assets and reference templates (local only)
+.templates/
