@@ -151,6 +151,9 @@ importers:
       '@commercejs/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@commercejs/webhook-verifier':
+        specifier: workspace:*
+        version: link:../../packages/webhook-verifier
       nuxt:
         specifier: ^4.3.1
         version: 4.3.1(ylvfepsmx3v6tz4medp5f7oqeq)
@@ -427,7 +430,7 @@ importers:
         version: 4.3.1
       nuxt:
         specifier: ^4.3.1
-        version: 4.3.1(vymdjlkgxxvxm23yzvivdvo4qy)
+        version: 4.3.1(cpavtvz47xlkl5dqqhyizh22u4)
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -533,7 +536,7 @@ importers:
         version: 4.4.0(km2eqlrmsvaqqmwpalasyjb4ly)
       nuxt:
         specifier: ^4.3.1
-        version: 4.3.1(cpavtvz47xlkl5dqqhyizh22u4)
+        version: 4.3.1(vymdjlkgxxvxm23yzvivdvo4qy)
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

@@ -14,6 +14,7 @@
     "@commercejs/checkout": "workspace:*",
     "@commercejs/payment-tap": "workspace:*",
     "@commercejs/types": "workspace:*",
+    "@commercejs/webhook-verifier": "workspace:*",
     "nuxt": "^4.3.1",
     "qrcode": "^1.5.4",
     "vue": "^3.5.28",
