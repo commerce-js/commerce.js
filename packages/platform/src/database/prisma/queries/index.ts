@@ -114,3 +114,57 @@ export {
   insertReturnItem,
   updateReturnStatus,
 } from './returns.js'
+
+// Admin: Catalog
+export {
+  insertProduct,
+  updateProductById,
+  deleteProductById,
+  findAllProducts,
+  insertProductImage,
+  deleteProductImages,
+  insertProductVariant,
+  deleteProductVariants,
+  updateProductVariantById,
+  insertProductAttribute,
+  deleteProductAttributes,
+  insertProductTag,
+  deleteProductTags,
+  setProductCategories,
+  insertCategory,
+  updateCategoryById,
+  deleteCategoryById,
+  findCategoryChildren,
+} from './admin-catalog.js'
+
+// Admin: Orders
+export {
+  findAllOrders,
+  updateOrderTracking,
+  countOrdersByStatus,
+  sumOrderRevenue,
+  findRecentOrders,
+} from './admin-orders.js'
+
+// Admin: Customers
+export {
+  findAllCustomers,
+  deleteCustomerById,
+  countCustomers,
+} from './admin-customers.js'
+
+// Admin: Store
+export {
+  updateStoreInfo,
+} from './admin-store.js'
+
+// Admin: Users
+export {
+  findAdminByEmail,
+  findAdminById,
+  createAdminUser,
+  updateAdminUser,
+  deleteAdminUser,
+  findAllAdminUsers,
+  countAdminUsers,
+} from './admin-users.js'

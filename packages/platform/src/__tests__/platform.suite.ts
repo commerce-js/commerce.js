@@ -38,7 +38,7 @@ export function platformTestSuite(opts: SuiteOptions) {
 
   beforeEach(async () => {
     await opts.setup()
-    adapter = await createPlatformAdapter()
+    adapter = (await createPlatformAdapter()).adapter
   })
 
   // ---- Catalog ----
@@ -277,7 +277,7 @@ export function platformTestSuite(opts: SuiteOptions) {
   it('should auto-seed default store info when none exists', async () => {
     // Create fresh DB without seed
     await opts.setupEmpty()
-    const freshAdapter = await createPlatformAdapter()
+    const freshAdapter = (await createPlatformAdapter()).adapter
     const info = await freshAdapter.getStoreInfo()
     expect(info.name.en).toBe('My Store')
   })

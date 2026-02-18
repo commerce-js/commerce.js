@@ -228,6 +228,7 @@
 ### Built-in Services
 - [ ] **CommerceJS Cache** — integrated caching layer for API responses (cart, catalog)
 - [ ] **CommerceJS Emails** — built-in transactional emails (order confirmations, shipping updates, password resets) with custom domain support and delivery tracking
+- [x] **CommerceJS Admin Auth** — DB-backed admin users with bcrypt, session auth, env-var seeding
 - [ ] **CommerceJS Admin** — hosted admin dashboard (unlimited users, no per-seat fees)
 - [ ] Data import/export tooling (DB dumps, seed data for previews)
 
@@ -253,7 +254,7 @@
 - [x] `@commercejs/delivery-armada` — Armada last-mile delivery provider (19 tests)
 - [x] `@commercejs/delivery-parcel` — Parcel delivery provider with OAuth2 (23 tests)
 - [x] `@commercejs/webhook-verifier` — cryptographic webhook verification
-- [x] `@commercejs/platform` — built-in commerce engine (SQLite/Drizzle + Neon Postgres)
+- [x] `@commercejs/platform` — built-in commerce engine (SQLite/Drizzle + Neon Postgres), Admin API (22 endpoints), DB-backed admin auth
 - [x] `@commercejs/cloud` — cloud infrastructure orchestration (Cloudflare, Neon, GitHub, Billing providers)
 - [x] `@commercejs/cli` — CLI tool (`deploy`, `init`, `env` commands)
 - [x] `@commercejs/notification-resend` — Resend email notification provider (9 tests)

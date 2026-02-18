@@ -1,0 +1,15 @@
+// ---------------------------------------------------------------------------
+// Admin User model — store administrators
+// ---------------------------------------------------------------------------
+
+model AdminUser {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  passwordHash String  @map("password_hash")
+  name         String?
+  role         String  @default("admin")
+  createdAt    String  @map("created_at")
+  updatedAt    String  @map("updated_at")
+
+  @@map("admin_users")
+}

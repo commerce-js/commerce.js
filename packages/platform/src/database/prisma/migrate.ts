@@ -343,9 +343,20 @@ export async function migratePrisma() {
       reason TEXT NOT NULL DEFAULT 'other',
       reason_note TEXT
     )`,
+
+    `CREATE TABLE IF NOT EXISTS admin_users (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      name TEXT,
+      role TEXT NOT NULL DEFAULT 'admin',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`,
   ]
 
   for (const stmt of statements) {
     await prisma.$executeRawUnsafe(stmt)
   }
 }
+

@@ -4,6 +4,8 @@
 
 import type { CommerceAdapter, AdapterDomain } from '@commercejs/types'
 import type { PlatformConfig, DatabaseDriver } from './types.js'
+import type { AdminAPI } from './admin/types.js'
+import { createAdminAPI } from './admin/index.js'
 import { createCatalogDomain } from './domains/catalog.js'
 import { createCartDomain } from './domains/cart.js'
 import { createCheckoutDomain } from './domains/checkout.js'
@@ -79,34 +81,36 @@ async function initDatabase(driver: DatabaseDriver, connectionString?: string) {
   return initPrisma(connectionString ?? ':memory:')
 }
 
+/** Result of createPlatformAdapter — storefront adapter + admin API */
+export interface PlatformAdapterResult {
+  /** Storefront adapter implementing CommerceAdapter */
+  adapter: CommerceAdapter
+  /** Admin API for merchant operations (platform-only) */
+  admin: AdminAPI
+}
+
 /**
  * Create a PlatformAdapter — the native CommerceJS commerce engine.
  *
- * Supports automatic driver detection:
+ * Returns both the storefront adapter and the admin API.
  *
  * @example Auto-detect (recommended)
  * ```ts
- * // Uses DATABASE_URL env var to pick sqlite or neon
- * const adapter = await createPlatformAdapter({ currency: 'SAR' })
+ * const { adapter, admin } = await createPlatformAdapter({ currency: 'SAR' })
+ * const commerce = createCommerce({ adapter })
+ * // Admin operations:
+ * await admin.createProduct({ name: 'T-Shirt', price: 99 })
  * ```
  *
  * @example Explicit Neon (cloud)
  * ```ts
- * const adapter = await createPlatformAdapter({
+ * const { adapter, admin } = await createPlatformAdapter({
  *   driver: 'neon',
  *   connectionString: process.env.DATABASE_URL,
  * })
  * ```
- *
- * @example Explicit SQLite (local dev)
- * ```ts
- * const adapter = await createPlatformAdapter({
- *   driver: 'sqlite',
- *   connectionString: './store.db',
- * })
- * ```
  */
-export async function createPlatformAdapter(config: PlatformConfig = {}): Promise<CommerceAdapter> {
+export async function createPlatformAdapter(config: PlatformConfig = {}): Promise<PlatformAdapterResult> {
   const currency = config.currency ?? 'SAR'
   const driver = detectDriver(config)
 
@@ -126,7 +130,13 @@ export async function createPlatformAdapter(config: PlatformConfig = {}): Promis
   const promotionsDomain = createPromotionsDomain()
   const returnsDomain = createReturnsDomain()
 
-  return {
+  // Build the admin API
+  const admin = createAdminAPI(currency)
+
+  // Seed the initial admin from env vars if no admins exist yet
+  await admin.auth.seedInitialAdmin()
+
+  const adapter = {
     name: 'commercejs',
     capabilities: ['catalog', 'cart', 'checkout', 'orders', 'customers', 'store', 'brands', 'countries', 'wishlist', 'reviews', 'promotions', 'returns'] as AdapterDomain[],
 
@@ -213,4 +223,6 @@ export async function createPlatformAdapter(config: PlatformConfig = {}): Promis
     ...giftCardStubs,
     ...locationStubs,
   } as CommerceAdapter
+
+  return { adapter, admin }
 }

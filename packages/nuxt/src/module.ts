@@ -6,6 +6,7 @@ import {
   addServerScanDir,
   addTypeTemplate,
   addServerPlugin,
+  installModule,
 } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
 import { consola } from 'consola'
@@ -51,10 +52,13 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     apiRoutes: true,
     openAPI: true,
   },
-  setup(options, nuxt) {
+  async setup(options, nuxt) {
     const { resolve } = createResolver(import.meta.url)
 
     logger.info('Initializing CommerceJS module...')
+
+    // Register nuxt-auth-utils for admin session support
+    await installModule('nuxt-auth-utils')
 
     // Expose options via runtime config
     nuxt.options.runtimeConfig.public.commerce = {

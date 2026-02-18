@@ -8,6 +8,7 @@
 import type { CommerceAdapter } from '@commercejs/types'
 
 let _adapter: CommerceAdapter | null = null
+let _adminApi: any = null
 let _initPromise: Promise<CommerceAdapter> | null = null
 
 async function initAdapter(): Promise<CommerceAdapter> {
@@ -23,10 +24,13 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
     const dbPath = process.env.COMMERCE_DB_PATH || process.env.NUXT_COMMERCE_DB_PATH || './store.db'
 
-    _adapter = await createPlatformAdapter({
+    const result = await createPlatformAdapter({
       currency: process.env.COMMERCE_CURRENCY || 'SAR',
       connectionString: dbPath,
     })
+
+    _adapter = result.adapter
+    _adminApi = result.admin
 
     await migratePrisma()
 
@@ -57,7 +61,7 @@ async function initAdapter(): Promise<CommerceAdapter> {
     })
   }
 
-  return _adapter
+  return _adapter!
 }
 
 export default defineNitroPlugin((nitroApp) => {
@@ -69,5 +73,6 @@ export default defineNitroPlugin((nitroApp) => {
       await _initPromise
     }
     ;(event.context as any)._commerceAdapter = _adapter
+    ;(event.context as any)._commerceAdmin = _adminApi
   })
 })
