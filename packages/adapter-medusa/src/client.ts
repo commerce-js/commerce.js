@@ -59,7 +59,7 @@ export class MedusaClient {
   async post<T>(path: string, body?: unknown): Promise<T> {
     return this.http<T>(path, {
       method: 'POST',
-      body,
+      body: body as Record<string, any>,
       headers: this.buildHeaders(),
     })
   }
@@ -78,7 +78,7 @@ export class MedusaClient {
   async authPost<T>(path: string, body?: unknown): Promise<T> {
     return ofetch<T>(`${this.baseUrl}${path}`, {
       method: 'POST',
-      body,
+      body: body as Record<string, any>,
       headers: {
         'Content-Type': 'application/json',
         'x-publishable-api-key': this.publishableApiKey,
