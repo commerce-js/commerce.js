@@ -1,5 +1,20 @@
 # @commercejs/platform
 
+## 0.4.0
+
+### Minor Changes
+
+- [`8a22683`](https://github.com/commerce-js/commerce.js/commit/8a226839b66c4579b1989eebfa650d1a4fada0b4) Thanks [@masterde](https://github.com/masterde)! - ### Admin Auth: DB-backed admin users
+
+  - Added `admin_users` table across all 3 database drivers (Prisma, Drizzle, Neon)
+  - Added `AdminUser` / `AdminUserSafe` types
+  - New `admin.auth` domain: `login`, `changePassword`, `createAdmin`, `listAdmins`, `deleteAdmin`, `seedInitialAdmin`
+  - Password hashing with `bcrypt-ts` (matches customer auth)
+  - Auto-seed initial admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD` env vars on first startup
+  - Login route (`POST /admin/auth/login`) now validates against the database
+  - New change-password route (`POST /admin/auth/change-password`)
+  - Session `User` type now includes `id` and `name` fields
+
 ## 0.3.2
 
 ### Patch Changes
