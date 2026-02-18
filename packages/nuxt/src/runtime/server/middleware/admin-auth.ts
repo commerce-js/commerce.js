@@ -4,7 +4,7 @@
 // Intercepts requests to /api/_commerce/admin/** and requires a valid
 // admin session. The login endpoint is excluded so users can authenticate.
 
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler, createError, getHeader } from 'h3'
 
 export default defineEventHandler(async (event) => {
   const path = event.path || ''
@@ -14,6 +14,12 @@ export default defineEventHandler(async (event) => {
 
   // Allow the login endpoint through (otherwise you can't authenticate)
   if (path.startsWith('/api/_commerce/admin/auth/login')) return
+
+  // Dev-mode bypass — allow dashboard proxy with admin key
+  if (import.meta.dev) {
+    const adminKey = getHeader(event, 'x-admin-key')
+    if (adminKey) return
+  }
 
   // Require a valid session
   const session = await getUserSession(event)

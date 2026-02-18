@@ -1,0 +1,61 @@
+@import "tailwindcss" theme(static);
+@import "@nuxt/ui";
+
+@theme static {
+  /* ── Typography ── */
+  --font-sans: "Geist", sans-serif;
+  --font-mono: "Geist Mono", monospace;
+}
+
+html,
+body,
+#__nuxt {
+  height: 100%;
+  letter-spacing: -0.2px;
+}
+
+:root {
+  --ui-primary: oklch(0.58 0.22 272);
+
+  /* ── Chart tokens ── */
+  --vis-tooltip-title-color: var(--ui-text) !important;
+  --vis-tooltip-title-border-bottom: 1px solid var(--ui-border) !important;
+  --vis-tooltip-label-color: var(--ui-text-muted) !important;
+  --vis-tooltip-background-color: var(--ui-bg) !important;
+  --vis-tooltip-border-color: var(--ui-border) !important;
+  --vis-tooltip-text-color: var(--ui-text-toned) !important;
+  --vis-tooltip-padding: 0 !important;
+
+  --vis-donut-background-color: var(--ui-bg-elevated) !important;
+
+  --vis-axis-grid-color: var(--ui-border) !important;
+  --vis-axis-tick-label-color: var(--ui-text-muted) !important;
+  --vis-axis-label-color: var(--ui-text-toned) !important;
+  --vis-legend-label-color: var(--ui-text-toned) !important;
+  --vis-legend-spacing: 1rem;
+}
+
+/* ── Scrollbar (Webkit) ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--ui-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ui-border);
+}
+
+/* ── Scrollbar (Firefox) ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border) transparent;
+}

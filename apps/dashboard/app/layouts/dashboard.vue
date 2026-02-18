@@ -1,45 +1,171 @@
 <script setup lang="ts">
+import type { NavigationMenuItem } from '@nuxt/ui'
+
+const { isNotificationsSlideOverOpen } = useDashboard()
 const route = useRoute()
 
-const navigation = [
-  { label: 'Projects', to: '/projects', icon: 'i-lucide-folder' },
-  { label: 'Billing', to: '/billing', icon: 'i-lucide-credit-card' },
-]
+const links = ref<NavigationMenuItem[][]>([
+  [
+    {
+      label: 'Projects',
+      icon: 'i-lucide-folder-kanban',
+      to: '/projects'
+    },
+    {
+      label: 'Deployments',
+      icon: 'i-lucide-rocket',
+      to: '/deployments'
+    },
+    {
+      label: 'Usage',
+      icon: 'i-lucide-bar-chart-3',
+      to: '/usage'
+    },
+    {
+      label: 'Uptime',
+      icon: 'i-lucide-activity',
+      to: '/uptime'
+    }
+  ],
+  [
+    {
+      label: 'Store',
+      icon: 'i-lucide-shopping-bag',
+      defaultOpen: false,
+      children: [
+        {
+          label: 'Overview',
+          icon: 'i-lucide-layout-dashboard',
+          to: '/store'
+        },
+        {
+          label: 'Orders',
+          icon: 'i-lucide-shopping-cart',
+          to: '/store/orders'
+        },
+        {
+          label: 'Products',
+          icon: 'i-lucide-package',
+          to: '/store/products'
+        },
+        {
+          label: 'Customers',
+          icon: 'i-lucide-users',
+          to: '/store/customers'
+        },
+        {
+          label: 'Analytics',
+          icon: 'i-lucide-trending-up',
+          to: '/store/analytics'
+        }
+      ]
+    }
+  ],
+  [
+    {
+      label: 'Billing',
+      icon: 'i-lucide-credit-card',
+      to: '/billing'
+    },
+    {
+      label: 'Settings',
+      icon: 'i-lucide-settings',
+      to: '/settings'
+    }
+  ]
+])
+
+const groups = computed(() => [
+  {
+    id: 'links',
+    label: 'Go to',
+    items: links.value.flat().flatMap(item =>
+      item.children
+        ? [item, ...item.children]
+        : [item]
+    ).filter(item => item.to)
+  },
+  {
+    id: 'actions',
+    label: 'Actions',
+    items: [
+      {
+        label: 'New Project',
+        icon: 'i-lucide-plus',
+        to: '/projects'
+      },
+      {
+        label: 'View Notifications',
+        icon: 'i-lucide-bell',
+        click: () => {
+          isNotificationsSlideOverOpen.value = true
+        }
+      }
+    ]
+  }
+])
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-950 text-white">
-    <!-- Top Nav -->
-    <header class="border-b border-gray-800 bg-gray-950/80 backdrop-blur-xl sticky top-0 z-50">
-      <div class="mx-auto max-w-7xl flex items-center justify-between px-6 h-16">
-        <div class="flex items-center gap-8">
-          <NuxtLink to="/" class="text-xl font-bold tracking-tight">
-            CommerceJS <span class="text-primary-400">Cloud</span>
-          </NuxtLink>
+  <UDashboardGroup unit="rem">
+    <UDashboardSidebar
+      id="dashboard"
+      resizable
+      collapsible
+      :min-size="14"
+      :default-size="16"
+      :max-size="18"
+    >
+      <template #header="{ collapsed }">
+        <ProjectSwitcher :collapsed="collapsed" />
+      </template>
 
-          <nav class="hidden md:flex items-center gap-1">
-            <NuxtLink
-              v-for="item in navigation"
-              :key="item.to"
-              :to="item.to"
-              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-              :class="route.path.startsWith(item.to) ? 'text-white bg-gray-800' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'"
-            >
-              {{ item.label }}
-            </NuxtLink>
-          </nav>
+      <template #default="{ collapsed }">
+        <!-- Search -->
+        <UDashboardSearchButton
+          :label="collapsed ? undefined : 'Search...'"
+          :square="collapsed"
+          color="neutral"
+          variant="outline"
+        />
+
+        <!-- Platform navigation -->
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="links[0]"
+          orientation="vertical"
+        />
+
+        <USeparator />
+
+        <!-- Store navigation -->
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="links[1]"
+          orientation="vertical"
+        />
+
+        <!-- Bottom links -->
+        <div class="mt-auto">
+          <USeparator />
+
+          <UNavigationMenu
+            :collapsed="collapsed"
+            :items="links[2]"
+            orientation="vertical"
+          />
         </div>
+      </template>
 
-        <div class="flex items-center gap-3">
-          <UButton variant="ghost" color="neutral" icon="i-lucide-bell" />
-          <UAvatar text="U" size="sm" />
-        </div>
-      </div>
-    </header>
+      <template #footer="{ collapsed }">
+        <UserMenu :collapsed="collapsed" />
+      </template>
+    </UDashboardSidebar>
 
-    <!-- Page Content -->
-    <main class="mx-auto max-w-7xl px-6 py-8">
-      <slot />
-    </main>
-  </div>
+    <UDashboardSearch :groups="groups" />
+
+    <slot />
+
+    <NotificationsSlideOver />
+  </UDashboardGroup>
 </template>

@@ -7,7 +7,24 @@ export default defineNuxtConfig({
     compatibilityVersion: 4,
   },
 
-  modules: ['@nuxt/ui'],
+  modules: [
+    '@nuxt/ui',
+    '@nuxthub/core',
+  ],
+
+  css: ['~/assets/css/main.css'],
+
+  // NuxtHub features — Cloudflare D1, R2, KV
+  hub: {
+    database: true,
+    blob: true,
+    kv: true,
+  },
+
+  // Nitro preset for Cloudflare
+  nitro: {
+    preset: 'cloudflare-pages',
+  },
 
   // App metadata
   app: {
@@ -18,6 +35,9 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Geist:wght@300..900&family=Geist+Mono:wght@300..900&display=swap' },
       ],
     },
   },
@@ -27,8 +47,16 @@ export default defineNuxtConfig({
     cloudflareApiToken: '',
     cloudflareAccountId: '',
     neonApiKey: '',
+    neonProjectId: '',
     githubAppId: '',
     githubAppPrivateKey: '',
+    sessionPassword: '',
+    oauth: {
+      github: {
+        clientId: '',
+        clientSecret: '',
+      },
+    },
     public: {
       appTitle: 'CommerceJS Cloud',
     },

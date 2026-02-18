@@ -10,71 +10,69 @@ const showCreateModal = ref(false)
 </script>
 
 <template>
-  <div>
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
-      <div>
-        <h1 class="text-2xl font-bold text-white">
-          Projects
-        </h1>
-        <p class="mt-1 text-gray-400 text-sm">
+  <UDashboardPanel id="projects">
+    <template #header>
+      <UDashboardNavbar title="Projects">
+        <template #leading>
+          <UDashboardSidebarCollapse />
+        </template>
+
+        <template #right>
+          <UButton
+            icon="i-lucide-plus"
+            label="New Project"
+            color="primary"
+            @click="showCreateModal = true"
+          />
+        </template>
+      </UDashboardNavbar>
+    </template>
+
+    <template #body>
+      <div class="space-y-1 mb-6">
+        <p class="text-muted text-sm">
           Manage your CommerceJS stores
         </p>
       </div>
 
-      <UButton
-        icon="i-lucide-plus"
-        label="New Project"
-        color="primary"
-        @click="showCreateModal = true"
-      />
-    </div>
-
-    <!-- Project Grid -->
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <NuxtLink
-        v-for="project in projects"
-        :key="project.id"
-        :to="`/projects/${project.id}`"
-        class="group"
-      >
-        <UCard class="bg-gray-900 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer h-full">
-          <div class="flex items-start justify-between">
-            <div>
-              <h3 class="font-semibold text-white group-hover:text-primary-400 transition-colors">
-                {{ project.name }}
-              </h3>
-              <p class="text-xs text-gray-500 mt-1 font-mono">
-                {{ project.slug }}
-              </p>
+      <!-- Project Grid -->
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <NuxtLink
+          v-for="project in projects"
+          :key="project.id"
+          :to="`/projects/${project.id}`"
+          class="group"
+        >
+          <UCard class="hover:ring-primary/50 transition-all cursor-pointer h-full">
+            <div class="flex items-start justify-between">
+              <div>
+                <h3 class="font-semibold text-highlighted group-hover:text-primary transition-colors">
+                  {{ project.name }}
+                </h3>
+                <p class="text-xs text-dimmed mt-1 font-mono">
+                  {{ project.slug }}
+                </p>
+              </div>
+              <UBadge
+                :color="project.status === 'active' ? 'success' : 'warning'"
+                variant="subtle"
+                size="xs"
+              >
+                {{ project.status }}
+              </UBadge>
             </div>
-            <UBadge
-              :color="project.status === 'active' ? 'success' : 'warning'"
-              variant="subtle"
-              size="xs"
-            >
-              {{ project.status }}
-            </UBadge>
-          </div>
 
-          <div class="mt-4 pt-4 border-t border-gray-800 flex items-center justify-between text-xs text-gray-500">
-            <span>{{ project.url }}</span>
-            <span>{{ project.lastDeploy }}</span>
-          </div>
-        </UCard>
-      </NuxtLink>
-    </div>
+            <div class="mt-4 pt-4 border-t border-default flex items-center justify-between text-xs text-dimmed">
+              <span>{{ project.url }}</span>
+              <span>{{ project.lastDeploy }}</span>
+            </div>
+          </UCard>
+        </NuxtLink>
+      </div>
 
-    <!-- Create Project Modal -->
-    <UModal v-model:open="showCreateModal">
-      <template #content>
-        <UCard class="bg-gray-900 border-gray-800">
-          <template #header>
-            <h2 class="text-lg font-semibold text-white">
-              Create Project
-            </h2>
-          </template>
-
+      <!-- Create Project Modal -->
+      <UModal v-model:open="showCreateModal" title="Create Project" description="Set up a new CommerceJS store">
+        <template #body>
           <div class="space-y-4">
             <UFormField label="Project Name">
               <UInput placeholder="my-awesome-store" size="lg" />
@@ -95,15 +93,15 @@ const showCreateModal = ref(false)
               />
             </UFormField>
           </div>
+        </template>
 
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="neutral" label="Cancel" @click="showCreateModal = false" />
-              <UButton color="primary" label="Create Project" @click="showCreateModal = false" />
-            </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
-  </div>
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" color="neutral" label="Cancel" @click="showCreateModal = false" />
+            <UButton color="primary" label="Create Project" @click="showCreateModal = false" />
+          </div>
+        </template>
+      </UModal>
+    </template>
+  </UDashboardPanel>
 </template>

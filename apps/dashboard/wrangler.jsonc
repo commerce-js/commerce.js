@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "commercejs-cloud",
+  "main": "./.output/server/index.mjs",
+  "compatibility_date": "2026-02-15",
+  "assets": {
+    "directory": "./.output/public/",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "r2_buckets": [
+    {
+      "binding": "BLOB",
+      "bucket_name": "commercejs-cloud"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "commercejs-cloud",
+      "database_id": ""
+    }
+  ],
+  // KV namespace will be created by NuxtHub when deployed
+  // "kv_namespaces": [{ "binding": "CACHE", "id": "<your-id>" }]
+  "compatibility_flags": ["nodejs_compat"]
+}

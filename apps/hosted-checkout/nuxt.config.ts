@@ -40,4 +40,9 @@ export default defineNuxtConfig({
       allowedHosts: true,
     },
   },
+
+  // Nitro — Cloudflare Pages preset
+  nitro: {
+    preset: 'cloudflare-pages',
+  },
 })

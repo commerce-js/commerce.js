@@ -44,6 +44,7 @@ export function createAdminAPI(currency: string): AdminAPI {
     // Auth
     auth,
     // Products
+    getProduct: products.getProduct,
     createProduct: products.createProduct,
     updateProduct: products.updateProduct,
     deleteProduct: products.deleteProduct,

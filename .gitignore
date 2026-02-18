@@ -3,6 +3,10 @@ node_modules/
 
 # Build output
 dist/
+.output/
+.nuxt/
+.wrangler/
+*.db
 
 # Turborepo
 .turbo/
@@ -33,3 +37,5 @@ pnpm-debug.log*
 
 # Design assets and reference templates (local only)
 .templates/
+
+apps/dashboard/.data

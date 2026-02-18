@@ -20,19 +20,30 @@ async function initAdapter(): Promise<CommerceAdapter> {
     // Platform adapter — native CommerceJS engine
     // Auto-detects driver from DATABASE_URL (sqlite or neon)
     const platform = await import('@commercejs/platform')
-    const { createPlatformAdapter, migratePrisma, seedPrisma } = platform
+    const { createPlatformAdapter, seedPrisma } = platform
 
+    const dbUrl = process.env.DATABASE_URL || process.env.NUXT_DATABASE_URL
     const dbPath = process.env.COMMERCE_DB_PATH || process.env.NUXT_COMMERCE_DB_PATH || './store.db'
+
+    // Use DATABASE_URL for Neon/Postgres, fall back to local SQLite path
+    const connectionString = dbUrl || dbPath
 
     const result = await createPlatformAdapter({
       currency: process.env.COMMERCE_CURRENCY || 'SAR',
-      connectionString: dbPath,
+      connectionString,
     })
 
     _adapter = result.adapter
     _adminApi = result.admin
 
-    await migratePrisma()
+    // Run migrations — use the correct driver
+    if (dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))) {
+      const { migrateNeon } = await import('@commercejs/platform')
+      await migrateNeon()
+    } else {
+      const { migratePrisma } = await import('@commercejs/platform')
+      await migratePrisma()
+    }
 
     // Auto-seed if the database is fresh (no products yet)
     try {

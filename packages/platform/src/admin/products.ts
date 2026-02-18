@@ -133,6 +133,8 @@ export function createAdminProductsDomain(currency: string) {
   }
 
   return {
+    getProduct: fullProduct,
+
     async createProduct(input: CreateProductInput): Promise<Product> {
       const id = crypto.randomUUID()
       const now = new Date().toISOString()

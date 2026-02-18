@@ -1,6 +1,12 @@
 <template>
-  <NuxtLoadingIndicator />
-  <NuxtLayout>
-    <NuxtPage />
-  </NuxtLayout>
+  <UApp
+    :toaster="{
+      position: 'bottom-right',
+    }"
+  >
+    <NuxtLoadingIndicator color="var(--ui-primary)" />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+  </UApp>
 </template>

@@ -31,18 +31,16 @@ export default defineNuxtConfig({
   // Runtime config for platform adapter (from .env)
   runtimeConfig: {
     commerceAdapter: 'platform',
-    commerceDbPath: process.env.COMMERCE_DB_PATH || './store.db',
   },
 
-  // Nitro server config — externalize native + platform modules
-  // @commercejs/platform must NOT be bundled by Nitro's rollup so that
-  // the Prisma singleton is shared across the server plugin and API route handlers.
+  // Nitro — Cloudflare Pages preset
+  // @commercejs/platform externalized so the Prisma singleton is shared
+  // across the server plugin and API route handlers.
   nitro: {
+    preset: 'cloudflare-pages',
     externals: {
       external: [
         '@commercejs/platform',
-        'better-sqlite3',
-        '@prisma/adapter-better-sqlite3',
       ],
     },
   },

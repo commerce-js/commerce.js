@@ -187,6 +187,7 @@ export interface AdminAPI {
   }
 
   // Products
+  getProduct(id: string): Promise<Product>
   createProduct(input: CreateProductInput): Promise<Product>
   updateProduct(id: string, input: UpdateProductInput): Promise<Product>
   deleteProduct(id: string): Promise<void>
