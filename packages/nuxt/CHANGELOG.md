@@ -1,5 +1,19 @@
 # @commercejs/nuxt
 
+## 0.5.0
+
+### Minor Changes
+
+- [`b28e4fc`](https://github.com/commerce-js/commerce.js/commit/b28e4fcb5e922c2a6dc4587bdebfa66c5af227e5) Thanks [@masterde](https://github.com/masterde)! - Cloud deployment readiness
+
+  - **@commercejs/nuxt**: Adapter plugin now detects `DATABASE_URL` for Neon Postgres and calls the correct migration function (`migrateNeon` for Postgres, `migratePrisma` for SQLite). Added admin auth dev-mode bypass, new admin API endpoints for orders and products by ID.
+  - **@commercejs/platform**: Admin API enhancements — added `getProduct`, `getOrder`, `fulfillOrder`, `refundOrder`, `deleteProduct` methods. Added `seedInitialAdmin` for DB-backed admin users.
+
+### Patch Changes
+
+- Updated dependencies [[`b28e4fc`](https://github.com/commerce-js/commerce.js/commit/b28e4fcb5e922c2a6dc4587bdebfa66c5af227e5)]:
+  - @commercejs/platform@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
