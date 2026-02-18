@@ -27,7 +27,18 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
     // Use DATABASE_URL for Neon/Postgres, fall back to local SQLite path
     const connectionString = dbUrl || dbPath
+    const isNeon = dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))
 
+    // Run migrations FIRST — tables must exist before adapter seeds admin
+    if (isNeon) {
+      const { migrateNeon } = await import('@commercejs/platform')
+      await migrateNeon()
+    } else {
+      const { migratePrisma } = await import('@commercejs/platform')
+      await migratePrisma()
+    }
+
+    // NOW create the adapter (this also seeds the initial admin user)
     const result = await createPlatformAdapter({
       currency: process.env.COMMERCE_CURRENCY || 'SAR',
       connectionString,
@@ -36,20 +47,15 @@ async function initAdapter(): Promise<CommerceAdapter> {
     _adapter = result.adapter
     _adminApi = result.admin
 
-    // Run migrations — use the correct driver
-    if (dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))) {
-      const { migrateNeon } = await import('@commercejs/platform')
-      await migrateNeon()
-    } else {
-      const { migratePrisma } = await import('@commercejs/platform')
-      await migratePrisma()
-    }
-
-    // Auto-seed if the database is fresh (no products yet)
+    // Auto-seed demo data if the database is fresh (no products yet)
     try {
       await seedPrisma()
-    } catch {
-      // Already seeded — ignore
+      console.log('[commerce] Demo data seeded successfully')
+    } catch (err: any) {
+      // Already seeded or seed error — log for debugging
+      if (err?.code !== 'P2002') {
+        console.warn('[commerce] Seed skipped:', err?.message || err)
+      }
     }
   } else {
     // Salla adapter (default)
