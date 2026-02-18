@@ -1,14 +1,16 @@
 // ---------------------------------------------------------------------------
-// Seed — populate the database with demo data (Prisma version)
+// Seed — populate the database with demo data (Prisma ORM — driver-agnostic)
 // ---------------------------------------------------------------------------
 
 import { getDb } from './client.js'
 
 /**
  * Seed the database with demo products, categories, and store info via Prisma.
+ * Accepts an optional Prisma client — if not provided, falls back to getDb() (SQLite).
+ * This allows the same seed logic to work with both SQLite and Neon drivers.
  */
-export async function seedPrisma() {
-  const prisma = getDb()
+export async function seedPrisma(db?: any) {
+  const prisma = db ?? getDb()
   const now = new Date().toISOString()
 
   // ---- Store ----

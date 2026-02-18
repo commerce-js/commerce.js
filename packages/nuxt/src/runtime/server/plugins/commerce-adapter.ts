@@ -48,8 +48,14 @@ async function initAdapter(): Promise<CommerceAdapter> {
     _adminApi = result.admin
 
     // Auto-seed demo data if the database is fresh (no products yet)
+    // Pass the correct Prisma client — Neon and SQLite use separate singletons
     try {
-      await seedPrisma()
+      let db: any
+      if (isNeon) {
+        const { getNeonDb } = await import('@commercejs/platform')
+        db = getNeonDb()
+      }
+      await seedPrisma(db)
       console.log('[commerce] Demo data seeded successfully')
     } catch (err: any) {
       // Already seeded or seed error — log for debugging
