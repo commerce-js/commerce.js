@@ -28,14 +28,10 @@ export default defineNuxtConfig({
     apiRoutes: true,
   },
 
-  // Runtime config for platform adapter (from .env)
-  runtimeConfig: {
-    commerceAdapter: 'platform',
-  },
+  // Runtime config is handled by @commercejs/nuxt module
+  // (runtimeConfig.commerce.* auto-mapped from NUXT_COMMERCE_* env vars)
 
   // Nitro — Cloudflare Pages preset
-  // @commercejs/platform externalized so the Prisma singleton is shared
-  // across the server plugin and API route handlers.
   nitro: {
     preset: 'cloudflare-pages',
     // Cloudflare Workers compatibility — Prisma client needs Node.js APIs
@@ -50,11 +46,8 @@ export default defineNuxtConfig({
         compatibility_flags: ['nodejs_compat'],
       },
     },
-    externals: {
-      external: [
-        '@commercejs/platform',
-      ],
-    },
+    // @commercejs/platform is bundled (not externalized) so it's
+    // available in Cloudflare Workers which have no node_modules
   },
 
   devtools: { enabled: true },
