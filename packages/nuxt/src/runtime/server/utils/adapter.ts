@@ -11,9 +11,12 @@ export function useServerAdapter(event: H3Event): CommerceAdapter {
   const adapter = (event.context as any)._commerceAdapter as CommerceAdapter | undefined
 
   if (!adapter) {
+    const initError = (event.context as any)._commerceInitError as Error | undefined
     throw createError({
       statusCode: 500,
-      message: '[@commercejs/nuxt] No commerce adapter configured on the server.',
+      message: initError
+        ? `[@commercejs/nuxt] Adapter init failed: ${initError.message}`
+        : '[@commercejs/nuxt] No commerce adapter configured on the server.',
     })
   }
 

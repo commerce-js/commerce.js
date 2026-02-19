@@ -97,10 +97,13 @@ async function initAdapter(): Promise<CommerceAdapter> {
   return _adapter!
 }
 
+let _initError: Error | null = null
+
 export default defineNitroPlugin((nitroApp) => {
   // Initialize on startup (deferred singleton)
   _initPromise = initAdapter().catch((err) => {
     console.error('[commerce] Adapter initialization FAILED:', err)
+    _initError = err instanceof Error ? err : new Error(String(err))
     throw err
   })
 
@@ -109,7 +112,8 @@ export default defineNitroPlugin((nitroApp) => {
       try {
         await _initPromise
       } catch (err) {
-        console.error('[commerce] Adapter unavailable due to init failure:', err)
+        // Store the error for the request handler to surface
+        ;(event.context as any)._commerceInitError = _initError
       }
     }
     ;(event.context as any)._commerceAdapter = _adapter
