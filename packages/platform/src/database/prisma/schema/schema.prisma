@@ -6,8 +6,6 @@ generator client {
   output                 = "../generated"
   moduleFormat           = "esm"
   generatedFileExtension = "ts"
-  runtime                = "cloudflare"
-  compilerBuild          = "small"
 }
 
 datasource db {
