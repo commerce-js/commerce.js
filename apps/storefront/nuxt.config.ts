@@ -34,20 +34,6 @@ export default defineNuxtConfig({
   // Nitro — Cloudflare Pages preset
   nitro: {
     preset: 'cloudflare-pages',
-    // Cloudflare Workers compatibility — Prisma client needs Node.js APIs
-    compatibilityDate: '2024-09-23',
-    cloudflare: {
-      pages: {
-        defaultRoutes: {
-          exclude: ['/api/*'],
-        },
-      },
-      wrangler: {
-        compatibility_flags: ['nodejs_compat'],
-      },
-    },
-    // @commercejs/platform is bundled (not externalized) so it's
-    // available in Cloudflare Workers which have no node_modules
   },
 
   devtools: { enabled: true },
