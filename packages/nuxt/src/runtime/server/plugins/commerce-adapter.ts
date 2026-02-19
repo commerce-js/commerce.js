@@ -16,9 +16,11 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
   // Use Nuxt runtime config as primary, process.env as fallback
   const runtimeConfig = useRuntimeConfig()
-  const adapterName = process.env.COMMERCE_ADAPTER
+  const commerceConfig = (runtimeConfig as any).commerce || {}
+
+  const adapterName = commerceConfig.adapter
+    || process.env.COMMERCE_ADAPTER
     || process.env.NUXT_COMMERCE_ADAPTER
-    || (runtimeConfig as any).commerceAdapter
     || 'salla'
 
   console.log('[commerce] Initializing adapter:', adapterName)
@@ -27,7 +29,9 @@ async function initAdapter(): Promise<CommerceAdapter> {
     const platform = await import('@commercejs/platform')
     const { createPlatformAdapter, seedPrisma, getDb } = platform
 
-    const connectionString = process.env.DATABASE_URL || process.env.NUXT_DATABASE_URL
+    const connectionString = commerceConfig.databaseUrl
+      || process.env.DATABASE_URL
+      || process.env.NUXT_DATABASE_URL
     if (!connectionString) {
       throw new Error('[@commercejs/nuxt] DATABASE_URL is required for platform adapter.')
     }
@@ -45,8 +49,12 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
     // 2. Create adapter (seeds initial admin user)
     console.log('[commerce] Creating platform adapter...')
+    const currency = commerceConfig.currency
+      || process.env.COMMERCE_CURRENCY
+      || 'SAR'
+
     const result = await createPlatformAdapter({
-      currency: process.env.COMMERCE_CURRENCY || 'SAR',
+      currency,
       connectionString,
     })
 
@@ -67,7 +75,9 @@ async function initAdapter(): Promise<CommerceAdapter> {
     // Salla adapter (default)
     const { SallaAdapter } = await import('@commercejs/adapter-salla')
 
-    const token = process.env.SALLA_TOKEN || process.env.NUXT_SALLA_TOKEN
+    const token = commerceConfig.sallaToken
+      || process.env.SALLA_TOKEN
+      || process.env.NUXT_SALLA_TOKEN
     if (!token) {
       throw new Error(
         '[@commercejs/nuxt] SALLA_TOKEN environment variable is required. ' +
@@ -77,10 +87,10 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
     _adapter = new SallaAdapter({
       accessToken: token,
-      refreshToken: process.env.SALLA_REFRESH_TOKEN || process.env.NUXT_SALLA_REFRESH_TOKEN,
-      clientId: process.env.SALLA_CLIENT_ID || process.env.NUXT_SALLA_CLIENT_ID,
-      clientSecret: process.env.SALLA_SECRET || process.env.NUXT_SALLA_SECRET,
-      locale: (process.env.SALLA_LOCALE || process.env.NUXT_SALLA_LOCALE || 'ar') as 'ar' | 'en',
+      refreshToken: commerceConfig.sallaRefreshToken || process.env.SALLA_REFRESH_TOKEN || process.env.NUXT_SALLA_REFRESH_TOKEN,
+      clientId: commerceConfig.sallaClientId || process.env.SALLA_CLIENT_ID || process.env.NUXT_SALLA_CLIENT_ID,
+      clientSecret: commerceConfig.sallaSecret || process.env.SALLA_SECRET || process.env.NUXT_SALLA_SECRET,
+      locale: (commerceConfig.sallaLocale || process.env.SALLA_LOCALE || process.env.NUXT_SALLA_LOCALE || 'ar') as 'ar' | 'en',
     })
   }
 

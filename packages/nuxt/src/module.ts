@@ -66,6 +66,19 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
       apiBase: options.apiBase || '/api/_commerce',
     }
 
+    // Server-side runtime config for secrets (auto-mapped from NUXT_* env vars)
+    nuxt.options.runtimeConfig.commerce = {
+      ...nuxt.options.runtimeConfig.commerce as any,
+      databaseUrl: '',        // NUXT_COMMERCE_DATABASE_URL
+      adapter: '',            // NUXT_COMMERCE_ADAPTER
+      currency: '',           // NUXT_COMMERCE_CURRENCY
+      sallaToken: '',         // NUXT_COMMERCE_SALLA_TOKEN
+      sallaRefreshToken: '',  // NUXT_COMMERCE_SALLA_REFRESH_TOKEN
+      sallaClientId: '',      // NUXT_COMMERCE_SALLA_CLIENT_ID
+      sallaSecret: '',        // NUXT_COMMERCE_SALLA_SECRET
+      sallaLocale: '',        // NUXT_COMMERCE_SALLA_LOCALE
+    }
+
     // Add type augmentation for $commerce on NuxtApp
     addTypeTemplate({
       filename: 'types/commercejs.d.ts',
