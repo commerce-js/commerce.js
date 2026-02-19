@@ -40,7 +40,12 @@ Prisma 7.4 WASM module fails to bundle correctly for Cloudflare Workers via Nuxt
 - Nuxt's `cloudflare-pages` preset handles these automatically
 - Storefront only sets `preset: 'cloudflare-pages'`
 
-## Current State (commit `7a00856`)
+### 7. ✅ Initialize `vite.plugins` array before push (commit `f7f4f2f`)
+- Cloudflare build crashed: `Cannot read properties of undefined (reading 'push')` at module.mjs:77
+- `nuxt.options.vite.plugins` was undefined in CF's build environment
+- Fix: `nuxt.options.vite.plugins = nuxt.options.vite.plugins || []` before `.push()`
+
+## Current State (commit `f7f4f2f`)
 
 **schema.prisma generator:**
 ```prisma
