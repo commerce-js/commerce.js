@@ -100,21 +100,28 @@ async function initAdapter(): Promise<CommerceAdapter> {
 let _initError: Error | null = null
 
 export default defineNitroPlugin((nitroApp) => {
-  // Initialize on startup (deferred singleton)
-  _initPromise = initAdapter().catch((err) => {
-    console.error('[commerce] Adapter initialization FAILED:', err)
-    _initError = err instanceof Error ? err : new Error(String(err))
-    throw err
-  })
+  // NOTE: Do NOT call initAdapter() here — Cloudflare Workers forbid
+  // async I/O (WebSocket, fetch, connect) in global scope.
+  // Instead, we lazily initialize on the first incoming request.
 
   nitroApp.hooks.hook('request', async (event) => {
-    if (!_adapter) {
+    if (!_adapter && !_initError) {
+      if (!_initPromise) {
+        _initPromise = initAdapter().catch((err) => {
+          console.error('[commerce] Adapter initialization FAILED:', err)
+          _initError = err instanceof Error ? err : new Error(String(err))
+          throw err
+        })
+      }
       try {
         await _initPromise
-      } catch (err) {
-        // Store the error for the request handler to surface
-        ;(event.context as any)._commerceInitError = _initError
+      } catch {
+        // error already stored in _initError
       }
+    }
+
+    if (_initError) {
+      ;(event.context as any)._commerceInitError = _initError
     }
     ;(event.context as any)._commerceAdapter = _adapter
     ;(event.context as any)._commerceAdmin = _adminApi
