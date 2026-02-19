@@ -2,7 +2,6 @@
 // Database client (Drizzle + Neon serverless HTTP)
 // ---------------------------------------------------------------------------
 
-import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import * as schema from './schema/index.js'
 
@@ -14,13 +13,15 @@ let _db: DrizzleDatabase | null = null
 /**
  * Initialize the Drizzle database with a Neon serverless connection.
  *
+ * Uses the simplified drizzle(connectionString) API — Drizzle creates the
+ * Neon HTTP client internally, avoiding v1.x tagged-template API issues.
+ *
  * @param connectionString - PostgreSQL connection string (e.g. from Neon)
  */
 export function initDrizzle(connectionString: string): DrizzleDatabase {
   if (_db) return _db
 
-  const sql = neon(connectionString)
-  _db = drizzle({ client: sql, schema })
+  _db = drizzle(connectionString, { schema })
   return _db
 }
 
