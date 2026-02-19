@@ -40,7 +40,7 @@
     "drizzle-orm": "^0.38.4"
   },
   "peerDependencies": {
-    "@neondatabase/serverless": "^1.0.0"
+    "@neondatabase/serverless": "^0.10.4"
   },
   "peerDependenciesMeta": {
     "@neondatabase/serverless": {
@@ -48,7 +48,7 @@
     }
   },
   "devDependencies": {
-    "@neondatabase/serverless": "^1.0.2",
+    "@neondatabase/serverless": "^0.10.4",
     "drizzle-kit": "^0.30.6",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
