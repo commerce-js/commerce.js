@@ -118,6 +118,12 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
       logger.info(`Server routes auto-discovered under ${options.apiBase}`)
     }
 
+    // Enable WASM support — required for Prisma query compiler on Cloudflare Workers
+    nuxt.options.nitro.experimental = {
+      ...nuxt.options.nitro.experimental,
+      wasm: true,
+    }
+
     // Enable OpenAPI spec generation (/_openapi.json, /_scalar, /_swagger)
     if (options.openAPI) {
       nuxt.options.nitro.experimental = {
