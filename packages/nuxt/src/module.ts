@@ -124,6 +124,7 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
       wasm: true,
     }
 
+    nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
     nuxt.options.vite.plugins.push(unwasm({
       esmImport: true,
     }))
