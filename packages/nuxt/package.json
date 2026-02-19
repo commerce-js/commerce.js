@@ -39,6 +39,7 @@
     "h3": "^1.13.0",
     "nuxt-auth-utils": "^0.5.29",
     "ulid": "^3.0.2",
+    "unwasm": "^0.5.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {

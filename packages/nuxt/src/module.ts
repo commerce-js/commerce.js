@@ -10,7 +10,7 @@ import {
 } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
 import { consola } from 'consola'
-
+import { unwasm } from 'unwasm/plugin'
 const logger = consola.withTag('@commercejs/nuxt')
 
 export interface CommerceModuleOptions {
@@ -123,6 +123,10 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
       ...nuxt.options.nitro.experimental,
       wasm: true,
     }
+
+    nuxt.options.vite.plugins.push(unwasm({
+      esmImport: true,
+    }))
 
     // Enable OpenAPI spec generation (/_openapi.json, /_scalar, /_swagger)
     if (options.openAPI) {
