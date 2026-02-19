@@ -26,7 +26,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp src/database/prisma/generated/internal/*.wasm src/database/prisma/generated/internal/*.js dist/database/prisma/generated/internal/ 2>/dev/null || true",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
