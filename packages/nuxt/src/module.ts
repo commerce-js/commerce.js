@@ -128,19 +128,6 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
       esmImport: true,
     }))
 
-    // Auto-exclude commerce API routes from Cloudflare Pages static routing
-    const preset = nuxt.options.nitro.preset || ''
-    if (preset.startsWith('cloudflare')) {
-      const existing = nuxt.options.nitro.cloudflare?.pages?.defaultRoutes?.exclude || []
-      nuxt.options.nitro.cloudflare = {
-        ...nuxt.options.nitro.cloudflare,
-        pages: {
-          ...nuxt.options.nitro.cloudflare?.pages,
-          defaultRoutes: { exclude: [...existing, `${options.apiBase}/*`] },
-        },
-      }
-    }
-
     // Enable OpenAPI spec generation (/_openapi.json, /_scalar, /_swagger)
     if (options.openAPI) {
       nuxt.options.nitro.experimental = {
