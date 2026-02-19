@@ -3,7 +3,6 @@
 // ---------------------------------------------------------------------------
 
 import { PrismaClient } from './generated/client.js'
-import { Pool } from '@neondatabase/serverless'
 import { PrismaNeon } from '@prisma/adapter-neon'
 
 // Module-level client instance — set via initPrisma()
@@ -17,9 +16,9 @@ let _prisma: InstanceType<typeof PrismaClient> | null = null
 export function initPrisma(connectionString: string) {
   if (_prisma) return _prisma
 
-  const pool = new Pool({ connectionString })
-  const adapter = new PrismaNeon(pool as any)
-  _prisma = new PrismaClient({ adapter })
+  // PrismaNeon creates its own Pool internally from the config object
+  const adapter = new PrismaNeon({ connectionString })
+  _prisma = new PrismaClient({ adapter } as any)
   return _prisma
 }
 
