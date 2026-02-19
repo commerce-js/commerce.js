@@ -87,11 +87,18 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
 export default defineNitroPlugin((nitroApp) => {
   // Initialize on startup (deferred singleton)
-  _initPromise = initAdapter()
+  _initPromise = initAdapter().catch((err) => {
+    console.error('[commerce] Adapter initialization FAILED:', err)
+    throw err
+  })
 
   nitroApp.hooks.hook('request', async (event) => {
     if (!_adapter) {
-      await _initPromise
+      try {
+        await _initPromise
+      } catch (err) {
+        console.error('[commerce] Adapter unavailable due to init failure:', err)
+      }
     }
     ;(event.context as any)._commerceAdapter = _adapter
     ;(event.context as any)._commerceAdmin = _adminApi
