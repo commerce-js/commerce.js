@@ -26,5 +26,16 @@ export function getDb() {
   return _prisma
 }
 
+/**
+ * Set the global Prisma client reference externally.
+ *
+ * Used by the Neon initialization path — `initPrismaNeon()` creates a Prisma
+ * client backed by `@prisma/adapter-neon`, and this function registers it so
+ * that all query modules (which call `getDb()`) use the Neon-backed client.
+ */
+export function setDb(client: InstanceType<typeof PrismaClient>) {
+  _prisma = client
+}
+
 /** Prisma client type — for consumers who need to type-hint the client. */
 export type PrismaDatabase = InstanceType<typeof PrismaClient>

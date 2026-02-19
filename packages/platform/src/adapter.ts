@@ -64,6 +64,19 @@ async function initDatabase(driver: DatabaseDriver, connectionString?: string) {
   }
 
   if (driver === 'neon') {
+    const { setDb } = await import('./database/prisma/client.js')
+
+    // Check if the Neon client was already initialized externally
+    // (e.g. by the Nuxt plugin calling initPrismaNeon() before migrations)
+    try {
+      const { getNeonDb } = await import('./database/neon/client.js')
+      const existingClient = getNeonDb() // Throws if not initialized
+      setDb(existingClient as any)
+      return existingClient
+    } catch {
+      // Neon client not initialized yet — create it now
+    }
+
     const { initPrismaNeon } = await import('./database/neon/client.js')
     if (!connectionString) {
       connectionString = globalThis.process?.env?.DATABASE_URL
@@ -73,7 +86,13 @@ async function initDatabase(driver: DatabaseDriver, connectionString?: string) {
         'Neon driver requires a connection string. Pass `connectionString` in config or set DATABASE_URL env var.',
       )
     }
-    return initPrismaNeon(connectionString)
+    const neonClient = await initPrismaNeon(connectionString)
+
+    // Bridge: register the Neon-backed client as the global getDb() target
+    // so all query modules (catalog, cart, orders, etc.) use the Neon client.
+    setDb(neonClient as any)
+
+    return neonClient
   }
 
   // Default: SQLite
