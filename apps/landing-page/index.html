@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commerce.js — The Abstraction Layer for eCommerce</title>
+  <meta name="description" content="One TypeScript SDK. Any eCommerce backend. Zero rewrites. Build your storefront once and connect it to Salla, Medusa, Shopify, or any backend through adapters.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #09090f;
+      --bg-2: #0e0e16;
+      --bg-card: #12121c;
+      --bg-card-hover: #181828;
+      --border: #1c1c2e;
+      --text: #e8e8ed;
+      --text-muted: #8888a0;
+      --text-dim: #555568;
+      --accent: #7c5cff;
+      --accent-glow: #9b7dff;
+      --accent-2: #00d4aa;
+      --accent-3: #ff6b6b;
+      --accent-4: #ffd93d;
+      --gradient: linear-gradient(135deg, #7c5cff 0%, #00d4aa 100%);
+      --gradient-warm: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%);
+      --font: 'Inter', -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --max-w: 1140px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); line-height: 1.6; overflow-x: hidden; }
+    a { color: var(--accent-glow); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+    /* ─── Nav ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(9,9,15,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: var(--max-w); margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between; height: 64px;
+    }
+    .nav-logo { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+    .nav-logo span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a { color: var(--text-muted); font-size: 14px; font-weight: 500; text-decoration: none; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 10px; font-size: 14px; font-weight: 600;
+      text-decoration: none; transition: all 0.3s;
+    }
+    .btn-primary { background: var(--gradient); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); text-decoration: none; }
+    .btn-ghost { border: 1px solid var(--border); color: var(--text); background: transparent; }
+    .btn-ghost:hover { border-color: var(--accent); text-decoration: none; }
+
+    /* ─── Hero ─── */
+    .hero {
+      padding: 160px 0 100px; text-align: center; position: relative;
+      background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(124,92,255,0.12) 0%, transparent 60%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+      background: rgba(124,92,255,0.1); color: var(--accent-glow); border: 1px solid rgba(124,92,255,0.2);
+      margin-bottom: 28px;
+    }
+    .hero h1 { font-size: 64px; font-weight: 900; line-height: 1.08; letter-spacing: -2px; max-width: 800px; margin: 0 auto 24px; }
+    .hero h1 .grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { font-size: 20px; color: var(--text-muted); max-width: 560px; margin: 0 auto 40px; line-height: 1.6; }
+    .hero-actions { display: flex; gap: 16px; justify-content: center; }
+
+    .hero-code {
+      max-width: 680px; margin: 56px auto 0;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      overflow: hidden;
+    }
+    .hero-code-header {
+      display: flex; align-items: center; gap: 8px; padding: 12px 18px;
+      border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);
+    }
+    .hero-code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .hero-code pre {
+      padding: 22px 26px; font-family: var(--mono); font-size: 14px; line-height: 1.8;
+      overflow-x: auto; color: var(--text);
+    }
+    .hero-code .kw { color: #c792ea; }
+    .hero-code .fn { color: #82aaff; }
+    .hero-code .str { color: #c3e88d; }
+    .hero-code .cm { color: #546e7a; }
+    .hero-code .prop { color: #80cbc4; }
+    .hero-code .obj { color: #f78c6c; }
+
+    /* ─── Section ─── */
+    section { padding: 100px 0; }
+    section.alt { background: var(--bg-2); }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-label {
+      font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--accent); margin-bottom: 14px;
+    }
+    .section-header h2 { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1; }
+    .section-header h2 .grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .section-header p { font-size: 18px; color: var(--text-muted); margin-top: 16px; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+    /* ─── Cards ─── */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; transition: all 0.3s;
+    }
+    .card:hover { border-color: rgba(124,92,255,0.3); transform: translateY(-3px); }
+    .card-icon { font-size: 36px; margin-bottom: 16px; display: block; }
+    .card h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    .card p { color: var(--text-muted); font-size: 15px; line-height: 1.6; }
+
+    .grid { display: grid; gap: 24px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    /* ─── How it Works ─── */
+    .how-it-works-steps { display: flex; flex-direction: column; gap: 64px; max-width: 800px; margin: 0 auto; }
+    .step { display: flex; gap: 32px; align-items: flex-start; }
+    .step-num {
+      flex-shrink: 0; width: 48px; height: 48px; border-radius: 12px;
+      background: var(--gradient); display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 800; color: #fff;
+    }
+    .step-content h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .step-content p { color: var(--text-muted); font-size: 15px; line-height: 1.6; }
+    .step-code {
+      margin-top: 16px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px; font-family: var(--mono);font-size: 13px; line-height: 1.7;
+    }
+
+    /* ─── Stats Bar ─── */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 36px 24px; text-align: center;
+    }
+    .stat-value { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+    .stat-value.grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ─── Comparison ─── */
+    .comp-table { width: 100%; border-collapse: collapse; }
+    .comp-table th {
+      text-align: left; padding: 14px 18px; font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
+      border-bottom: 2px solid var(--border);
+    }
+    .comp-table td { padding: 14px 18px; border-bottom: 1px solid rgba(28,28,46,0.5); font-size: 14px; }
+    .comp-table tr:last-child td { border-bottom: none; }
+    .comp-table .us { background: rgba(124,92,255,0.06); }
+    .comp-table .us td:first-child { color: var(--accent-glow); font-weight: 700; }
+
+    /* ─── Ecosystem ─── */
+    .ecosystem { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .eco-tag {
+      padding: 8px 18px; border-radius: 10px; font-size: 14px; font-weight: 500;
+      background: var(--bg-card); border: 1px solid var(--border); transition: all 0.3s;
+    }
+    .eco-tag:hover { border-color: var(--accent); }
+    .eco-tag.highlight { background: rgba(124,92,255,0.1); border-color: rgba(124,92,255,0.3); color: var(--accent-glow); }
+
+    /* ─── CTA ─── */
+    .cta-section {
+      padding: 100px 0; text-align: center;
+      background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(124,92,255,0.1) 0%, transparent 60%);
+    }
+    .cta-section h2 { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; }
+    .cta-section p { font-size: 18px; color: var(--text-muted); margin-bottom: 36px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .cta-actions { display: flex; gap: 16px; justify-content: center; }
+
+    /* ─── Footer ─── */
+    footer {
+      border-top: 1px solid var(--border); padding: 40px 0;
+      text-align: center; font-size: 13px; color: var(--text-dim);
+    }
+
+    /* ─── Mobile ─── */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 36px; letter-spacing: -1px; }
+      .hero p { font-size: 16px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .stats-bar { grid-template-columns: repeat(3, 1fr); }
+      .step { flex-direction: column; gap: 16px; }
+      .hero-actions, .cta-actions { flex-direction: column; align-items: center; }
+      .nav-links { gap: 16px; }
+      .nav-links a:not(.btn) { display: none; }
+      section { padding: 64px 0; }
+      .section-header h2 { font-size: 32px; }
+    }
+
+    /* ─── Animations ─── */
+    .reveal { opacity: 0; transform: translateY(24px); transition: all 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- ▸▸▸ NAV ▸▸▸ -->
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-logo"><span>Commerce.js</span></div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How It Works</a>
+        <a href="#ecosystem">Ecosystem</a>
+        <a href="#compare">Compare</a>
+        <a href="https://github.com/commercejs" class="btn btn-ghost">GitHub</a>
+        <a href="#cta" class="btn btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ▸▸▸ HERO ▸▸▸ -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">✨ Open Source · MIT License · MENA-Native</div>
+      <h1>The abstraction layer for <span class="grad">eCommerce</span></h1>
+      <p>One TypeScript SDK. Any backend. Zero rewrites. Build your storefront once, connect it to Salla, Medusa, Shopify, or anything else — through adapters.</p>
+      <div class="hero-actions">
+        <a href="#cta" class="btn btn-primary">Start Building →</a>
+        <a href="#how" class="btn btn-ghost">See How It Works</a>
+      </div>
+      <div class="hero-code">
+        <div class="hero-code-header">
+          <div class="hero-code-dot" style="background: #ff5f57;"></div>
+          <div class="hero-code-dot" style="background: #ffbd2e;"></div>
+          <div class="hero-code-dot" style="background: #28c840;"></div>
+          <span style="margin-left: auto; font-size: 12px; color: var(--text-dim); font-family: var(--mono);">nuxt.config.ts</span>
+        </div>
+<pre><span class="kw">export default</span> <span class="fn">defineNuxtConfig</span>({
+  <span class="prop">modules</span>: [<span class="str">'@commercejs/nuxt'</span>],
+
+  <span class="prop">commerce</span>: {
+    <span class="prop">adapter</span>: <span class="str">'salla'</span>,       <span class="cm">// ← swap to 'medusa', 'shopify', etc.</span>
+    <span class="prop">providers</span>: {
+      <span class="prop">payment</span>: <span class="str">'tap'</span>,        <span class="cm">// Tap Payments</span>
+      <span class="prop">delivery</span>: <span class="str">'armada'</span>,    <span class="cm">// Armada Delivery</span>
+      <span class="prop">email</span>: <span class="str">'resend'</span>,       <span class="cm">// Resend Email</span>
+    }
+  }
+})</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ STATS BAR ▸▸▸ -->
+  <section style="padding: 0 0 80px;">
+    <div class="container">
+      <div class="stats-bar reveal">
+        <div><div class="stat-value grad">16</div><div class="stat-label">npm packages</div></div>
+        <div><div class="stat-value grad">26</div><div class="stat-label">unified types</div></div>
+        <div><div class="stat-value grad">46</div><div class="stat-label">API routes</div></div>
+        <div><div class="stat-value grad">200+</div><div class="stat-label">tests passing</div></div>
+        <div><div class="stat-value grad">100%</div><div class="stat-label">TypeScript</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ THE PROBLEM ▸▸▸ -->
+  <section class="alt" id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">The Problem</div>
+        <h2>Every platform is a <span class="grad">walled garden</span></h2>
+        <p>Different APIs, data shapes, auth flows, and price formats. Build on one, locked into one.</p>
+      </div>
+      <div class="grid grid-3 reveal">
+        <div class="card">
+          <span class="card-icon">🔒</span>
+          <h3>Platform Lock-In</h3>
+          <p>Build on Salla? Everything is Salla-shaped. Switch to Medusa? Rewrite 100% of your integration layer. Start from zero.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🧩</span>
+          <h3>Fragmented APIs</h3>
+          <p>Salla uses OAuth. Medusa uses JWT. Salla prices in major units. Medusa in minor. No two platforms agree on anything.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">💸</span>
+          <h3>Linear Cost Growth</h3>
+          <p>Agencies maintaining storefronts for clients on 3 different platforms need 3 separate codebases. Costs multiply.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ THE SOLUTION ▸▸▸ -->
+  <section id="how">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">The Solution</div>
+        <h2>One interface. <span class="grad">Every backend.</span></h2>
+        <p>Commerce.js defines 26 canonical types and maps each backend to them through adapters.</p>
+      </div>
+      <div class="how-it-works-steps">
+        <div class="step reveal">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Install the Nuxt 4 module</h3>
+            <p>One package. Auto-registers 46 server routes, composables, and the event bus.</p>
+            <div class="step-code">
+              <span style="color: var(--text-dim);">$</span> <span style="color: var(--accent-2);">npx nuxi module add @commercejs/nuxt</span>
+            </div>
+          </div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Pick your adapter</h3>
+            <p>Connect to your eCommerce backend in one line. Salla, Medusa, or bring your own.</p>
+            <div class="step-code">
+<span style="color: #c792ea;">commerce</span>: { <span style="color: #80cbc4;">adapter</span>: <span style="color: #c3e88d;">'salla'</span> }  <span style="color: #546e7a;">// or 'medusa', 'shopify', etc.</span>
+            </div>
+          </div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Build with unified composables</h3>
+            <p>Your frontend codes against types — not APIs. Every composable works with every adapter.</p>
+            <div class="step-code">
+<span style="color: #c792ea;">const</span> { <span style="color: #f78c6c;">products</span> } = <span style="color: #c792ea;">await</span> <span style="color: #82aaff;">useProducts</span>()
+<span style="color: #c792ea;">const</span> { <span style="color: #f78c6c;">cart</span>, <span style="color: #82aaff;">addToCart</span> } = <span style="color: #c792ea;">await</span> <span style="color: #82aaff;">useCart</span>()
+<span style="color: #c792ea;">const</span> { <span style="color: #82aaff;">createOrder</span> } = <span style="color: #c792ea;">await</span> <span style="color: #82aaff;">useOrders</span>()
+            </div>
+          </div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Switch backends. Keep everything.</h3>
+            <p>Change one config line. Zero rewrites. Your frontend, composables, providers, and tests stay the same.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ FEATURES ▸▸▸ -->
+  <section class="alt">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Features</div>
+        <h2>Everything you need. <span class="grad">Nothing you don't.</span></h2>
+      </div>
+      <div class="grid grid-2 reveal">
+        <div class="card">
+          <span class="card-icon">⚡</span>
+          <h3>Composable Adapters</h3>
+          <p>Each adapter maps a backend's API to 26 unified TypeScript types. Products, carts, orders, customers — all normalized. Works with any backend that speaks HTTP.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🔌</span>
+          <h3>Pluggable Providers</h3>
+          <p>Payments (Tap), email (Resend), analytics (GA), delivery (Armada, Parcel) — all swappable. Register once, use across every adapter.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🛡️</span>
+          <h3>Platform Fallback Engine</h3>
+          <p>If an adapter doesn't support wishlists, reviews, or carts? The platform engine fills the gap with SQLite or Postgres — automatically.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">📡</span>
+          <h3>Event-Driven Architecture</h3>
+          <p>Every commerce action emits events. Hook into <code>order:created</code>, <code>cart:updated</code>, or <code>payment:completed</code> to add custom logic without touching core code.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🔐</span>
+          <h3>Auto-Generated API</h3>
+          <p>46 server routes with OpenAPI spec, Scalar UI, and type-safe request/response. Zero boilerplate — the Nuxt 4 module handles everything.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🌙</span>
+          <h3>MENA-Native</h3>
+          <p>First-class Salla adapter, Tap Payments, Armada & Parcel delivery, RTL-ready UI, SAR currency — built in, not bolted on.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ ECOSYSTEM ▸▸▸ -->
+  <section id="ecosystem">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Ecosystem</div>
+        <h2>16 packages. <span class="grad">One SDK.</span></h2>
+        <p>Everything is modular. Install only what you need.</p>
+      </div>
+      <div class="ecosystem reveal">
+        <span class="eco-tag highlight">@commercejs/core</span>
+        <span class="eco-tag highlight">@commercejs/types</span>
+        <span class="eco-tag highlight">@commercejs/nuxt</span>
+        <span class="eco-tag">@commercejs/adapter-salla</span>
+        <span class="eco-tag">@commercejs/adapter-medusa</span>
+        <span class="eco-tag">@commercejs/checkout</span>
+        <span class="eco-tag">@commercejs/platform</span>
+        <span class="eco-tag">@commercejs/ui</span>
+        <span class="eco-tag">@commercejs/payment-tap</span>
+        <span class="eco-tag">@commercejs/notification-resend</span>
+        <span class="eco-tag">@commercejs/analytics-ga</span>
+        <span class="eco-tag">@commercejs/delivery-armada</span>
+        <span class="eco-tag">@commercejs/delivery-parcel</span>
+        <span class="eco-tag">+ more</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ COMPARE ▸▸▸ -->
+  <section class="alt" id="compare">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Compare</div>
+        <h2>How we're <span class="grad">different</span></h2>
+      </div>
+      <div class="card reveal" style="padding: 0; overflow: hidden;">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Commerce.js</th>
+              <th>Medusa</th>
+              <th>Alokai</th>
+              <th>Commerce Layer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="us"><td>Category</td><td>Abstraction layer</td><td>Commerce platform</td><td>FEaaS middleware</td><td>API-first SaaS</td></tr>
+            <tr class="us"><td>Backend</td><td><strong>Any</strong> (via adapters)</td><td>Medusa only</td><td>Any (limited)</td><td>CL only</td></tr>
+            <tr class="us"><td>Frontend</td><td><strong>Nuxt 4</strong> native</td><td>Framework-agnostic</td><td>Vue + React</td><td>Framework-agnostic</td></tr>
+            <tr class="us"><td>MENA Support</td><td><strong>✅ Native</strong></td><td>❌</td><td>❌</td><td>❌</td></tr>
+            <tr class="us"><td>Pricing</td><td><strong>No GMV fees</strong></td><td>No GMV fees</td><td>Enterprise</td><td>GMV-based</td></tr>
+            <tr class="us"><td>Open Source</td><td><strong>✅ MIT</strong></td><td>✅ MIT</td><td>Partial</td><td>❌</td></tr>
+            <tr class="us"><td>Self-Hosted</td><td><strong>✅</strong></td><td>✅</td><td>✅</td><td>❌</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ CLOUD TEASER ▸▸▸ -->
+  <section>
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Coming Soon</div>
+        <h2>Commerce.js <span class="grad">Cloud</span></h2>
+        <p>Zero to production in minutes. Managed hosting with no GMV fees, ever.</p>
+      </div>
+      <div class="grid grid-3 reveal">
+        <div class="card" style="text-align: center;">
+          <span class="card-icon">🚀</span>
+          <h3>One-Click Deploy</h3>
+          <p>Push to GitHub. We handle build, deploy, SSL, CDN, and scaling.</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <span class="card-icon">📊</span>
+          <h3>Dashboard</h3>
+          <p>Manage products, orders, and customers without touching code.</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <span class="card-icon">💰</span>
+          <h3>No GMV Fees</h3>
+          <p>Pay for infrastructure only. Unlimited orders, products, and customers.</p>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 40px;" class="reveal">
+        <div style="display: inline-flex; gap: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 36px;">
+          <div><span style="font-size: 24px; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$29</span><span style="color: var(--text-muted); font-size: 14px;">/mo Starter</span></div>
+          <div style="width: 1px; background: var(--border);"></div>
+          <div><span style="font-size: 24px; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$149</span><span style="color: var(--text-muted); font-size: 14px;">/mo Pro</span></div>
+          <div style="width: 1px; background: var(--border);"></div>
+          <div><span style="font-size: 24px; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$499</span><span style="color: var(--text-muted); font-size: 14px;">/mo Business</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ CTA ▸▸▸ -->
+  <section class="cta-section" id="cta">
+    <div class="container">
+      <h2>Start building with<br><span class="grad">Commerce.js</span></h2>
+      <p>Open source. MIT licensed. Ready for production.</p>
+      <div class="cta-actions">
+        <a href="https://github.com/commercejs" class="btn btn-primary">
+          ⭐ Star on GitHub
+        </a>
+        <a href="https://commerce.js.org" class="btn btn-ghost">
+          📚 Read the Docs
+        </a>
+      </div>
+      <div style="margin-top: 24px;">
+        <code style="font-family: var(--mono); font-size: 14px; color: var(--text-muted); background: var(--bg-card); padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border);">npx nuxi module add @commercejs/nuxt</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▸▸▸ FOOTER ▸▸▸ -->
+  <footer>
+    <div class="container">
+      <p>Commerce.js · Open Source · MIT License · Built with ❤️ for MENA</p>
+    </div>
+  </footer>
+
+  <script>
+    // Intersection Observer for reveal animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Smooth scroll for nav links
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commerce.js Cloud — Pitch Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #050510;
+      --bg-2: #0a0a1a;
+      --card: #0f0f1f;
+      --border: #1a1a35;
+      --text: #e8e8f0;
+      --muted: #7878a0;
+      --dim: #444466;
+      --primary: #00b4d8;
+      --primary-light: #48cae4;
+      --accent: #7c5cff;
+      --accent-light: #9b7dff;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #fbbf24;
+      --orange: #f97316;
+      --gradient: linear-gradient(135deg, #00b4d8 0%, #7c5cff 100%);
+      --gradient-warm: linear-gradient(135deg, #f97316 0%, #fbbf24 100%);
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; }
+
+    /* Slide System */
+    .deck { position: relative; width: 100vw; height: 100vh; }
+    .slide {
+      position: absolute; inset: 0; display: none; flex-direction: column;
+      justify-content: center; padding: 60px 80px;
+      opacity: 0; background: var(--bg);
+    }
+    .slide.active { display: flex; opacity: 1; }
+    .slide-header {
+      position: absolute; top: 20px; left: 80px; right: 80px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .slide-logo { font-size: 16px; font-weight: 800; }
+    .slide-logo span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .slide-logo .cloud-badge { font-size: 11px; font-weight: 600; color: var(--primary); border: 1px solid rgba(0,180,216,0.3); padding: 2px 8px; border-radius: 6px; margin-left: 8px; }
+    .slide-num { font-size: 13px; color: var(--dim); font-family: var(--mono); }
+
+    .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); margin-bottom: 16px; }
+    h1 { font-size: 56px; font-weight: 900; line-height: 1.1; letter-spacing: -2px; margin-bottom: 20px; }
+    h1 .grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    h2 { font-size: 44px; font-weight: 800; line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 20px; }
+    h2 .grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { font-size: 20px; color: var(--muted); line-height: 1.5; max-width: 700px; }
+
+    /* Cards */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 28px; transition: border-color 0.3s;
+    }
+    .card:hover { border-color: rgba(0,180,216,0.4); }
+    .card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .card p { font-size: 14px; color: var(--muted); line-height: 1.5; }
+    .card-icon { font-size: 28px; margin-bottom: 12px; display: block; }
+
+    .grid { display: grid; gap: 20px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    /* Code blocks */
+    .code-block {
+      background: #0a0a18; border: 1px solid var(--border); border-radius: 12px;
+      padding: 24px 28px; font-family: var(--mono); font-size: 14px; line-height: 1.8;
+      overflow-x: auto;
+    }
+    .kw { color: #c792ea; } .fn { color: #82aaff; } .str { color: #c3e88d; }
+    .cm { color: #546e7a; } .prop { color: #80cbc4; } .op { color: #89ddff; }
+    .term-prompt { color: var(--green); } .term-output { color: var(--muted); }
+
+    /* Tags */
+    .tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      border: 1px solid;
+    }
+    .tag-primary { background: rgba(0,180,216,0.1); color: var(--primary-light); border-color: rgba(0,180,216,0.2); }
+    .tag-accent { background: rgba(124,92,255,0.1); color: var(--accent-light); border-color: rgba(124,92,255,0.2); }
+    .tag-green { background: rgba(16,185,129,0.1); color: var(--green); border-color: rgba(16,185,129,0.2); }
+
+    /* Table */
+    .table-wrap { border-radius: 14px; border: 1px solid var(--border); overflow: hidden; background: var(--card); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 18px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 2px solid var(--border); }
+    td { padding: 11px 18px; font-size: 13px; border-bottom: 1px solid rgba(26,26,53,0.5); }
+    tr:last-child td { border-bottom: none; }
+    .us td { background: rgba(0,180,216,0.04); }
+    .us td:first-child { color: var(--primary-light); font-weight: 700; }
+
+    /* Timeline */
+    .timeline { display: flex; align-items: flex-start; gap: 0; position: relative; margin-top: 24px; }
+    .timeline::before { content: ''; position: absolute; top: 16px; left: 0; right: 0; height: 3px; background: var(--border); border-radius: 2px; }
+    .timeline-item { flex: 1; text-align: center; position: relative; }
+    .timeline-dot { width: 14px; height: 14px; border-radius: 50%; margin: 10px auto 12px; position: relative; z-index: 1; }
+    .timeline-dot.done { background: var(--green); box-shadow: 0 0 10px rgba(16,185,129,0.4); }
+    .timeline-dot.current { background: var(--primary); box-shadow: 0 0 12px rgba(0,180,216,0.5); width: 18px; height: 18px; margin-top: 8px; }
+    .timeline-dot.future { background: var(--dim); }
+    .timeline-label { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .timeline-desc { font-size: 11px; color: var(--muted); line-height: 1.4; padding: 0 4px; }
+    .timeline-status { font-size: 10px; margin-top: 4px; font-weight: 600; }
+
+    /* Pricing */
+    .pricing-card { text-align: center; padding: 32px 24px; }
+    .pricing-card .price { font-size: 40px; font-weight: 900; letter-spacing: -1px; }
+    .pricing-card .price .grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .pricing-card .period { font-size: 14px; color: var(--muted); }
+    .pricing-card .tier { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .pricing-list { list-style: none; margin-top: 16px; text-align: left; font-size: 13px; color: var(--muted); }
+    .pricing-list li { padding: 4px 0; }
+    .pricing-list li::before { content: '✓ '; color: var(--green); }
+
+    .pricing-highlight { border-color: var(--primary) !important; box-shadow: 0 0 30px rgba(0,180,216,0.1); }
+
+    /* Stats */
+    .stat { text-align: center; }
+    .stat-val { font-size: 36px; font-weight: 900; letter-spacing: -1px; }
+    .stat-val.grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* Navigation */
+    .nav-dots {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 100;
+    }
+    .nav-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--dim);
+      cursor: pointer; transition: all 0.3s; border: none;
+    }
+    .nav-dot.active { background: var(--primary); box-shadow: 0 0 8px rgba(0,180,216,0.5); }
+    .nav-hint {
+      position: fixed; bottom: 24px; right: 40px; font-size: 12px; color: var(--dim);
+      font-family: var(--mono); z-index: 100;
+    }
+
+    /* Feature row */
+    .feature-row { display: flex; gap: 40px; align-items: flex-start; margin-top: 32px; }
+    .feature-col { flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="deck">
+
+    <!-- ══════ SLIDE 1: TITLE ══════ -->
+    <div class="slide active" data-slide="0">
+      <div class="slide-header"><div></div><div class="slide-num">01 / 10</div></div>
+      <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <div class="label">COMMERCE.JS CLOUD</div>
+        <h1 style="font-size: 64px;">Push code.<br><span class="grad">Sell products.</span></h1>
+        <p class="subtitle" style="text-align: center;">Deploy your entire commerce stack in 60 seconds. Storefront, API, database, storage — all provisioned on Cloudflare's global edge.</p>
+        <div style="display: flex; gap: 12px; margin-top: 28px;">
+          <span class="tag tag-primary">☁️ Cloudflare Edge</span>
+          <span class="tag tag-accent">🐘 Neon Postgres</span>
+          <span class="tag tag-green">🚀 Nuxt 4</span>
+        </div>
+        <div style="margin-top: 32px; color: var(--dim); font-size: 13px;">February 2026</div>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 2: PROBLEM ══════ -->
+    <div class="slide" data-slide="1">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">02 / 10</div></div>
+      <div class="label">THE PROBLEM</div>
+      <h2>Weeks of DevOps before <span class="grad">selling anything</span></h2>
+      <div class="grid grid-3" style="margin-top: 28px;">
+        <div class="card">
+          <span class="card-icon">🔧</span>
+          <h3>Infrastructure Tax</h3>
+          <p>Every composable store needs: Postgres provisioning, S3/R2 storage, CDN, CI/CD, SSL, monitoring. That's 2-4 weeks before listing a single product.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">💸</span>
+          <h3>GMV Fees Scale Against You</h3>
+          <p>Shopify takes 0.5-2% of every sale. A $1M/year store pays $5K-$20K in platform tax. Your success funds their growth, not yours.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🏗️</span>
+          <h3>No Commerce-Specific PaaS</h3>
+          <p>Railway, Render, Fly.io deploy containers — not commerce stacks. No built-in checkout, no admin panel, no database migrations, no preview environments.</p>
+        </div>
+      </div>
+      <div style="margin-top: 24px; display: flex; gap: 24px;">
+        <div class="card" style="flex: 1; text-align: center; padding: 20px;">
+          <div style="font-size: 32px; font-weight: 900; color: var(--red);">2-4 weeks</div>
+          <div style="font-size: 12px; color: var(--muted);">Typical composable store setup</div>
+        </div>
+        <div class="card" style="flex: 1; text-align: center; padding: 20px;">
+          <div style="font-size: 32px; font-weight: 900; color: var(--red);">$5K-$20K/yr</div>
+          <div style="font-size: 12px; color: var(--muted);">GMV fees on $1M revenue</div>
+        </div>
+        <div class="card" style="flex: 1; text-align: center; padding: 20px;">
+          <div style="font-size: 32px; font-weight: 900; color: var(--red);">0</div>
+          <div style="font-size: 12px; color: var(--muted);">Commerce-specific deploy platforms</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 3: SOLUTION ══════ -->
+    <div class="slide" data-slide="2">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">03 / 10</div></div>
+      <div class="label">THE SOLUTION</div>
+      <h2><span class="grad">One command.</span> Full stack.</h2>
+      <div class="feature-row">
+        <div class="feature-col">
+          <div class="code-block">
+<span class="term-prompt">$</span> npx @commercejs/cli init my-store
+<span class="term-output">✔ Template: fashion-store</span>
+<span class="term-output">✔ Adapter: salla</span>
+<span class="term-output">✔ Payment: tap</span>
+
+<span class="term-prompt">$</span> cd my-store && commercejs deploy
+
+<span class="term-output">☁ Provisioning Cloudflare Pages...</span> <span style="color: var(--green);">✓</span>
+<span class="term-output">🐘 Creating Neon Postgres...</span> <span style="color: var(--green);">✓</span>
+<span class="term-output">📦 Deploying R2 bucket...</span> <span style="color: var(--green);">✓</span>
+<span class="term-output">🔑 Configuring KV namespace...</span> <span style="color: var(--green);">✓</span>
+<span class="term-output">🔒 SSL certificate issued...</span> <span style="color: var(--green);">✓</span>
+
+<span style="color: var(--green); font-weight: 700;">✓ Live at my-store.commercejs.cloud</span>
+          </div>
+        </div>
+        <div class="feature-col">
+          <h3 style="margin-bottom: 16px;">What gets deployed:</h3>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">⚡</span>
+              <div><div style="font-weight: 600; font-size: 14px;">Storefront</div><div style="font-size: 12px; color: var(--muted);">Nuxt 4 on Cloudflare Pages</div></div>
+            </div>
+            <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">🔌</span>
+              <div><div style="font-weight: 600; font-size: 14px;">API (46 routes)</div><div style="font-size: 12px; color: var(--muted);">Cloudflare Workers via Nitro</div></div>
+            </div>
+            <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">🐘</span>
+              <div><div style="font-weight: 600; font-size: 14px;">Database</div><div style="font-size: 12px; color: var(--muted);">Neon Postgres (auto-provisioned)</div></div>
+            </div>
+            <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px;">📦</span>
+              <div><div style="font-weight: 600; font-size: 14px;">Storage + Cache</div><div style="font-size: 12px; color: var(--muted);">R2 objects + KV sessions</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 4: ARCHITECTURE ══════ -->
+    <div class="slide" data-slide="3">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">04 / 10</div></div>
+      <div class="label">ARCHITECTURE</div>
+      <h2>Built on <span class="grad">edge infrastructure</span></h2>
+      <div class="grid grid-2" style="margin-top: 24px; gap: 32px;">
+        <div>
+          <!-- CSS Architecture Diagram -->
+          <div style="background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; position: relative;">
+            <div style="font-size: 14px; font-weight: 700; color: var(--primary-light); margin-bottom: 16px; text-align: center;">Commerce.js Cloud</div>
+
+            <!-- CLI entry -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+              <div style="background: rgba(0,180,216,0.1); border: 1px solid rgba(0,180,216,0.3); border-radius: 8px; padding: 6px 14px; font-family: var(--mono); font-size: 12px; color: var(--primary-light); font-weight: 600;">CLI</div>
+              <div style="color: var(--dim); font-family: var(--mono); font-size: 12px;">→</div>
+              <div style="background: rgba(124,92,255,0.1); border: 1px solid rgba(124,92,255,0.3); border-radius: 8px; padding: 6px 14px; font-family: var(--mono); font-size: 11px; color: var(--accent-light); font-weight: 600; flex: 1; text-align: center;">@commercejs/cloud · Orchestrator</div>
+            </div>
+
+            <div style="text-align: center; color: var(--dim); font-size: 14px; margin-bottom: 10px;">▼</div>
+
+            <!-- Providers Grid -->
+            <div style="border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.2);">
+              <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 10px; text-align: center;">Providers</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div style="background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; text-align: center;">
+                  <div style="font-size: 16px; margin-bottom: 4px;">☁️</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--primary-light);">Cloudflare</div>
+                  <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">Pages · Workers · R2 · KV</div>
+                </div>
+                <div style="background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; text-align: center;">
+                  <div style="font-size: 16px; margin-bottom: 4px;">🐘</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--accent-light);">Neon</div>
+                  <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">Postgres · Branching · Migrate</div>
+                </div>
+                <div style="background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; text-align: center;">
+                  <div style="font-size: 16px; margin-bottom: 4px;">🔗</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--text);">GitHub</div>
+                  <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">Webhooks · PR Detect</div>
+                </div>
+                <div style="background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; text-align: center;">
+                  <div style="font-size: 16px; margin-bottom: 4px;">💳</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--text);">Billing</div>
+                  <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">Tap · Stripe · Metering</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dashboard -->
+            <div style="margin-top: 12px; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 8px 14px; text-align: center;">
+              <span style="font-size: 12px; font-weight: 600; color: var(--green);">Dashboard</span>
+              <span style="font-size: 11px; color: var(--muted); margin-left: 6px;">Nuxt 4 + Nuxt UI</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="grid" style="gap: 14px;">
+            <div class="card" style="padding: 18px;">
+              <h3 style="font-size: 15px;">☁️ Cloudflare — Compute & Edge</h3>
+              <p style="font-size: 13px;">Pages deploys storefronts. Workers run API routes. R2 stores assets. KV caches sessions. 300+ global PoPs.</p>
+            </div>
+            <div class="card" style="padding: 18px;">
+              <h3 style="font-size: 15px;">🐘 Neon — Database</h3>
+              <p style="font-size: 13px;">Serverless Postgres with branch-per-PR. Preview envs get their own DB branch. Auto-scales to zero.</p>
+            </div>
+            <div class="card" style="padding: 18px;">
+              <h3 style="font-size: 15px;">🔗 GitHub — CI/CD</h3>
+              <p style="font-size: 13px;">Push-to-deploy. PR opens → preview env created. PR merges → preview torn down. Zero config.</p>
+            </div>
+            <div class="card" style="padding: 18px;">
+              <h3 style="font-size: 15px;">💳 Billing — Tap + Stripe</h3>
+              <p style="font-size: 13px;">Dual billing: Tap for GCC, Stripe for international. Usage metering for overage billing.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 5: MARKET ══════ -->
+    <div class="slide" data-slide="4">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">05 / 10</div></div>
+      <div class="label">MARKET OPPORTUNITY</div>
+      <h2>Two massive markets. <span class="grad">Zero competitors.</span></h2>
+      <div class="grid grid-2" style="margin-top: 24px; gap: 32px;">
+        <div>
+          <div class="card" style="margin-bottom: 20px;">
+            <h3 style="color: var(--primary-light);">Global Headless Commerce</h3>
+            <div style="display: flex; gap: 24px; margin-top: 16px;">
+              <div class="stat"><div class="stat-val grad">$44B</div><div class="stat-label">TAM by 2028</div></div>
+              <div class="stat"><div class="stat-val grad">22%</div><div class="stat-label">CAGR</div></div>
+              <div class="stat"><div class="stat-val grad">$5.2B</div><div class="stat-label">Deploy platforms SAM</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3 style="color: var(--orange);">MENA eCommerce</h3>
+            <div style="display: flex; gap: 24px; margin-top: 16px;">
+              <div class="stat"><div class="stat-val" style="color: var(--orange);">$57B</div><div class="stat-label">by 2026</div></div>
+              <div class="stat"><div class="stat-val" style="color: var(--orange);">$31B</div><div class="stat-label">KSA alone</div></div>
+              <div class="stat"><div class="stat-val" style="color: var(--orange);">20%</div><div class="stat-label">YoY growth</div></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin-bottom: 14px;">Why MENA-first?</h3>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="card" style="padding: 14px 18px;">
+              <div style="font-weight: 600; font-size: 14px;">🏪 150K+ Salla merchants</div>
+              <div style="font-size: 12px; color: var(--muted);">Zero Vercel-like deploy tooling available</div>
+            </div>
+            <div class="card" style="padding: 14px 18px;">
+              <div style="font-weight: 600; font-size: 14px;">💳 Tap Payments dominates GCC</div>
+              <div style="font-size: 12px; color: var(--muted);">No integrated hosting + payments bundle</div>
+            </div>
+            <div class="card" style="padding: 14px 18px;">
+              <div style="font-weight: 600; font-size: 14px;">🏛️ Vision 2030</div>
+              <div style="font-size: 12px; color: var(--muted);">Saudi digital transformation spending surge</div>
+            </div>
+            <div class="card" style="padding: 14px 18px;">
+              <div style="font-weight: 600; font-size: 14px;">🌍 Arabic RTL is an afterthought</div>
+              <div style="font-size: 12px; color: var(--muted);">For US/EU platforms — native advantage for us</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 6: DEVELOPER EXPERIENCE ══════ -->
+    <div class="slide" data-slide="5">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">06 / 10</div></div>
+      <div class="label">DEVELOPER EXPERIENCE</div>
+      <h2>The DX developers <span class="grad">actually want</span></h2>
+      <div class="grid grid-2" style="margin-top: 24px; gap: 32px;">
+        <div>
+          <div class="card" style="margin-bottom: 16px; padding: 22px;">
+            <span class="card-icon" style="font-size: 22px;">🔀</span>
+            <h3 style="font-size: 16px;">Preview Environments</h3>
+            <p>Open a PR → Neon branches your DB, Cloudflare deploys a preview. Merge → it all tears down. Branch-per-PR, automatically.</p>
+          </div>
+          <div class="card" style="margin-bottom: 16px; padding: 22px;">
+            <span class="card-icon" style="font-size: 22px;">🔄</span>
+            <h3 style="font-size: 16px;">Push-to-Deploy</h3>
+            <p>Connect your GitHub repo. Push to main → production deploys. Push to a branch → preview deploys. No CI/CD config needed.</p>
+          </div>
+          <div class="card" style="padding: 22px;">
+            <span class="card-icon" style="font-size: 22px;">🔐</span>
+            <h3 style="font-size: 16px;">Environment Management</h3>
+            <p><code>commercejs env set SALLA_TOKEN=xxx</code> — manage secrets per environment. Pull to local with <code>commercejs env pull</code>.</p>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="padding: 22px; margin-bottom: 16px;">
+            <span class="card-icon" style="font-size: 22px;">🏗️</span>
+            <h3 style="font-size: 16px;">Store Templates</h3>
+            <p>Fashion, electronics, grocery, or minimal — pick a template and deploy. Pre-configured with adapter, payments, and demo data.</p>
+          </div>
+          <div class="card" style="padding: 22px; margin-bottom: 16px;">
+            <span class="card-icon" style="font-size: 22px;">🌐</span>
+            <h3 style="font-size: 16px;">Custom Domains</h3>
+            <p>One-click custom domain setup with auto-provisioned SSL certificates. <code>store.example.com</code> → your store.</p>
+          </div>
+          <div class="card" style="padding: 22px;">
+            <span class="card-icon" style="font-size: 22px;">📊</span>
+            <h3 style="font-size: 16px;">Real-Time Logs</h3>
+            <p>Stream build logs and deploy events in real-time. Debug production issues from the dashboard — no SSH required.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 7: PRICING ══════ -->
+    <div class="slide" data-slide="6">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">07 / 10</div></div>
+      <div class="label">PRICING</div>
+      <h2>No GMV fees. <span class="grad">Ever.</span></h2>
+      <p class="subtitle" style="margin-bottom: 28px;">Pay for infrastructure, not for success. Unlimited orders, products, and customers on every tier.</p>
+      <div class="grid grid-3" style="gap: 20px;">
+        <div class="card pricing-card">
+          <div class="tier">Starter</div>
+          <div class="price"><span class="grad">$29</span></div>
+          <div class="period">/month</div>
+          <ul class="pricing-list">
+            <li>1 store</li>
+            <li>Unlimited orders</li>
+            <li>Neon Postgres</li>
+            <li>10 GB R2 storage</li>
+            <li>Push-to-deploy</li>
+            <li>Custom domain</li>
+            <li>Community support</li>
+          </ul>
+        </div>
+        <div class="card pricing-card pricing-highlight">
+          <div class="tier" style="color: var(--primary-light);">Pro</div>
+          <div class="price"><span class="grad">$149</span></div>
+          <div class="period">/month</div>
+          <ul class="pricing-list">
+            <li>5 stores</li>
+            <li>Unlimited everything</li>
+            <li>Preview environments</li>
+            <li>100 GB R2 storage</li>
+            <li>Team collaboration</li>
+            <li>Priority support</li>
+            <li>Analytics dashboard</li>
+          </ul>
+        </div>
+        <div class="card pricing-card">
+          <div class="tier">Business</div>
+          <div class="price"><span class="grad">$499</span></div>
+          <div class="period">/month</div>
+          <ul class="pricing-list">
+            <li>Unlimited stores</li>
+            <li>Unlimited everything</li>
+            <li>SSO + RBAC</li>
+            <li>1 TB R2 storage</li>
+            <li>SLA guarantee</li>
+            <li>Dedicated support</li>
+            <li>White-label option</li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top: 20px; text-align: center;">
+        <div class="table-wrap" style="display: inline-block;">
+          <table style="width: auto;">
+            <tr><th>Store Revenue</th><th>Shopify Cost</th><th>Our Cost</th><th>You Save</th></tr>
+            <tr class="us"><td>$100K/yr</td><td>$1,450/yr</td><td style="color: var(--green); font-weight: 700;">$348/yr</td><td style="color: var(--green); font-weight: 700;">$1,102</td></tr>
+            <tr class="us"><td>$1M/yr</td><td>$10,500/yr</td><td style="color: var(--green); font-weight: 700;">$1,788/yr</td><td style="color: var(--green); font-weight: 700;">$8,712</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 8: COMPETITIVE ══════ -->
+    <div class="slide" data-slide="7">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">08 / 10</div></div>
+      <div class="label">COMPETITIVE LANDSCAPE</div>
+      <h2>The only <span class="grad">commerce deploy platform</span></h2>
+      <div class="table-wrap" style="margin-top: 24px;">
+        <table>
+          <thead>
+            <tr><th></th><th>CJS Cloud</th><th>Medusa Cloud</th><th>Shopify</th><th>Railway</th></tr>
+          </thead>
+          <tbody>
+            <tr class="us"><td>Category</td><td><strong>Commerce deploy</strong></td><td>Headless hosting</td><td>SaaS platform</td><td>Generic PaaS</td></tr>
+            <tr class="us"><td>Backend</td><td><strong>Any (adapters)</strong></td><td>Medusa only</td><td>Shopify only</td><td>Anything</td></tr>
+            <tr class="us"><td>Commerce features</td><td><strong>Built-in</strong></td><td>Built-in</td><td>Built-in</td><td>None</td></tr>
+            <tr class="us"><td>Preview envs</td><td><strong>✅ Branch DB</strong></td><td>✅</td><td>❌</td><td>❌</td></tr>
+            <tr class="us"><td>GMV fees</td><td><strong>❌ Never</strong></td><td>❌</td><td>✅ 0.5-2%</td><td>❌</td></tr>
+            <tr class="us"><td>Edge hosting</td><td><strong>Cloudflare 300+</strong></td><td>AWS</td><td>Shopify CDN</td><td>Regional</td></tr>
+            <tr class="us"><td>MENA native</td><td><strong>✅</strong></td><td>❌</td><td>Limited</td><td>N/A</td></tr>
+            <tr class="us"><td>Open source</td><td><strong>✅ MIT</strong></td><td>✅ MIT</td><td>❌</td><td>N/A</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 9: ROADMAP ══════ -->
+    <div class="slide" data-slide="8">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">09 / 10</div></div>
+      <div class="label">ROADMAP</div>
+      <h2>From scaffold to <span class="grad">production platform</span></h2>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot done"></div>
+          <div class="timeline-label" style="color: var(--green);">M1</div>
+          <div class="timeline-desc">Cloud + CLI<br>Provider scaffolds</div>
+          <div class="timeline-status" style="color: var(--green);">✓ Done</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot done"></div>
+          <div class="timeline-label" style="color: var(--green);">M2</div>
+          <div class="timeline-desc">Platform<br>Neon driver</div>
+          <div class="timeline-status" style="color: var(--green);">✓ Scaffold</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot current"></div>
+          <div class="timeline-label" style="color: var(--primary-light);">M3</div>
+          <div class="timeline-desc">Dashboard MVP<br>Deploy logs, billing</div>
+          <div class="timeline-status" style="color: var(--primary);">→ Now</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot future"></div>
+          <div class="timeline-label">M4</div>
+          <div class="timeline-desc">GitHub + Preview<br>Branch-per-PR</div>
+          <div class="timeline-status" style="color: var(--muted);">Next</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot future"></div>
+          <div class="timeline-label">M5</div>
+          <div class="timeline-desc">Wire to real APIs<br>Production deploys</div>
+          <div class="timeline-status" style="color: var(--muted);">Q2 2026</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot future"></div>
+          <div class="timeline-label">M6</div>
+          <div class="timeline-desc">Templates<br>Multi-tenant</div>
+          <div class="timeline-status" style="color: var(--muted);">Q2 2026</div>
+        </div>
+      </div>
+      <div class="grid grid-3" style="margin-top: 36px;">
+        <div class="card" style="text-align: center; padding: 22px;">
+          <span class="card-icon" style="font-size: 24px;">🤖</span>
+          <h3 style="font-size: 15px;">Agentic Commerce</h3>
+          <p style="font-size: 12px;">MCP server · AI checkout · UCP/ACP protocols</p>
+        </div>
+        <div class="card" style="text-align: center; padding: 22px;">
+          <span class="card-icon" style="font-size: 24px;">🏬</span>
+          <h3 style="font-size: 15px;">Template Marketplace</h3>
+          <p style="font-size: 12px;">Community stores · Themes · Plugins</p>
+        </div>
+        <div class="card" style="text-align: center; padding: 22px;">
+          <span class="card-icon" style="font-size: 24px;">🌍</span>
+          <h3 style="font-size: 15px;">Global Expansion</h3>
+          <p style="font-size: 12px;">Shopify adapter · WooCommerce · Multi-currency</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ SLIDE 10: THE ASK ══════ -->
+    <div class="slide" data-slide="9">
+      <div class="slide-header"><div class="slide-logo"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></div><div class="slide-num">10 / 10</div></div>
+      <div class="label">THE ASK</div>
+      <h2><span class="grad">$500K</span> pre-seed</h2>
+      <p class="subtitle" style="margin-bottom: 28px;">16-month runway to reach 100 paying Cloud customers and Series Seed readiness.</p>
+      <div class="grid grid-2" style="gap: 28px;">
+        <div>
+          <h3 style="margin-bottom: 14px; font-size: 16px;">Use of Funds</h3>
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <table>
+              <tr><td style="font-weight: 600;">Engineering (2 hires)</td><td style="text-align: right; font-family: var(--mono); color: var(--primary-light);">$200K</td></tr>
+              <tr><td style="font-weight: 600;">Developer Advocate</td><td style="text-align: right; font-family: var(--mono); color: var(--primary-light);">$80K</td></tr>
+              <tr><td style="font-weight: 600;">Infrastructure</td><td style="text-align: right; font-family: var(--mono); color: var(--primary-light);">$60K</td></tr>
+              <tr><td style="font-weight: 600;">Marketing & Events</td><td style="text-align: right; font-family: var(--mono); color: var(--primary-light);">$60K</td></tr>
+              <tr><td style="font-weight: 600;">Operations + Buffer</td><td style="text-align: right; font-family: var(--mono); color: var(--primary-light);">$100K</td></tr>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin-bottom: 14px; font-size: 16px;">Key Milestones</h3>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="card" style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; font-size: 14px;">Cloud beta (50 devs)</span>
+              <span class="tag tag-green" style="font-size: 11px;">Month 3</span>
+            </div>
+            <div class="card" style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; font-size: 14px;">Production launch</span>
+              <span class="tag tag-primary" style="font-size: 11px;">Month 6</span>
+            </div>
+            <div class="card" style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; font-size: 14px;">10 agency partners</span>
+              <span class="tag tag-accent" style="font-size: 11px;">Month 9</span>
+            </div>
+            <div class="card" style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; font-size: 14px;">$100K+ ARR</span>
+              <span class="tag tag-green" style="font-size: 11px;">Month 12</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 24px; text-align: center;">
+        <div style="display: inline-flex; gap: 40px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px 40px;">
+          <div class="stat"><div class="stat-val grad">$106K</div><div class="stat-label">Yr 1 ARR</div></div>
+          <div class="stat"><div class="stat-val grad">$774K</div><div class="stat-label">Yr 2 ARR</div></div>
+          <div class="stat"><div class="stat-val grad">$4.3M</div><div class="stat-label">Yr 3 ARR</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation Dots -->
+  <div class="nav-dots"></div>
+  <div class="nav-hint">← → navigate · F fullscreen</div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const dotsContainer = document.querySelector('.nav-dots');
+    let currentSlide = 0;
+
+    // Create dots
+    slides.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = `nav-dot${i === 0 ? ' active' : ''}`;
+      dot.addEventListener('click', () => goTo(i));
+      dotsContainer.appendChild(dot);
+    });
+
+    function goTo(n) {
+      slides[currentSlide].classList.remove('active');
+      dotsContainer.children[currentSlide].classList.remove('active');
+      currentSlide = Math.max(0, Math.min(n, slides.length - 1));
+      slides[currentSlide].classList.add('active');
+      dotsContainer.children[currentSlide].classList.add('active');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(currentSlide + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(currentSlide - 1); }
+      if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commerce.js Cloud — Deploy Commerce in 60 Seconds</title>
+  <meta name="description" content="Deploy your entire commerce stack — storefront, API, database, storage — with one command. No DevOps. No GMV fees. Built on Cloudflare.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #050510;
+      --bg-2: #080818;
+      --card: #0c0c1e;
+      --card-hover: #10102a;
+      --border: #1a1a35;
+      --text: #e8e8f0;
+      --muted: #7878a0;
+      --dim: #444466;
+      --primary: #00b4d8;
+      --primary-light: #48cae4;
+      --accent: #7c5cff;
+      --accent-light: #9b7dff;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #fbbf24;
+      --orange: #f97316;
+      --gradient: linear-gradient(135deg, #00b4d8 0%, #7c5cff 100%);
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; overflow-x: hidden; }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* Nav */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(5,5,16,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+    }
+    nav .container { display: flex; justify-content: space-between; align-items: center; }
+    .nav-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; text-decoration: none; color: var(--text); }
+    .nav-brand span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .cloud-badge { font-size: 10px; font-weight: 700; color: var(--primary); border: 1px solid rgba(0,180,216,0.3); padding: 2px 8px; border-radius: 6px; letter-spacing: 0.5px; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px;
+      border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none;
+      transition: all 0.3s; cursor: pointer; border: none;
+    }
+    .btn-primary { background: var(--gradient); color: #fff; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,180,216,0.3); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* Hero */
+    .hero {
+      padding: 160px 0 100px; text-align: center; position: relative;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,180,216,0.12) 0%, transparent 70%);
+    }
+    .hero-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+      border: 1px solid rgba(0,180,216,0.2); background: rgba(0,180,216,0.06);
+      color: var(--primary-light); margin-bottom: 24px;
+    }
+    .hero h1 { font-size: 72px; font-weight: 900; line-height: 1.05; letter-spacing: -3px; margin-bottom: 20px; }
+    .hero h1 .grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero .subtitle { font-size: 20px; color: var(--muted); line-height: 1.6; max-width: 600px; margin: 0 auto 32px; }
+    .hero-actions { display: flex; gap: 14px; justify-content: center; align-items: center; }
+
+    .terminal-hero {
+      max-width: 660px; margin: 48px auto 0;
+      background: #0a0a18; border: 1px solid var(--border); border-radius: 14px;
+      text-align: left; overflow: hidden;
+    }
+    .terminal-bar {
+      display: flex; align-items: center; gap: 6px; padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .terminal-dot.r { background: #ef4444; } .terminal-dot.y { background: #fbbf24; } .terminal-dot.g { background: #10b981; }
+    .terminal-title { font-size: 11px; color: var(--dim); flex: 1; text-align: center; font-family: var(--mono); }
+    .terminal-body {
+      padding: 20px 24px; font-family: var(--mono); font-size: 13px; line-height: 2;
+    }
+    .t-prompt { color: var(--green); } .t-cmd { color: var(--text); font-weight: 600; }
+    .t-output { color: var(--muted); } .t-success { color: var(--green); font-weight: 600; }
+    .t-check { color: var(--green); }
+
+    /* Stats Bar */
+    .stats-bar {
+      padding: 44px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      background: var(--bg-2);
+    }
+    .stats-grid { display: flex; justify-content: center; gap: 64px; }
+    .stat { text-align: center; }
+    .stat-val { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
+    .stat-val.grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* Section */
+    section { padding: 100px 0; }
+    section.alt { background: var(--bg-2); }
+    .section-label {
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--primary); margin-bottom: 12px;
+    }
+    .section-title { font-size: 44px; font-weight: 800; line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 16px; }
+    .section-title .grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .section-desc { font-size: 18px; color: var(--muted); line-height: 1.6; max-width: 600px; }
+
+    /* Cards */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 28px; transition: all 0.3s;
+    }
+    .card:hover { border-color: rgba(0,180,216,0.3); background: var(--card-hover); transform: translateY(-2px); }
+    .card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .card-icon { font-size: 28px; margin-bottom: 14px; display: block; }
+
+    .grid { display: grid; gap: 20px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    /* Feature blocks */
+    .feature-split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin-top: 48px; }
+    .feature-split.reverse { direction: rtl; }
+    .feature-split.reverse > * { direction: ltr; }
+
+    /* Code block */
+    .code-block {
+      background: #0a0a18; border: 1px solid var(--border); border-radius: 14px;
+      padding: 28px 32px; font-family: var(--mono); font-size: 13px; line-height: 1.9;
+      overflow-x: auto;
+    }
+
+    /* Table */
+    .table-wrap { border-radius: 14px; border: 1px solid var(--border); overflow: hidden; background: var(--card); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 14px 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 2px solid var(--border); background: rgba(0,0,0,0.2); }
+    td { padding: 13px 20px; font-size: 14px; border-bottom: 1px solid rgba(26,26,53,0.5); }
+    tr:last-child td { border-bottom: none; }
+    .us { background: rgba(0,180,216,0.03); }
+    .us td:first-child { color: var(--primary-light); font-weight: 700; }
+
+    /* Pricing */
+    .pricing-card { text-align: center; padding: 36px 28px; position: relative; }
+    .pricing-card .tier { font-size: 16px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+    .pricing-card .price { font-size: 48px; font-weight: 900; letter-spacing: -2px; }
+    .pricing-card .price .grad { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .pricing-card .period { font-size: 14px; color: var(--dim); margin-bottom: 20px; }
+    .pricing-list { list-style: none; text-align: left; font-size: 14px; color: var(--muted); }
+    .pricing-list li { padding: 6px 0; display: flex; align-items: center; gap: 8px; }
+    .pricing-list li::before { content: '✓'; color: var(--green); font-weight: 700; }
+    .pricing-highlight { border-color: var(--primary) !important; box-shadow: 0 0 40px rgba(0,180,216,0.08); }
+    .pricing-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gradient); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 16px; border-radius: 12px; }
+
+    /* How it works */
+    .steps { counter-reset: step; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 36px; }
+    .step {
+      counter-increment: step;
+      position: relative; padding: 28px 28px 28px 70px;
+    }
+    .step::before {
+      content: counter(step);
+      position: absolute; left: 20px; top: 28px;
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(0,180,216,0.1); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800;
+    }
+    .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .step p { font-size: 13px; }
+
+    /* Footer */
+    footer { padding: 60px 0; border-top: 1px solid var(--border); background: var(--bg-2); }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; }
+    .footer-brand { font-weight: 800; font-size: 20px; }
+    .footer-brand span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { color: var(--muted); text-decoration: none; font-size: 13px; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* CTA */
+    .cta-section {
+      text-align: center; padding: 120px 0;
+      background: radial-gradient(ellipse 70% 50% at 50% 100%, rgba(0,180,216,0.1) 0%, transparent 70%);
+    }
+    .cta-section h2 { font-size: 48px; font-weight: 900; letter-spacing: -2px; margin-bottom: 16px; }
+    .cta-section .subtitle { margin: 0 auto 32px; }
+
+    /* Scroll animations */
+    .fade-in { opacity: 0; transform: translateY(20px); transition: all 0.6s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 42px; letter-spacing: -1.5px; }
+      .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .feature-split { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; }
+      .stats-grid { flex-wrap: wrap; gap: 32px; }
+      nav .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="container">
+      <a href="#" class="nav-brand"><span>Commerce.js</span><span class="cloud-badge">Cloud</span></a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#compare">Compare</a>
+        <a href="https://github.com/commerce-js/commerce.js" class="btn btn-outline">GitHub</a>
+        <a href="#cta" class="btn btn-primary">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-label">☁️ Commerce Deployment Platform</div>
+      <h1>Push code.<br><span class="grad">Sell products.</span></h1>
+      <p class="subtitle">Deploy your entire commerce stack in 60 seconds. Storefront, API, database, storage — all provisioned on Cloudflare's global edge. No DevOps. No GMV fees.</p>
+      <div class="hero-actions">
+        <a href="#cta" class="btn btn-primary">Start Deploying →</a>
+        <a href="#how-it-works" class="btn btn-outline">See How It Works</a>
+      </div>
+      <div class="terminal-hero">
+        <div class="terminal-bar">
+          <div class="terminal-dot r"></div>
+          <div class="terminal-dot y"></div>
+          <div class="terminal-dot g"></div>
+          <div class="terminal-title">terminal — zsh</div>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">npx @commercejs/cli init my-store</span>
+<span class="t-output">✔ Template: fashion-store</span>
+<span class="t-output">✔ Adapter: salla</span>
+<span class="t-output">✔ Payment: tap</span>
+
+<span class="t-prompt">$</span> <span class="t-cmd">cd my-store && commercejs deploy</span>
+
+<span class="t-output">☁ Provisioning Cloudflare Pages...</span> <span class="t-check">✓</span>
+<span class="t-output">🐘 Creating Neon Postgres...</span> <span class="t-check">✓</span>
+<span class="t-output">📦 Deploying R2 storage...</span> <span class="t-check">✓</span>
+<span class="t-output">🔒 SSL issued, domain configured...</span> <span class="t-check">✓</span>
+
+<span class="t-success">✓ Live at my-store.commercejs.cloud — 47s</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-val grad">300+</div><div class="stat-label">Cloudflare Edge Locations</div></div>
+        <div class="stat"><div class="stat-val grad">60s</div><div class="stat-label">Deploy Time</div></div>
+        <div class="stat"><div class="stat-val grad">46</div><div class="stat-label">API Routes Auto-Deployed</div></div>
+        <div class="stat"><div class="stat-val grad">0%</div><div class="stat-label">GMV Fees — Forever</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Problem Section -->
+  <section class="alt" id="problem">
+    <div class="container">
+      <div class="section-label fade-in">The Problem</div>
+      <div class="section-title fade-in">Commerce infrastructure<br>is a <span class="grad">time sink</span></div>
+      <div class="section-desc fade-in" style="margin-bottom: 36px;">Every composable store requires weeks of DevOps before listing a single product.</div>
+      <div class="grid grid-3 fade-in">
+        <div class="card">
+          <span class="card-icon">🔧</span>
+          <h3>Infrastructure Tax</h3>
+          <p>Database, CDN, storage, CI/CD, SSL, monitoring — 2-4 weeks of setup for every new project.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">💸</span>
+          <h3>GMV Fees Scale Against You</h3>
+          <p>Shopify takes 0.5-2% of every sale. A $1M/year store pays $5K-$20K in platform fees.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🏗️</span>
+          <h3>No Commerce PaaS</h3>
+          <p>Railway deploys containers, not commerce stacks. No checkout, admin, or database migrations included.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What Gets Deployed -->
+  <section id="features">
+    <div class="container">
+      <div class="section-label fade-in">Full Stack Deployment</div>
+      <div class="section-title fade-in">Everything you need.<br><span class="grad">All provisioned.</span></div>
+      <div class="section-desc fade-in" style="margin-bottom: 36px;">One command deploys your entire commerce infrastructure.</div>
+      <div class="grid grid-4 fade-in">
+        <div class="card">
+          <span class="card-icon">⚡</span>
+          <h3>Storefront</h3>
+          <p>Nuxt 4 SSR on Cloudflare Pages. Pre-rendered pages, edge-cached, globally distributed.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🔌</span>
+          <h3>46 API Routes</h3>
+          <p>Cloudflare Workers via Nitro. Products, orders, cart, checkout, payments — all auto-deployed.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🐘</span>
+          <h3>Neon Postgres</h3>
+          <p>Auto-provisioned serverless Postgres with branch-per-PR. Auto-scales. Auto-migrates.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">📦</span>
+          <h3>R2 Storage + KV</h3>
+          <p>Product images in R2 object storage. Cart sessions in KV. Both auto-configured.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="alt" id="how-it-works">
+    <div class="container">
+      <div class="section-label fade-in">How It Works</div>
+      <div class="section-title fade-in">From <code style="font-family: var(--mono); color: var(--primary-light);">init</code> to <span class="grad">production</span></div>
+      <div class="steps fade-in">
+        <div class="card step">
+          <h3>Pick a Template</h3>
+          <p>Fashion, electronics, grocery, or minimal — pre-configured with adapter, payments, and demo data.</p>
+        </div>
+        <div class="card step">
+          <h3>Choose Your Backend</h3>
+          <p>Connect Salla, Medusa, or use the built-in Platform engine with Neon Postgres. Switch anytime.</p>
+        </div>
+        <div class="card step">
+          <h3>Deploy in One Command</h3>
+          <p><code style="font-family: var(--mono); font-size: 12px; color: var(--green);">commercejs deploy</code> — provisions Cloudflare, Neon, R2, KV, SSL. You're live in 60 seconds.</p>
+        </div>
+        <div class="card step">
+          <h3>Push-to-Deploy Forever</h3>
+          <p>Connect GitHub. Push to main → production deploys. Open a PR → preview environment with branched DB.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Preview Environments -->
+  <section id="previews">
+    <div class="container">
+      <div class="feature-split fade-in">
+        <div>
+          <div class="section-label">Preview Environments</div>
+          <div class="section-title" style="font-size: 36px;">Every PR gets its <span class="grad">own database</span></div>
+          <p style="color: var(--muted); line-height: 1.7; margin-top: 16px; font-size: 15px;">
+            Open a pull request and Commerce.js Cloud automatically creates a full preview environment — complete with a branched Neon Postgres database, Cloudflare Pages deployment, and KV cache namespace.
+          </p>
+          <p style="color: var(--muted); line-height: 1.7; margin-top: 12px; font-size: 15px;">
+            Merge the PR and everything tears down. Zero configuration. Zero leaked resources.
+          </p>
+          <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <span style="padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; background: rgba(0,180,216,0.1); color: var(--primary-light); border: 1px solid rgba(0,180,216,0.2);">Branch-per-PR</span>
+            <span style="padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2);">Auto-cleanup</span>
+            <span style="padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; background: rgba(124,92,255,0.1); color: var(--accent-light); border: 1px solid rgba(124,92,255,0.2);">Isolated data</span>
+          </div>
+        </div>
+        <div>
+          <div class="code-block" style="font-size: 12px; line-height: 1.7;">
+<span style="color: var(--muted);">// PR #42 opened → auto-provisioned:</span>
+
+<span style="color: var(--green);">✓</span> <span class="t-output">Neon branch: pr-42</span>
+  <span style="color: var(--dim);">→ postgres://pr-42.neon.tech/mystore</span>
+
+<span style="color: var(--green);">✓</span> <span class="t-output">Cloudflare Pages deploy</span>
+  <span style="color: var(--dim);">→ my-store-pr-42.commercejs.cloud</span>
+
+<span style="color: var(--green);">✓</span> <span class="t-output">KV namespace: my-store-pr-42-cache</span>
+
+<span style="color: var(--muted);">// PR #42 merged → auto-teardown:</span>
+
+<span style="color: var(--yellow);">↺</span> <span class="t-output">Neon branch deleted</span>
+<span style="color: var(--yellow);">↺</span> <span class="t-output">Cloudflare project deleted</span>
+<span style="color: var(--yellow);">↺</span> <span class="t-output">KV namespace deleted</span>
+<span style="color: var(--green); font-weight: 600;">✓ Clean. Zero resources leaked.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Multi-Backend -->
+  <section class="alt" id="adapters">
+    <div class="container">
+      <div class="feature-split reverse fade-in">
+        <div>
+          <div class="section-label">Multi-Backend</div>
+          <div class="section-title" style="font-size: 36px;">Deploy <span class="grad">any backend</span></div>
+          <p style="color: var(--muted); line-height: 1.7; margin-top: 16px; font-size: 15px;">
+            Commerce.js Cloud isn't locked to one backend. Connect Salla, Medusa, or the built-in Platform engine. Your storefront code stays the same — only the adapter changes.
+          </p>
+          <p style="color: var(--muted); line-height: 1.7; margin-top: 12px; font-size: 15px;">
+            Start with the Platform engine (zero dependencies). Migrate to Salla when you scale. Switch to Medusa for international. One storefront, any backend.
+          </p>
+        </div>
+        <div>
+          <div class="code-block" style="font-size: 12px; line-height: 1.8;">
+<span style="color: var(--muted);">// commercejs.config.ts</span>
+<span style="color: #c792ea;">export default</span> defineCommerceConfig({
+  <span style="color: #80cbc4;">adapter</span>: <span style="color: #c3e88d;">'platform'</span>,   <span style="color: var(--muted);">// Built-in</span>
+  <span style="color: var(--muted);">// adapter: 'salla',     // Salla API</span>
+  <span style="color: var(--muted);">// adapter: 'medusa',    // Medusa v2</span>
+  <span style="color: var(--muted);">// adapter: 'shopify',   // Coming soon</span>
+
+  <span style="color: #80cbc4;">payment</span>: <span style="color: #c3e88d;">'tap'</span>,
+  <span style="color: #80cbc4;">notification</span>: <span style="color: #c3e88d;">'resend'</span>,
+  <span style="color: #80cbc4;">analytics</span>: <span style="color: #c3e88d;">'ga4'</span>,
+})
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing">
+    <div class="container">
+      <div style="text-align: center;">
+        <div class="section-label fade-in">Pricing</div>
+        <div class="section-title fade-in">No GMV fees. <span class="grad">Ever.</span></div>
+        <p class="section-desc fade-in" style="margin: 0 auto 40px; text-align: center;">Pay for infrastructure, not for success. Unlimited orders on every tier.</p>
+      </div>
+      <div class="grid grid-3 fade-in">
+        <div class="card pricing-card">
+          <div class="tier">Starter</div>
+          <div class="price"><span class="grad">$29</span></div>
+          <div class="period">/month</div>
+          <ul class="pricing-list">
+            <li>1 store</li>
+            <li>Unlimited orders & products</li>
+            <li>Neon Postgres</li>
+            <li>10 GB R2 storage</li>
+            <li>Push-to-deploy</li>
+            <li>Custom domain + SSL</li>
+            <li>Community support</li>
+          </ul>
+        </div>
+        <div class="card pricing-card pricing-highlight">
+          <div class="pricing-badge">Most Popular</div>
+          <div class="tier" style="color: var(--primary-light);">Pro</div>
+          <div class="price"><span class="grad">$149</span></div>
+          <div class="period">/month</div>
+          <ul class="pricing-list">
+            <li>5 stores</li>
+            <li>Unlimited everything</li>
+            <li>Preview environments</li>
+            <li>100 GB R2 storage</li>
+            <li>Team collaboration</li>
+            <li>Analytics dashboard</li>
+            <li>Priority support</li>
+          </ul>
+        </div>
+        <div class="card pricing-card">
+          <div class="tier">Business</div>
+          <div class="price"><span class="grad">$499</span></div>
+          <div class="period">/month</div>
+          <ul class="pricing-list">
+            <li>Unlimited stores</li>
+            <li>Unlimited everything</li>
+            <li>SSO + RBAC</li>
+            <li>1 TB R2 storage</li>
+            <li>SLA guarantee</li>
+            <li>White-label option</li>
+            <li>Dedicated support</li>
+          </ul>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 32px;" class="fade-in">
+        <div class="table-wrap" style="display: inline-block; max-width: 600px; width: 100%;">
+          <table>
+            <tr><th>Revenue</th><th>Shopify Cost</th><th>CJS Cloud Cost</th><th>You Save</th></tr>
+            <tr class="us"><td>$100K/yr</td><td>$1,450/yr</td><td style="color: var(--green); font-weight: 700;">$348/yr</td><td style="color: var(--green); font-weight: 700;">$1,102/yr</td></tr>
+            <tr class="us"><td>$500K/yr</td><td>$6,500/yr</td><td style="color: var(--green); font-weight: 700;">$1,788/yr</td><td style="color: var(--green); font-weight: 700;">$4,712/yr</td></tr>
+            <tr class="us"><td>$1M/yr</td><td>$10,500/yr</td><td style="color: var(--green); font-weight: 700;">$1,788/yr</td><td style="color: var(--green); font-weight: 700;">$8,712/yr</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison Table -->
+  <section class="alt" id="compare">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 36px;">
+        <div class="section-label fade-in">Comparison</div>
+        <div class="section-title fade-in">Why <span class="grad">Commerce.js Cloud</span></div>
+      </div>
+      <div class="table-wrap fade-in">
+        <table>
+          <thead>
+            <tr><th></th><th>CJS Cloud</th><th>Medusa Cloud</th><th>Shopify</th><th>Railway</th></tr>
+          </thead>
+          <tbody>
+            <tr class="us"><td>Deploy method</td><td><strong>commercejs deploy</strong></td><td>Dashboard</td><td>N/A (SaaS)</td><td>git push</td></tr>
+            <tr class="us"><td>Backend</td><td><strong>Any adapter</strong></td><td>Medusa only</td><td>Shopify only</td><td>Anything</td></tr>
+            <tr class="us"><td>Commerce features</td><td><strong>Built-in</strong></td><td>Built-in</td><td>All built-in</td><td>None</td></tr>
+            <tr class="us"><td>Preview environments</td><td><strong>✅ + DB branch</strong></td><td>✅</td><td>❌</td><td>❌</td></tr>
+            <tr class="us"><td>GMV fees</td><td><strong>❌ Never</strong></td><td>❌</td><td>0.5-2%</td><td>❌</td></tr>
+            <tr class="us"><td>Edge hosting</td><td><strong>Cloudflare 300+</strong></td><td>AWS</td><td>Shopify CDN</td><td>Regional</td></tr>
+            <tr class="us"><td>MENA support</td><td><strong>✅ Native</strong></td><td>❌</td><td>Limited</td><td>N/A</td></tr>
+            <tr class="us"><td>Open source</td><td><strong>✅ MIT SDK</strong></td><td>✅ MIT</td><td>❌</td><td>N/A</td></tr>
+            <tr class="us"><td>Database</td><td><strong>Neon Postgres</strong></td><td>Postgres</td><td>Proprietary</td><td>BYOD</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section" id="cta">
+    <div class="container">
+      <div class="section-title fade-in" style="font-size: 48px;">Ready to <span class="grad">push code?</span></div>
+      <p class="subtitle section-desc fade-in" style="text-align: center;">Deploy your commerce stack in 60 seconds. Start with the Starter tier at $29/month — unlimited orders, no GMV fees, ever.</p>
+      <div style="display: flex; gap: 14px; justify-content: center;" class="fade-in">
+        <a href="#" class="btn btn-primary" style="font-size: 16px; padding: 14px 28px;">Start Deploying →</a>
+        <a href="https://github.com/commerce-js/commerce.js" class="btn btn-outline" style="font-size: 16px; padding: 14px 28px;">View on GitHub</a>
+      </div>
+      <div style="margin-top: 28px; color: var(--dim); font-size: 13px;" class="fade-in">
+        <code style="font-family: var(--mono);">npx @commercejs/cli init my-store && cd my-store && commercejs deploy</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand"><span>Commerce.js</span> Cloud</div>
+        <div class="footer-links">
+          <a href="#">Documentation</a>
+          <a href="#">GitHub</a>
+          <a href="#">Pricing</a>
+          <a href="#">Blog</a>
+          <a href="#">Twitter</a>
+        </div>
+        <div style="font-size: 12px; color: var(--dim);">© 2026 Commerce.js</div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
