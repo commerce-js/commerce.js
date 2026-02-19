@@ -4,6 +4,10 @@
 
 import { getDb } from '../client.js'
 
+export async function countOrders(): Promise<number> {
+  return getDb().order.count()
+}
+
 export async function findAllOrders(opts: {
   status?: string
   customerId?: string

@@ -189,3 +189,36 @@ export async function deleteCategoryById(id: string) {
 export async function findCategoryChildren(parentId: string) {
   return getDb().category.findMany({ where: { parentId } })
 }
+
+// ---- Dashboard stats ----
+
+export async function countProducts(): Promise<number> {
+  return getDb().product.count()
+}
+
+export async function countActiveProducts(): Promise<number> {
+  return getDb().product.count({ where: { status: 'active' } })
+}
+
+// ---- Inventory helpers ----
+
+export async function adminFindLowStockProducts(threshold: number, limit: number) {
+  return getDb().product.findMany({
+    where: {
+      inventoryQuantity: { lte: threshold },
+      status: 'active',
+    },
+    orderBy: { inventoryQuantity: 'asc' },
+    take: limit,
+  })
+}
+
+// ---- Product categories (junction) ----
+
+export async function adminCreateProductCategory(data: { productId: string; categoryId: string }) {
+  return getDb().productCategory.create({ data })
+}
+
+export async function adminDeleteProductCategories(productId: string) {
+  return getDb().productCategory.deleteMany({ where: { productId } })
+}

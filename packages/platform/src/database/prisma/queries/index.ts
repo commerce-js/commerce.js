@@ -118,30 +118,53 @@ export {
 // Admin: Catalog
 export {
   insertProduct,
+  insertProduct as adminCreateProduct,
   updateProductById,
+  updateProductById as adminUpdateProduct,
   deleteProductById,
+  deleteProductById as adminDeleteProduct,
   findAllProducts,
+  findAllProducts as adminListProducts,
   insertProductImage,
+  insertProductImage as adminCreateProductImage,
   deleteProductImages,
+  deleteProductImages as adminDeleteProductImages,
   insertProductVariant,
+  insertProductVariant as adminCreateProductVariant,
   deleteProductVariants,
+  deleteProductVariants as adminDeleteProductVariants,
   updateProductVariantById,
   insertProductAttribute,
+  insertProductAttribute as adminCreateProductAttribute,
   deleteProductAttributes,
+  deleteProductAttributes as adminDeleteProductAttributes,
   insertProductTag,
+  insertProductTag as adminCreateProductTag,
   deleteProductTags,
+  deleteProductTags as adminDeleteProductTags,
   setProductCategories,
+  adminCreateProductCategory,
+  adminDeleteProductCategories,
   insertCategory,
+  insertCategory as adminCreateCategory,
   updateCategoryById,
+  updateCategoryById as adminUpdateCategory,
   deleteCategoryById,
+  deleteCategoryById as adminDeleteCategory,
   findCategoryChildren,
+  findCategoryChildren as adminFindChildCategories,
+  adminFindLowStockProducts,
+  countProducts,
+  countActiveProducts,
 } from './admin-catalog.js'
 
 // Admin: Orders
 export {
   findAllOrders,
+  findAllOrders as adminFindAllOrders,
   updateOrderTracking,
   countOrdersByStatus,
+  countOrders,
   sumOrderRevenue,
   findRecentOrders,
 } from './admin-orders.js'
@@ -149,13 +172,16 @@ export {
 // Admin: Customers
 export {
   findAllCustomers,
+  findAllCustomers as adminFindAllCustomers,
   deleteCustomerById,
+  deleteCustomerById as adminDeleteCustomer,
   countCustomers,
 } from './admin-customers.js'
 
 // Admin: Store
 export {
   updateStoreInfo,
+  updateStoreInfo as adminUpdateStoreInfo,
 } from './admin-store.js'
 
 // Admin: Users
