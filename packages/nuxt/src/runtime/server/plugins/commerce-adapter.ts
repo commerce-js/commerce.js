@@ -14,7 +14,14 @@ let _initPromise: Promise<CommerceAdapter> | null = null
 async function initAdapter(): Promise<CommerceAdapter> {
   if (_adapter) return _adapter
 
-  const adapterName = process.env.COMMERCE_ADAPTER || process.env.NUXT_COMMERCE_ADAPTER || 'salla'
+  // Use Nuxt runtime config as primary, process.env as fallback
+  const runtimeConfig = useRuntimeConfig()
+  const adapterName = process.env.COMMERCE_ADAPTER
+    || process.env.NUXT_COMMERCE_ADAPTER
+    || (runtimeConfig as any).commerceAdapter
+    || 'salla'
+
+  console.log('[commerce] Initializing adapter:', adapterName)
 
   if (adapterName === 'platform') {
     const platform = await import('@commercejs/platform')
@@ -25,22 +32,30 @@ async function initAdapter(): Promise<CommerceAdapter> {
     const connectionString = dbUrl || dbPath
     const isNeon = dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))
 
+    console.log('[commerce] Database driver:', isNeon ? 'neon' : 'sqlite')
+    console.log('[commerce] Connection string provided:', !!connectionString)
+
     // For Neon: init client → migrate → create adapter → seed
     // For SQLite: migrate → create adapter → seed (initPrisma is sync)
     if (isNeon) {
       // 1. Init the Neon Prisma client (migrateNeon needs it)
+      console.log('[commerce] Initializing Neon Prisma client...')
       const { initPrismaNeon } = await import('@commercejs/platform')
       await initPrismaNeon(connectionString)
+      console.log('[commerce] Neon Prisma client initialized')
 
       // 2. Migrate (tables must exist before adapter seeds admin)
+      console.log('[commerce] Running Neon migrations...')
       const { migrateNeon } = await import('@commercejs/platform')
       await migrateNeon()
+      console.log('[commerce] Neon migrations complete')
     } else {
       const { migratePrisma } = await import('@commercejs/platform')
       await migratePrisma()
     }
 
     // 3. Create adapter (seeds initial admin user, skips client init since already done)
+    console.log('[commerce] Creating platform adapter...')
     const result = await createPlatformAdapter({
       currency: process.env.COMMERCE_CURRENCY || 'SAR',
       connectionString,
@@ -48,6 +63,7 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
     _adapter = result.adapter
     _adminApi = result.admin
+    console.log('[commerce] Platform adapter created successfully')
 
     // 4. Seed demo data
     try {
@@ -104,3 +120,4 @@ export default defineNitroPlugin((nitroApp) => {
     ;(event.context as any)._commerceAdmin = _adminApi
   })
 })
+
