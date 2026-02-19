@@ -2,12 +2,12 @@
 // Products schema — products, variants, images, options, attributes
 // ---------------------------------------------------------------------------
 
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, integer, boolean, numeric, doublePrecision, timestamp } from 'drizzle-orm/pg-core'
 import { categories } from './categories.js'
 
 // ---- Products ----
 
-export const products = sqliteTable('products', {
+export const products = pgTable('products', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   sku: text('sku'),
   name: text('name').notNull(),
@@ -19,63 +19,61 @@ export const products = sqliteTable('products', {
   shortDescriptionAr: text('short_description_ar'),
 
   // Pricing
-  price: real('price'),
-  compareAtPrice: real('compare_at_price'),
+  price: numeric('price', { precision: 12, scale: 2 }),
+  compareAtPrice: numeric('compare_at_price', { precision: 12, scale: 2 }),
   currency: text('currency').notNull().default('SAR'),
 
   // Classification
-  productType: text('product_type', {
-    enum: ['physical', 'digital', 'service', 'event', 'subscription', 'auction', 'rental', 'gift_card'],
-  }).notNull().default('physical'),
+  productType: text('product_type').notNull().default('physical'),
 
   // Stock
-  inStock: integer('in_stock', { mode: 'boolean' }).notNull().default(true),
+  inStock: boolean('in_stock').notNull().default(true),
   inventoryQuantity: integer('inventory_quantity'),
   quantityLimit: integer('quantity_limit'),
 
   // Flags
-  vatIncluded: integer('vat_included', { mode: 'boolean' }).notNull().default(true),
-  vatRate: real('vat_rate'),
-  requiresShipping: integer('requires_shipping', { mode: 'boolean' }).notNull().default(true),
-  isDropshipped: integer('is_dropshipped', { mode: 'boolean' }).notNull().default(false),
+  vatIncluded: boolean('vat_included').notNull().default(true),
+  vatRate: doublePrecision('vat_rate'),
+  requiresShipping: boolean('requires_shipping').notNull().default(true),
+  isDropshipped: boolean('is_dropshipped').notNull().default(false),
 
   // Status
-  status: text('status', { enum: ['active', 'draft', 'archived'] }).notNull().default('draft'),
+  status: text('status').notNull().default('draft'),
 
   // Timestamps
-  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
-  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
 // ---- Product Images ----
 
-export const productImages = sqliteTable('product_images', {
+export const productImages = pgTable('product_images', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   url: text('url').notNull(),
   altText: text('alt_text'),
   sortOrder: integer('sort_order').notNull().default(0),
-  isPrimary: integer('is_primary', { mode: 'boolean' }).notNull().default(false),
+  isPrimary: boolean('is_primary').notNull().default(false),
 })
 
 // ---- Product Variants ----
 
-export const productVariants = sqliteTable('product_variants', {
+export const productVariants = pgTable('product_variants', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   sku: text('sku'),
   name: text('name'),
   nameAr: text('name_ar'),
-  price: real('price'),
-  compareAtPrice: real('compare_at_price'),
-  inStock: integer('in_stock', { mode: 'boolean' }).notNull().default(true),
+  price: numeric('price', { precision: 12, scale: 2 }),
+  compareAtPrice: numeric('compare_at_price', { precision: 12, scale: 2 }),
+  inStock: boolean('in_stock').notNull().default(true),
   inventoryQuantity: integer('inventory_quantity'),
   sortOrder: integer('sort_order').notNull().default(0),
 })
 
 // ---- Product Options (e.g., Size, Color) ----
 
-export const productOptions = sqliteTable('product_options', {
+export const productOptions = pgTable('product_options', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
@@ -85,7 +83,7 @@ export const productOptions = sqliteTable('product_options', {
 
 // ---- Product Option Values (e.g., S, M, L, XL) ----
 
-export const productOptionValues = sqliteTable('product_option_values', {
+export const productOptionValues = pgTable('product_option_values', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   optionId: text('option_id').notNull().references(() => productOptions.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
@@ -95,7 +93,7 @@ export const productOptionValues = sqliteTable('product_option_values', {
 
 // ---- Product Attributes (key-value metadata) ----
 
-export const productAttributes = sqliteTable('product_attributes', {
+export const productAttributes = pgTable('product_attributes', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   code: text('code').notNull(),
@@ -107,14 +105,14 @@ export const productAttributes = sqliteTable('product_attributes', {
 
 // ---- Product ↔ Category (many-to-many) ----
 
-export const productCategories = sqliteTable('product_categories', {
+export const productCategories = pgTable('product_categories', {
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   categoryId: text('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
 })
 
 // ---- Product Tags ----
 
-export const productTags = sqliteTable('product_tags', {
+export const productTags = pgTable('product_tags', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   tag: text('tag').notNull(),

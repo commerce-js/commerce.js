@@ -18,5 +18,5 @@ export async function findBrandById(id: string) {
 }
 
 export async function insertBrand(data: Record<string, any>) {
-  getDb().insert(schema.brands).values(data as any).run()
+  await getDb().insert(schema.brands).values(data as any)
 }

@@ -2,17 +2,17 @@
 // Reviews schema
 // ---------------------------------------------------------------------------
 
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, integer, boolean, timestamp } from 'drizzle-orm/pg-core'
 import { products } from './products.js'
 
-export const reviews = sqliteTable('reviews', {
+export const reviews = pgTable('reviews', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   authorName: text('author_name').notNull(),
   rating: integer('rating').notNull(),
   title: text('title'),
   body: text('body'),
-  verified: integer('verified', { mode: 'boolean' }).notNull().default(false),
+  verified: boolean('verified').notNull().default(false),
   status: text('status').notNull().default('published'),
-  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })

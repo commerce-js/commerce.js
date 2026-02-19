@@ -118,31 +118,53 @@ export {
 // Admin — Catalog
 export {
   adminCreateProduct,
+  adminCreateProduct as insertProduct,
   adminUpdateProduct,
+  adminUpdateProduct as updateProductById,
   adminDeleteProduct,
+  adminDeleteProduct as deleteProductById,
   adminListProducts,
+  adminListProducts as findAllProducts,
   adminCreateProductImage,
+  adminCreateProductImage as insertProductImage,
   adminDeleteProductImages,
+  adminDeleteProductImages as deleteProductImages,
   adminCreateProductVariant,
+  adminCreateProductVariant as insertProductVariant,
   adminDeleteProductVariants,
+  adminDeleteProductVariants as deleteProductVariants,
   adminCreateProductAttribute,
+  adminCreateProductAttribute as insertProductAttribute,
   adminDeleteProductAttributes,
+  adminDeleteProductAttributes as deleteProductAttributes,
   adminCreateProductTag,
+  adminCreateProductTag as insertProductTag,
   adminDeleteProductTags,
+  adminDeleteProductTags as deleteProductTags,
   adminCreateProductCategory,
   adminDeleteProductCategories,
   adminCreateCategory,
+  adminCreateCategory as insertCategory,
   adminUpdateCategory,
+  adminUpdateCategory as updateCategoryById,
   adminDeleteCategory,
+  adminDeleteCategory as deleteCategoryById,
   adminFindChildCategories,
+  adminFindChildCategories as findCategoryChildren,
   adminFindLowStockProducts,
+  updateProductVariantById,
+  setProductCategories,
+  countProducts,
+  countActiveProducts,
 } from './admin-catalog.js'
 
 // Admin — Orders
 export {
   adminFindAllOrders,
+  adminFindAllOrders as findAllOrders,
   updateOrderTracking,
   countOrdersByStatus,
+  countOrders,
   sumOrderRevenue,
   findRecentOrders,
 } from './admin-orders.js'
@@ -150,13 +172,16 @@ export {
 // Admin — Customers
 export {
   adminFindAllCustomers,
+  adminFindAllCustomers as findAllCustomers,
   adminDeleteCustomer,
+  adminDeleteCustomer as deleteCustomerById,
   countCustomers,
 } from './admin-customers.js'
 
 // Admin — Store
 export {
   adminUpdateStoreInfo,
+  adminUpdateStoreInfo as updateStoreInfo,
 } from './admin-store.js'
 
 // Admin — Users

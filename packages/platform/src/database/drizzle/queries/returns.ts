@@ -28,16 +28,13 @@ export async function insertReturn(data: {
   customerNote?: string | null
 }) {
   const id = crypto.randomUUID()
-  const now = new Date().toISOString()
-  getDb().insert(schema.returns).values({
+  await getDb().insert(schema.returns).values({
     id,
     orderId: data.orderId,
     orderNumber: data.orderNumber,
     status: 'requested',
     customerNote: data.customerNote ?? null,
-    createdAt: now,
-    updatedAt: now,
-  }).run()
+  })
   return id
 }
 
@@ -66,14 +63,12 @@ export async function insertReturnItem(data: {
     quantity: data.quantity,
     reason: data.reason,
     reasonNote: data.reasonNote ?? null,
-  }).run()
+  })
   return id
 }
 
 export async function updateReturnStatus(returnId: string, status: string) {
-  const now = new Date().toISOString()
-  getDb().update(schema.returns)
-    .set({ status, updatedAt: now })
+  await getDb().update(schema.returns)
+    .set({ status, updatedAt: new Date() })
     .where(eq(schema.returns.id, returnId))
-    .run()
 }

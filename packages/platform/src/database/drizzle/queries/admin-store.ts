@@ -9,6 +9,6 @@ import * as schema from '../schema/index.js'
 export async function adminUpdateStoreInfo(id: string, data: Record<string, any>) {
   await getDb().update(schema.storeInfo).set({
     ...data as any,
-    updatedAt: new Date().toISOString(),
+    updatedAt: new Date(),
   }).where(eq(schema.storeInfo.id, id))
 }

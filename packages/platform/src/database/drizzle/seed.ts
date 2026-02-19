@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Seed — populate the database with demo data (Drizzle version)
+// Seed — populate the database with demo data (Drizzle + Neon)
 // ---------------------------------------------------------------------------
 
 import { getDb } from './client.js'
@@ -9,12 +9,11 @@ import * as schema from './schema/index.js'
 /**
  * Seed the database with demo products, categories, and store info via Drizzle.
  */
-export function seedDrizzle(db?: DrizzleDatabase): void {
+export async function seedDrizzle(db?: DrizzleDatabase): Promise<void> {
   const database = db ?? getDb()
-  const now = new Date().toISOString()
 
   // ---- Store ----
-  database.insert(schema.storeInfo).values({
+  await database.insert(schema.storeInfo).values({
     id: 'default',
     name: 'CommerceJS Demo Store',
     nameAr: 'متجر كوميرس جي إس',
@@ -25,9 +24,7 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
     timezone: 'Asia/Riyadh',
     supportedCurrencies: ['SAR', 'AED', 'USD'],
     supportedLocales: ['en', 'ar'],
-    createdAt: now,
-    updatedAt: now,
-  }).run()
+  })
 
   // ---- Categories ----
   const categories = [
@@ -37,11 +34,7 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
   ]
 
   for (const cat of categories) {
-    database.insert(schema.categories).values({
-      ...cat,
-      createdAt: now,
-      updatedAt: now,
-    }).run()
+    await database.insert(schema.categories).values(cat)
   }
 
   // ---- Products ----
@@ -53,8 +46,8 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
       slug: 'premium-cotton-t-shirt',
       description: 'Ultra-soft 100% organic cotton t-shirt with a modern fit.',
       descriptionAr: 'تي شيرت من القطن العضوي بنسبة 100٪ بقصة عصرية',
-      price: 89,
-      compareAtPrice: 120,
+      price: '89.00',
+      compareAtPrice: '120.00',
       currency: 'SAR',
       status: 'active',
       productType: 'physical',
@@ -72,7 +65,7 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
       slug: 'wireless-bluetooth-earbuds',
       description: 'High-fidelity audio with active noise cancellation and 30h battery.',
       descriptionAr: 'صوت عالي الدقة مع إلغاء الضوضاء النشط وبطارية 30 ساعة',
-      price: 249,
+      price: '249.00',
       currency: 'SAR',
       status: 'active',
       productType: 'physical',
@@ -90,8 +83,8 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
       slug: 'leather-crossbody-bag',
       description: 'Handcrafted genuine leather bag with adjustable strap.',
       descriptionAr: 'حقيبة جلد طبيعي مصنوعة يدويًا مع حزام قابل للتعديل',
-      price: 350,
-      compareAtPrice: 450,
+      price: '350.00',
+      compareAtPrice: '450.00',
       currency: 'SAR',
       status: 'active',
       productType: 'physical',
@@ -106,19 +99,13 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
 
   for (const product of products) {
     const { categoryId, ...productData } = product
-    database.insert(schema.products).values({
-      ...productData,
-      productType: productData.productType as 'physical',
-      status: productData.status as 'active',
-      createdAt: now,
-      updatedAt: now,
-    }).run()
+    await database.insert(schema.products).values(productData)
 
     // Link to category
-    database.insert(schema.productCategories).values({
+    await database.insert(schema.productCategories).values({
       productId: product.id,
       categoryId,
-    }).run()
+    })
   }
 
   // ---- Product Images ----
@@ -129,18 +116,18 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
   ]
 
   for (const image of images) {
-    database.insert(schema.productImages).values(image).run()
+    await database.insert(schema.productImages).values(image)
   }
 
   // ---- Product Variants (for t-shirt) ----
   const variants = [
-    { productId: 'prod-1', name: 'Small', sku: 'TSHIRT-S', price: 89, inStock: true, inventoryQuantity: 50, sortOrder: 1 },
-    { productId: 'prod-1', name: 'Medium', sku: 'TSHIRT-M', price: 89, inStock: true, inventoryQuantity: 60, sortOrder: 2 },
-    { productId: 'prod-1', name: 'Large', sku: 'TSHIRT-L', price: 99, inStock: true, inventoryQuantity: 40, sortOrder: 3 },
+    { productId: 'prod-1', name: 'Small', sku: 'TSHIRT-S', price: '89.00', inStock: true, inventoryQuantity: 50, sortOrder: 1 },
+    { productId: 'prod-1', name: 'Medium', sku: 'TSHIRT-M', price: '89.00', inStock: true, inventoryQuantity: 60, sortOrder: 2 },
+    { productId: 'prod-1', name: 'Large', sku: 'TSHIRT-L', price: '99.00', inStock: true, inventoryQuantity: 40, sortOrder: 3 },
   ]
 
   for (const v of variants) {
-    database.insert(schema.productVariants).values(v).run()
+    await database.insert(schema.productVariants).values(v)
   }
 
   // ---- Brands ----
@@ -151,11 +138,11 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
   ]
 
   for (const brand of brands) {
-    database.insert(schema.brands).values({ ...brand, createdAt: now, updatedAt: now }).run()
+    await database.insert(schema.brands).values(brand)
   }
 
   // ---- Countries ----
-  const countries = [
+  const countryList = [
     { id: 'sa', code: 'SA', name: 'Saudi Arabia', nameAr: 'المملكة العربية السعودية', callingCode: '+966', currency: 'SAR' },
     { id: 'ae', code: 'AE', name: 'United Arab Emirates', nameAr: 'الإمارات العربية المتحدة', callingCode: '+971', currency: 'AED' },
     { id: 'kw', code: 'KW', name: 'Kuwait', nameAr: 'الكويت', callingCode: '+965', currency: 'KWD' },
@@ -164,21 +151,21 @@ export function seedDrizzle(db?: DrizzleDatabase): void {
     { id: 'qa', code: 'QA', name: 'Qatar', nameAr: 'قطر', callingCode: '+974', currency: 'QAR' },
   ]
 
-  for (const country of countries) {
-    database.insert(schema.countries).values(country).run()
+  for (const country of countryList) {
+    await database.insert(schema.countries).values(country)
   }
 
   // ---- Reviews ----
-  const reviews = [
-    { id: 'rev-1', productId: 'prod-1', authorName: 'Ahmed', rating: 5, title: 'Excellent quality', body: 'Best t-shirt I have ever bought. The cotton is incredibly soft.', verified: true, status: 'published', createdAt: now },
-    { id: 'rev-2', productId: 'prod-1', authorName: 'Sara', rating: 4, title: 'Good fit', body: 'Nice shirt, true to size. Would buy again.', verified: true, status: 'published', createdAt: now },
-    { id: 'rev-3', productId: 'prod-1', authorName: 'Omar', rating: 5, title: 'Love it', body: 'Perfect for everyday wear.', verified: false, status: 'published', createdAt: now },
-    { id: 'rev-4', productId: 'prod-2', authorName: 'Fatima', rating: 5, title: 'Amazing sound', body: 'Crystal clear audio and the noise cancellation is top-notch.', verified: true, status: 'published', createdAt: now },
-    { id: 'rev-5', productId: 'prod-2', authorName: 'Khalid', rating: 3, title: 'Decent', body: 'Good sound but battery life could be better.', verified: true, status: 'published', createdAt: now },
-    { id: 'rev-6', productId: 'prod-3', authorName: 'Noura', rating: 4, title: 'Beautiful bag', body: 'Gorgeous leather, arrived well-packaged.', verified: true, status: 'published', createdAt: now },
+  const reviewsList = [
+    { id: 'rev-1', productId: 'prod-1', authorName: 'Ahmed', rating: 5, title: 'Excellent quality', body: 'Best t-shirt I have ever bought. The cotton is incredibly soft.', verified: true, status: 'published' },
+    { id: 'rev-2', productId: 'prod-1', authorName: 'Sara', rating: 4, title: 'Good fit', body: 'Nice shirt, true to size. Would buy again.', verified: true, status: 'published' },
+    { id: 'rev-3', productId: 'prod-1', authorName: 'Omar', rating: 5, title: 'Love it', body: 'Perfect for everyday wear.', verified: false, status: 'published' },
+    { id: 'rev-4', productId: 'prod-2', authorName: 'Fatima', rating: 5, title: 'Amazing sound', body: 'Crystal clear audio and the noise cancellation is top-notch.', verified: true, status: 'published' },
+    { id: 'rev-5', productId: 'prod-2', authorName: 'Khalid', rating: 3, title: 'Decent', body: 'Good sound but battery life could be better.', verified: true, status: 'published' },
+    { id: 'rev-6', productId: 'prod-3', authorName: 'Noura', rating: 4, title: 'Beautiful bag', body: 'Gorgeous leather, arrived well-packaged.', verified: true, status: 'published' },
   ]
 
-  for (const review of reviews) {
-    database.insert(schema.reviews).values(review).run()
+  for (const review of reviewsList) {
+    await database.insert(schema.reviews).values(review)
   }
 }

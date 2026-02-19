@@ -2,30 +2,28 @@
 // Orders schema — orders, line items, and status history
 // ---------------------------------------------------------------------------
 
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, integer, boolean, numeric, jsonb, timestamp } from 'drizzle-orm/pg-core'
 import { customers } from './customers.js'
 
-export const orders = sqliteTable('orders', {
+export const orders = pgTable('orders', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   orderNumber: text('order_number').notNull().unique(),
   customerId: text('customer_id').references(() => customers.id, { onDelete: 'set null' }),
 
   // Status
-  status: text('status', {
-    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'returned'],
-  }).notNull().default('pending'),
+  status: text('status').notNull().default('pending'),
 
   // Totals
-  subtotal: real('subtotal').notNull().default(0),
-  shippingCost: real('shipping_cost'),
-  tax: real('tax'),
-  discount: real('discount'),
-  total: real('total').notNull().default(0),
+  subtotal: numeric('subtotal', { precision: 12, scale: 2 }).notNull().default('0'),
+  shippingCost: numeric('shipping_cost', { precision: 12, scale: 2 }),
+  tax: numeric('tax', { precision: 12, scale: 2 }),
+  discount: numeric('discount', { precision: 12, scale: 2 }),
+  total: numeric('total', { precision: 12, scale: 2 }).notNull().default('0'),
   currency: text('currency').notNull().default('SAR'),
 
   // Addresses (JSON snapshots)
-  shippingAddress: text('shipping_address', { mode: 'json' }),
-  billingAddress: text('billing_address', { mode: 'json' }),
+  shippingAddress: jsonb('shipping_address'),
+  billingAddress: jsonb('billing_address'),
 
   // Shipping
   shippingMethod: text('shipping_method'),
@@ -35,13 +33,13 @@ export const orders = sqliteTable('orders', {
 
   // Misc
   note: text('note'),
-  requiresShipping: integer('requires_shipping', { mode: 'boolean' }).notNull().default(true),
+  requiresShipping: boolean('requires_shipping').notNull().default(true),
 
-  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
-  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
-export const orderItems = sqliteTable('order_items', {
+export const orderItems = pgTable('order_items', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   productId: text('product_id').notNull(),
@@ -52,24 +50,19 @@ export const orderItems = sqliteTable('order_items', {
   nameAr: text('name_ar'),
   image: text('image'),
   quantity: integer('quantity').notNull(),
-  price: real('price').notNull(),
-  totalPrice: real('total_price').notNull(),
+  price: numeric('price', { precision: 12, scale: 2 }).notNull(),
+  totalPrice: numeric('total_price', { precision: 12, scale: 2 }).notNull(),
 
   // Product type info
-  productType: text('product_type', {
-    enum: ['physical', 'digital', 'service', 'event', 'subscription', 'auction', 'rental', 'gift_card'],
-  }).notNull().default('physical'),
-
-  fulfillmentStatus: text('fulfillment_status', {
-    enum: ['unfulfilled', 'partially_fulfilled', 'fulfilled', 'returned', 'download_ready', 'license_sent', 'access_granted', 'ticket_issued'],
-  }).notNull().default('unfulfilled'),
+  productType: text('product_type').notNull().default('physical'),
+  fulfillmentStatus: text('fulfillment_status').notNull().default('unfulfilled'),
 })
 
-export const orderHistory = sqliteTable('order_history', {
+export const orderHistory = pgTable('order_history', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   fromStatus: text('from_status'),
   toStatus: text('to_status').notNull(),
   note: text('note'),
-  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })

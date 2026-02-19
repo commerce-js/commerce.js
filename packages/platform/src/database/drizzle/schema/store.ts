@@ -2,9 +2,9 @@
 // Store schema — single-row store configuration
 // ---------------------------------------------------------------------------
 
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, jsonb, timestamp } from 'drizzle-orm/pg-core'
 
-export const storeInfo = sqliteTable('store_info', {
+export const storeInfo = pgTable('store_info', {
   id: text('id').primaryKey().default('default'),
   name: text('name').notNull().default('My Store'),
   nameAr: text('name_ar'),
@@ -14,13 +14,13 @@ export const storeInfo = sqliteTable('store_info', {
   favicon: text('favicon'),
   currency: text('currency').notNull().default('SAR'),
   locale: text('locale').notNull().default('en'),
-  supportedCurrencies: text('supported_currencies', { mode: 'json' }).$type<string[]>().default(['SAR']),
-  supportedLocales: text('supported_locales', { mode: 'json' }).$type<string[]>().default(['en', 'ar']),
+  supportedCurrencies: jsonb('supported_currencies').$type<string[]>().default(['SAR']),
+  supportedLocales: jsonb('supported_locales').$type<string[]>().default(['en', 'ar']),
   timezone: text('timezone').notNull().default('Asia/Riyadh'),
   contactEmail: text('contact_email'),
   contactPhone: text('contact_phone'),
   address: text('address'),
-  socialLinks: text('social_links', { mode: 'json' }).$type<Record<string, string>>(),
-  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
-  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+  socialLinks: jsonb('social_links').$type<Record<string, string>>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

@@ -8,6 +8,17 @@ import * as schema from '../schema/index.js'
 
 // ---- Products ----
 
+export async function countProducts(): Promise<number> {
+  const result = await getDb().select({ count: sql<number>`count(*)` }).from(schema.products)
+  return Number(result[0]?.count ?? 0)
+}
+
+export async function countActiveProducts(): Promise<number> {
+  const result = await getDb().select({ count: sql<number>`count(*)` }).from(schema.products)
+    .where(eq(schema.products.status, 'active'))
+  return Number(result[0]?.count ?? 0)
+}
+
 export async function adminCreateProduct(data: Record<string, any>) {
   await getDb().insert(schema.products).values(data as any)
 }
@@ -26,6 +37,7 @@ export async function adminListProducts(opts: {
   limit: number
   offset: number
   search?: string
+  sort?: { field: string; direction: 'asc' | 'desc' }
   orderBy?: { field: string; direction: 'asc' | 'desc' }
 }) {
   const db = getDb()
@@ -35,10 +47,11 @@ export async function adminListProducts(opts: {
     conditions.push(like(schema.products.name, `%${opts.search}%`))
   }
 
-  const sortCol = opts.orderBy?.field === 'price' ? schema.products.price
-    : opts.orderBy?.field === 'name' ? schema.products.name
+  const sorting = opts.orderBy || opts.sort
+  const sortCol = sorting?.field === 'price' ? schema.products.price
+    : sorting?.field === 'name' ? schema.products.name
     : schema.products.createdAt
-  const orderFn = opts.orderBy?.direction === 'asc' ? asc : desc
+  const orderFn = sorting?.direction === 'asc' ? asc : desc
 
   const [rows, countResult] = await Promise.all([
     db.select().from(schema.products)
@@ -132,4 +145,21 @@ export async function adminFindLowStockProducts(threshold: number, limit: number
     ))
     .orderBy(asc(schema.products.inventoryQuantity))
     .limit(limit)
+}
+
+// ---- Variant update ----
+
+export async function updateProductVariantById(id: string, data: Record<string, unknown>) {
+  await getDb().update(schema.productVariants).set(data as any)
+    .where(eq(schema.productVariants.id, id))
+}
+
+// ---- Set product categories (delete + replace) ----
+
+export async function setProductCategories(productId: string, categoryIds: string[]) {
+  await getDb().delete(schema.productCategories)
+    .where(eq(schema.productCategories.productId, productId))
+  for (const categoryId of categoryIds) {
+    await getDb().insert(schema.productCategories).values({ productId, categoryId })
+  }
 }

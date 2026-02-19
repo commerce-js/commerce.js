@@ -30,17 +30,14 @@ export type {
 // Config
 export type { PlatformConfig } from './types.js'
 
-// Database (PostgreSQL via Neon adapter)
-export { initPrisma, getPrismaDb, getDb, migratePrisma } from './database/index.js'
-export type { PrismaDatabase } from './database/prisma/client.js'
-
-// Drizzle (secondary driver — for raw queries)
-export { initDrizzle, getDrizzleDb, migrateDrizzle } from './database/index.js'
+// Database (Drizzle + Neon serverless — no WASM)
+export { initDrizzle, getDrizzleDb, getDb, migrateDrizzle, seedDrizzle } from './database/index.js'
 export type { DrizzleDatabase } from './database/drizzle/client.js'
 
-// Seed
-export { seedDrizzle } from './database/drizzle/seed.js'
-export { seedPrisma } from './database/prisma/seed.js'
+// Prisma (dormant — commented out to prevent WASM bundling)
+// export { initPrisma, getPrismaDb, migratePrisma } from './database/index.js'
+// export type { PrismaDatabase } from './database/prisma/client.js'
+// export { seedPrisma } from './database/prisma/seed.js'
 
-// Drizzle schema (for raw queries — Prisma users access models via the client directly)
+// Drizzle schema (for raw queries)
 export * as schema from './database/drizzle/schema/index.js'

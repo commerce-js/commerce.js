@@ -18,5 +18,5 @@ export async function findCountryById(id: string) {
 }
 
 export async function insertCountry(data: Record<string, any>) {
-  getDb().insert(schema.countries).values(data as any).run()
+  await getDb().insert(schema.countries).values(data as any)
 }

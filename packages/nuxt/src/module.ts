@@ -1,4 +1,4 @@
-import { dirname, resolve } from 'path'
+import { resolve } from 'path'
 import {
   defineNuxtModule,
   addPlugin,
@@ -11,7 +11,6 @@ import {
 } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
 import { consola } from 'consola'
-import { unwasm } from 'unwasm/plugin'
 const logger = consola.withTag('@commercejs/nuxt')
 
 export interface CommerceModuleOptions {
@@ -119,40 +118,10 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
       logger.info(`Server routes auto-discovered under ${options.apiBase}`)
     }
 
-    // Enable WASM support — required for Prisma query compiler on Cloudflare Workers
-    nuxt.options.nitro.experimental = {
-      ...nuxt.options.nitro.experimental,
-      wasm: true,
-    }
-
-    // Add unwasm as both a Vite and Nitro Rollup plugin
-    const unwasmPlugin = unwasm({
-      esmImport: true,
-    })
-
-    nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
-    nuxt.options.vite.plugins.push(unwasmPlugin)
-
-    // Custom Rollup plugin to strip Cloudflare-specific ?module query from .wasm imports
-    // Prisma's cloudflare runtime generates `.wasm?module` imports; unwasm only understands plain `.wasm`
-    const wasmModulePlugin = {
-      name: 'prisma-wasm-module-compat',
-      resolveId(source: string, importer: string | undefined) {
-        if (source.endsWith('.wasm?module')) {
-          const stripped = source.replace('?module', '')
-          if (importer) {
-            return { id: resolve(dirname(importer), stripped), external: false }
-          }
-          return { id: stripped, external: false }
-        }
-        return null
-      },
-    }
-
-    // Configure Nitro Rollup — the wasmModulePlugin must come before unwasm
-    nuxt.options.nitro.rollupConfig = nuxt.options.nitro.rollupConfig || {}
-    nuxt.options.nitro.rollupConfig.plugins = nuxt.options.nitro.rollupConfig.plugins || []
-    ;(nuxt.options.nitro.rollupConfig.plugins as any[]).push(wasmModulePlugin, unwasmPlugin)
+    // Note: WASM handling was removed — Drizzle uses @neondatabase/serverless
+    // (HTTP-based, no WASM binary needed) so no unwasm or patch-wasm.mjs required.
+    // The platform build script removes dist/database/prisma/ to prevent stale
+    // Prisma generated code from being bundled.
 
     // Enable OpenAPI spec generation (/_openapi.json, /_scalar, /_swagger)
     if (options.openAPI) {

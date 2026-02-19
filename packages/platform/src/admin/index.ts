@@ -16,6 +16,9 @@ import {
   findRecentOrders,
   countCustomers,
   findOrderItems,
+  countProducts,
+  countActiveProducts,
+  countOrders,
 } from '../database/index.js'
 import { localized, priceRequired, price, img, parseJsonField } from '../domains/helpers.js'
 
@@ -76,9 +79,6 @@ export function createAdminAPI(currency: string): AdminAPI {
 
     // Dashboard stats
     async getDashboardStats() {
-      const { getDb } = await import('../database/prisma/client.js')
-      const prisma = getDb()
-
       const [
         totalProducts,
         activeProducts,
@@ -88,9 +88,9 @@ export function createAdminAPI(currency: string): AdminAPI {
         ordersByStatus,
         recentOrderRows,
       ] = await Promise.all([
-        prisma.product.count(),
-        prisma.product.count({ where: { status: 'active' } }),
-        prisma.order.count(),
+        countProducts(),
+        countActiveProducts(),
+        countOrders(),
         sumOrderRevenue(),
         countCustomers(),
         countOrdersByStatus(),

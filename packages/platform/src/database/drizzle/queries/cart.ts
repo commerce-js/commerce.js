@@ -6,8 +6,14 @@ import { eq, and, sql } from 'drizzle-orm'
 import { getDb } from '../client.js'
 import * as schema from '../schema/index.js'
 
-export async function createCart(id: string, now: string) {
-  await getDb().insert(schema.carts).values({ id, createdAt: now, updatedAt: now })
+export async function createCart(id: string, now?: string | Date) {
+  const values: any = { id }
+  if (now) {
+    const ts = now instanceof Date ? now : new Date(now)
+    values.createdAt = ts
+    values.updatedAt = ts
+  }
+  await getDb().insert(schema.carts).values(values)
 }
 
 export async function findCart(cartId: string) {
@@ -36,15 +42,18 @@ export async function insertCartItem(item: {
   productId: string
   variantId?: string | null
   quantity: number
-  createdAt: string
+  createdAt?: string | Date
 }) {
-  await getDb().insert(schema.cartItems).values({
+  const values: any = {
     cartId: item.cartId,
     productId: item.productId,
     variantId: item.variantId ?? null,
     quantity: item.quantity,
-    createdAt: item.createdAt,
-  })
+  }
+  if (item.createdAt) {
+    values.createdAt = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt)
+  }
+  await getDb().insert(schema.cartItems).values(values)
 }
 
 export async function updateCartItemQuantity(itemId: string, quantity: number) {

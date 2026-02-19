@@ -2,9 +2,9 @@
 // Countries schema
 // ---------------------------------------------------------------------------
 
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, boolean } from 'drizzle-orm/pg-core'
 
-export const countries = sqliteTable('countries', {
+export const countries = pgTable('countries', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   code: text('code').notNull().unique(),
   name: text('name').notNull(),
@@ -12,5 +12,5 @@ export const countries = sqliteTable('countries', {
   callingCode: text('calling_code'),
   currency: text('currency'),
   capital: text('capital'),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  isActive: boolean('is_active').notNull().default(true),
 })

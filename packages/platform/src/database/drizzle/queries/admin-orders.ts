@@ -6,6 +6,11 @@ import { eq, sql, and, like, gte, lte, desc } from 'drizzle-orm'
 import { getDb } from '../client.js'
 import * as schema from '../schema/index.js'
 
+export async function countOrders(): Promise<number> {
+  const result = await getDb().select({ count: sql<number>`count(*)` }).from(schema.orders)
+  return Number(result[0]?.count ?? 0)
+}
+
 export async function adminFindAllOrders(opts: {
   limit: number
   offset: number
@@ -20,8 +25,8 @@ export async function adminFindAllOrders(opts: {
 
   if (opts.status) conditions.push(eq(schema.orders.status, opts.status as any))
   if (opts.customerId) conditions.push(eq(schema.orders.customerId, opts.customerId))
-  if (opts.dateFrom) conditions.push(gte(schema.orders.createdAt, opts.dateFrom))
-  if (opts.dateTo) conditions.push(lte(schema.orders.createdAt, opts.dateTo))
+  if (opts.dateFrom) conditions.push(gte(schema.orders.createdAt, new Date(opts.dateFrom)))
+  if (opts.dateTo) conditions.push(lte(schema.orders.createdAt, new Date(opts.dateTo)))
   if (opts.search) conditions.push(like(schema.orders.orderNumber, `%${opts.search}%`))
 
   const [rows, countResult] = await Promise.all([
@@ -39,13 +44,13 @@ export async function adminFindAllOrders(opts: {
 }
 
 export async function updateOrderTracking(id: string, data: {
-  trackingNumber?: string
-  trackingUrl?: string
+  trackingNumber?: string | null
+  trackingUrl?: string | null
   status?: string
 }) {
   await getDb().update(schema.orders).set({
     ...data as any,
-    updatedAt: new Date().toISOString(),
+    updatedAt: new Date(),
   }).where(eq(schema.orders.id, id))
 }
 

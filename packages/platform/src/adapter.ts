@@ -42,11 +42,11 @@ function resolveConnectionString(config: PlatformConfig): string {
 }
 
 /**
- * Initialize the database — single PostgreSQL path via Neon adapter.
+ * Initialize the database — PostgreSQL via Neon serverless (Drizzle).
  */
 async function initDatabase(connectionString: string) {
-  const { initPrisma } = await import('./database/prisma/client.js')
-  await initPrisma(connectionString)
+  const { initDrizzle } = await import('./database/drizzle/client.js')
+  initDrizzle(connectionString)
 }
 
 /** Result of createPlatformAdapter — storefront adapter + admin API */

@@ -24,8 +24,8 @@ export async function createAdminUser(data: {
   passwordHash: string
   name?: string
   role?: string
-  createdAt: string
-  updatedAt: string
+  createdAt?: string | Date
+  updatedAt?: string | Date
 }) {
   await getDb().insert(schema.adminUsers).values(data as any)
 }

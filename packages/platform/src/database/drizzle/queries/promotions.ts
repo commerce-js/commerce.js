@@ -29,24 +29,21 @@ export async function insertPromotion(data: {
   discountType: string
   discountValue: number
   target: string
-  startsAt: string
-  endsAt?: string | null
+  startsAt: Date | string
+  endsAt?: Date | string | null
   isActive?: boolean
 }) {
   const id = crypto.randomUUID()
-  const now = new Date().toISOString()
-  getDb().insert(schema.promotions).values({
+  await getDb().insert(schema.promotions).values({
     id,
     name: data.name,
     nameAr: data.nameAr ?? null,
     discountType: data.discountType,
-    discountValue: data.discountValue,
+    discountValue: String(data.discountValue),
     target: data.target,
-    startsAt: data.startsAt,
-    endsAt: data.endsAt ?? null,
+    startsAt: data.startsAt instanceof Date ? data.startsAt : new Date(data.startsAt),
+    endsAt: data.endsAt ? (data.endsAt instanceof Date ? data.endsAt : new Date(data.endsAt)) : null,
     isActive: data.isActive ?? true,
-    createdAt: now,
-    updatedAt: now,
-  }).run()
+  })
   return id
 }

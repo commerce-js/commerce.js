@@ -54,8 +54,7 @@ export async function insertReview(data: {
   verified?: boolean
 }) {
   const id = crypto.randomUUID()
-  const now = new Date().toISOString()
-  getDb().insert(schema.reviews).values({
+  await getDb().insert(schema.reviews).values({
     id,
     productId: data.productId,
     authorName: data.authorName,
@@ -64,7 +63,6 @@ export async function insertReview(data: {
     body: data.body ?? null,
     verified: data.verified ?? false,
     status: 'published',
-    createdAt: now,
-  }).run()
+  })
   return id
 }

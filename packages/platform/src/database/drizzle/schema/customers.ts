@@ -2,9 +2,9 @@
 // Customers schema — customers and address book
 // ---------------------------------------------------------------------------
 
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, boolean, timestamp } from 'drizzle-orm/pg-core'
 
-export const customers = sqliteTable('customers', {
+export const customers = pgTable('customers', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
@@ -12,11 +12,11 @@ export const customers = sqliteTable('customers', {
   lastName: text('last_name'),
   phone: text('phone'),
   defaultAddressId: text('default_address_id'),
-  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
-  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
-export const customerAddresses = sqliteTable('customer_addresses', {
+export const customerAddresses = pgTable('customer_addresses', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   customerId: text('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
   firstName: text('first_name').notNull(),
@@ -31,5 +31,5 @@ export const customerAddresses = sqliteTable('customer_addresses', {
   district: text('district'),
   nationalAddress: text('national_address'),
   additionalNumber: text('additional_number'),
-  isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
+  isDefault: boolean('is_default').notNull().default(false),
 })

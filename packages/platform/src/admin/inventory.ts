@@ -148,17 +148,10 @@ export function createAdminInventoryDomain(currency: string) {
     },
 
     async getLowStockProducts(threshold?: number): Promise<Product[]> {
+      const { adminFindLowStockProducts } = await import('../database/drizzle/queries/admin-catalog.js')
       const limit = threshold ?? 10
-      const { getDb } = await import('../database/prisma/client.js')
 
-      const rows = await getDb().product.findMany({
-        where: {
-          inventoryQuantity: { lte: limit },
-          status: 'active',
-        },
-        orderBy: { inventoryQuantity: 'asc' },
-        take: 50,
-      })
+      const rows = await adminFindLowStockProducts(limit, 50)
 
       return Promise.all(
         rows.map(async (row) => {

@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// Database client (Drizzle + better-sqlite3)
+// Database client (Drizzle + Neon serverless HTTP)
 // ---------------------------------------------------------------------------
 
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { neon } from '@neondatabase/serverless'
+import { drizzle } from 'drizzle-orm/neon-http'
 import * as schema from './schema/index.js'
 
 export type DrizzleDatabase = ReturnType<typeof drizzle<typeof schema>>
@@ -12,24 +12,20 @@ export type DrizzleDatabase = ReturnType<typeof drizzle<typeof schema>>
 let _db: DrizzleDatabase | null = null
 
 /**
- * Initialize the Drizzle database.
+ * Initialize the Drizzle database with a Neon serverless connection.
  *
- * @param url - SQLite database path. Use ':memory:' for in-memory (tests),
- *              or a file path like './store.db' for persistent storage.
+ * @param connectionString - PostgreSQL connection string (e.g. from Neon)
  */
-export function initDrizzle(url: string = ':memory:'): DrizzleDatabase {
-  const sqlite = new Database(url)
+export function initDrizzle(connectionString: string): DrizzleDatabase {
+  if (_db) return _db
 
-  // Enable WAL mode for better concurrent read performance
-  sqlite.pragma('journal_mode = WAL')
-  sqlite.pragma('foreign_keys = ON')
-
-  _db = drizzle(sqlite, { schema })
+  const sql = neon(connectionString)
+  _db = drizzle({ client: sql, schema })
   return _db
 }
 
 /** Get the current database instance. Throws if not initialized. */
 export function getDb(): DrizzleDatabase {
-  if (!_db) throw new Error('Drizzle database not initialized. Call initDrizzle() first.')
+  if (!_db) throw new Error('Drizzle database not initialized. Call initDrizzle(connectionString) first.')
   return _db
 }

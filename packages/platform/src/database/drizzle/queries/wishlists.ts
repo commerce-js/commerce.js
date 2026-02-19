@@ -14,9 +14,8 @@ export async function findWishlistByCustomer(customerId: string) {
 
 export async function createWishlist(customerId: string) {
   const id = crypto.randomUUID()
-  const now = new Date().toISOString()
-  getDb().insert(schema.wishlists).values({ id, customerId, createdAt: now }).run()
-  return { id, customerId, createdAt: now }
+  await getDb().insert(schema.wishlists).values({ id, customerId })
+  return { id, customerId, createdAt: new Date() }
 }
 
 export async function findWishlistItems(wishlistId: string) {
@@ -30,24 +29,21 @@ export async function insertWishlistItem(data: {
   variantId?: string | null
 }) {
   const id = crypto.randomUUID()
-  const now = new Date().toISOString()
-  getDb().insert(schema.wishlistItems).values({
+  await getDb().insert(schema.wishlistItems).values({
     id,
     wishlistId: data.wishlistId,
     productId: data.productId,
     variantId: data.variantId ?? null,
-    addedAt: now,
-  }).run()
+  })
   return id
 }
 
 export async function deleteWishlistItem(wishlistId: string, productId: string) {
-  getDb().delete(schema.wishlistItems)
+  await getDb().delete(schema.wishlistItems)
     .where(and(
       eq(schema.wishlistItems.wishlistId, wishlistId),
       eq(schema.wishlistItems.productId, productId),
     ))
-    .run()
 }
 
 export async function findWishlistItemByProduct(wishlistId: string, productId: string) {

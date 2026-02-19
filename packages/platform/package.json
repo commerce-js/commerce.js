@@ -26,7 +26,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && cp src/database/prisma/generated/internal/*.wasm src/database/prisma/generated/internal/*.js dist/database/prisma/generated/internal/ 2>/dev/null || true",
+    "build": "tsc && rm -rf dist/database/prisma",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -36,31 +36,20 @@
   },
   "dependencies": {
     "@commercejs/types": "workspace:*",
-    "@prisma/adapter-better-sqlite3": "^7.4.0",
-    "@prisma/adapter-pg": "^7.4.0",
-    "@prisma/client": "^7.4.0",
     "bcrypt-ts": "^5.0.0",
-    "better-sqlite3": "^11.7.0",
-    "drizzle-orm": "^0.38.0"
+    "drizzle-orm": "^0.38.4"
   },
   "peerDependencies": {
-    "@neondatabase/serverless": "^1.0.0",
-    "@prisma/adapter-neon": "^7.4.0"
+    "@neondatabase/serverless": "^1.0.0"
   },
   "peerDependenciesMeta": {
     "@neondatabase/serverless": {
-      "optional": true
-    },
-    "@prisma/adapter-neon": {
       "optional": true
     }
   },
   "devDependencies": {
     "@neondatabase/serverless": "^1.0.2",
-    "@prisma/adapter-neon": "^7.4.0",
-    "@types/better-sqlite3": "^7.6.12",
-    "drizzle-kit": "^0.30.0",
-    "prisma": "^7.4.0",
+    "drizzle-kit": "^0.30.6",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   }

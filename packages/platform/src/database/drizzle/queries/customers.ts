@@ -23,8 +23,8 @@ export async function createCustomer(data: {
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: string | Date
+  updatedAt?: string | Date
 }) {
   await getDb().insert(schema.customers).values(data as any)
 }

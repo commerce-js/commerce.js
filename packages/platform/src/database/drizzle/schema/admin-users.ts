@@ -2,14 +2,14 @@
 // Admin Users schema — store administrators
 // ---------------------------------------------------------------------------
 
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 
-export const adminUsers = sqliteTable('admin_users', {
+export const adminUsers = pgTable('admin_users', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   name: text('name'),
-  role: text('role', { enum: ['owner', 'admin', 'editor'] }).notNull().default('admin'),
-  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
-  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+  role: text('role').notNull().default('admin'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

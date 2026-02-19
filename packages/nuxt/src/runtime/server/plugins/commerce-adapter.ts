@@ -27,7 +27,7 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
   if (adapterName === 'platform') {
     const platform = await import('@commercejs/platform')
-    const { createPlatformAdapter, seedPrisma, getDb } = platform
+    const { createPlatformAdapter, initDrizzle, getDrizzleDb } = platform
 
     const connectionString = commerceConfig.databaseUrl
       || process.env.DATABASE_URL
@@ -36,15 +36,13 @@ async function initAdapter(): Promise<CommerceAdapter> {
       throw new Error('[@commercejs/nuxt] DATABASE_URL is required for platform adapter.')
     }
 
-    console.log('[commerce] Database: PostgreSQL (Neon)')
+    console.log('[commerce] Database: PostgreSQL (Neon via Drizzle)')
 
-    // 1. Run programmatic migrations (creates tables if they don't exist)
+    // 1. Initialize Drizzle and run programmatic migrations
     console.log('[commerce] Running migrations...')
-    const { migratePrisma } = await import('@commercejs/platform')
-    // initPrisma is called by createPlatformAdapter; we need to init first for migrations
-    const { initPrisma } = await import('@commercejs/platform')
-    await initPrisma(connectionString)
-    await migratePrisma()
+    initDrizzle(connectionString)
+    const { migrateDrizzle } = await import('@commercejs/platform')
+    await migrateDrizzle(connectionString)
     console.log('[commerce] Migrations complete')
 
     // 2. Create adapter (seeds initial admin user)
@@ -64,10 +62,12 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
     // 3. Seed demo data
     try {
-      await seedPrisma(getDb())
+      const { seedDrizzle } = await import('@commercejs/platform')
+      await seedDrizzle(getDrizzleDb())
       console.log('[commerce] Demo data seeded successfully')
     } catch (err: any) {
-      if (err?.code !== 'P2002') {
+      // 23505 = PostgreSQL unique constraint violation (data already seeded)
+      if (err?.code !== '23505') {
         console.warn('[commerce] Seed skipped:', err?.message || err)
       }
     }
