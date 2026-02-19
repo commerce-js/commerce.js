@@ -3,15 +3,15 @@
 // ---------------------------------------------------------------------------
 
 model Review {
-  id         String  @id @default(uuid())
-  productId  String  @map("product_id")
-  authorName String  @map("author_name")
+  id         String   @id @default(uuid())
+  productId  String   @map("product_id")
+  authorName String   @map("author_name")
   rating     Int
   title      String?
   body       String?
-  verified   Boolean @default(false)
-  status     String  @default("published")
-  createdAt  String  @map("created_at")
+  verified   Boolean  @default(false)
+  status     String   @default("published")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@map("reviews")
 }

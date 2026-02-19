@@ -105,7 +105,6 @@ async function fetchProductRelations(productId: string) {
 export function createAdminInventoryDomain(currency: string) {
   return {
     async updateInventory(input: UpdateInventoryInput): Promise<void> {
-      const now = new Date().toISOString()
       const adjustment = input.adjustment ?? 'set'
 
       if (input.variantId) {
@@ -133,7 +132,6 @@ export function createAdminInventoryDomain(currency: string) {
           await updateProductById(input.productId, {
             inventoryQuantity: input.quantity,
             inStock: input.quantity > 0,
-            updatedAt: now,
           })
         } else {
           const product = await findProductById(input.productId)
@@ -144,7 +142,6 @@ export function createAdminInventoryDomain(currency: string) {
           await updateProductById(input.productId, {
             inventoryQuantity: Math.max(0, newQty),
             inStock: newQty > 0,
-            updatedAt: now,
           })
         }
       }

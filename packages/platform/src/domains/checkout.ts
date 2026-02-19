@@ -20,7 +20,7 @@ import {
   findOrderById,
   findOrderItems,
 } from '../database/index.js'
-import { generateOrderNumber, localized, price, priceRequired, img, parseJsonField } from './helpers.js'
+import { generateOrderNumber, localized, price, priceRequired, img, parseJsonField, toNumber } from './helpers.js'
 import { createCartDomain } from './cart.js'
 
 export function createCheckoutDomain(currency: string) {
@@ -51,17 +51,17 @@ export function createCheckoutDomain(currency: string) {
     },
 
     async setShippingAddress(cartId: string, address: Omit<Address, 'id' | 'isDefault'>): Promise<Cart> {
-      await updateCart(cartId, { shippingAddress: address as any, updatedAt: new Date().toISOString() })
+      await updateCart(cartId, { shippingAddress: address as any })
       return cartDomain.getCart(cartId)
     },
 
     async setBillingAddress(cartId: string, address: Omit<Address, 'id' | 'isDefault'>): Promise<Cart> {
-      await updateCart(cartId, { billingAddress: address as any, updatedAt: new Date().toISOString() })
+      await updateCart(cartId, { billingAddress: address as any })
       return cartDomain.getCart(cartId)
     },
 
     async setShippingMethod(cartId: string, methodId: string): Promise<Cart> {
-      await updateCart(cartId, { shippingMethodId: methodId, updatedAt: new Date().toISOString() })
+      await updateCart(cartId, { shippingMethodId: methodId })
       return cartDomain.getCart(cartId)
     },
 
@@ -87,7 +87,7 @@ export function createCheckoutDomain(currency: string) {
     },
 
     async setPaymentMethod(cartId: string, methodId: string): Promise<Cart> {
-      await updateCart(cartId, { paymentMethodId: methodId, updatedAt: new Date().toISOString() })
+      await updateCart(cartId, { paymentMethodId: methodId })
       return cartDomain.getCart(cartId)
     },
 
@@ -105,7 +105,7 @@ export function createCheckoutDomain(currency: string) {
       const selectedShipping = shippingMethods.find(m => m.id === cartRow?.shippingMethodId) ?? null
       const selectedPayment = paymentMethods.find(m => m.id === cartRow?.paymentMethodId) ?? null
 
-      const now = new Date().toISOString()
+
       const orderId = crypto.randomUUID()
       const orderNumber = generateOrderNumber()
 
@@ -131,8 +131,6 @@ export function createCheckoutDomain(currency: string) {
         shippingMethod: selectedShipping?.name ? JSON.stringify(selectedShipping.name) : null,
         paymentMethod: selectedPayment?.name ? JSON.stringify(selectedPayment.name) : null,
         requiresShipping: true,
-        createdAt: now,
-        updatedAt: now,
       })
 
       for (const item of cart.items) {
@@ -154,7 +152,6 @@ export function createCheckoutDomain(currency: string) {
         fromStatus: null,
         toStatus: 'pending',
         note: 'Order placed',
-        createdAt: now,
       })
 
       // Delete cart after order placement
@@ -176,8 +173,8 @@ export function createCheckoutDomain(currency: string) {
           name: localized(i.name, i.nameAr),
           image: i.image ? img(i.image, null) : null,
           quantity: i.quantity,
-          price: priceRequired(i.price, currency),
-          totalPrice: priceRequired(i.totalPrice, currency),
+          price: priceRequired(toNumber(i.price), currency),
+          totalPrice: priceRequired(toNumber(i.totalPrice), currency),
           fulfillmentStatus: i.fulfillmentStatus as any,
           productType: i.productType as any,
           digital: null,
@@ -203,8 +200,8 @@ export function createCheckoutDomain(currency: string) {
         note: order.note ?? null,
         customerId: order.customerId ?? null,
         requiresShipping: Boolean(order.requiresShipping),
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt,
+        createdAt: order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt,
+        updatedAt: order.updatedAt instanceof Date ? order.updatedAt.toISOString() : order.updatedAt,
         paymentTerms: null,
         purchaseOrderNumber: null,
         companyName: null,

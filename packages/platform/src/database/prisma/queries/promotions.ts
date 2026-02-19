@@ -26,7 +26,6 @@ export async function insertPromotion(data: {
   endsAt?: string | null
   isActive?: boolean
 }) {
-  const now = new Date().toISOString()
   return getDb().promotion.create({
     data: {
       name: data.name,
@@ -37,8 +36,6 @@ export async function insertPromotion(data: {
       startsAt: data.startsAt,
       endsAt: data.endsAt ?? null,
       isActive: data.isActive ?? true,
-      createdAt: now,
-      updatedAt: now,
     },
   })
 }

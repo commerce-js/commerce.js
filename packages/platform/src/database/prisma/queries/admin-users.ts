@@ -18,8 +18,6 @@ export async function createAdminUser(data: {
   passwordHash: string
   name?: string
   role?: string
-  createdAt: string
-  updatedAt: string
 }) {
   return getDb().adminUser.create({ data })
 }

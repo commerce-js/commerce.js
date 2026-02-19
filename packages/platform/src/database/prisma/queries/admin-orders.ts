@@ -46,7 +46,6 @@ export async function updateOrderTracking(id: string, data: {
   trackingNumber?: string | null
   trackingUrl?: string | null
   status?: string
-  updatedAt: string
 }) {
   return getDb().order.update({ where: { id }, data })
 }
@@ -70,7 +69,8 @@ export async function sumOrderRevenue(): Promise<number> {
     _sum: { total: true },
     where: { status: { notIn: ['cancelled', 'refunded'] } },
   })
-  return result._sum.total ?? 0
+  const total = result._sum.total
+  return total ? (typeof total === 'number' ? total : Number(total)) : 0
 }
 
 export async function findRecentOrders(limit: number = 10) {

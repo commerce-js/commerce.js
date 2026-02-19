@@ -424,6 +424,7 @@ export type ProductOptionValueCreateOrConnectWithoutOptionInput = {
 
 export type ProductOptionValueCreateManyOptionInputEnvelope = {
   data: Prisma.ProductOptionValueCreateManyOptionInput | Prisma.ProductOptionValueCreateManyOptionInput[]
+  skipDuplicates?: boolean
 }
 
 export type ProductOptionValueUpsertWithWhereUniqueWithoutOptionInput = {
@@ -1198,6 +1199,7 @@ export type ProductOptionValueCreateManyArgs<ExtArgs extends runtime.Types.Exten
    * The data used to create many ProductOptionValues.
    */
   data: Prisma.ProductOptionValueCreateManyInput | Prisma.ProductOptionValueCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1216,6 +1218,7 @@ export type ProductOptionValueCreateManyAndReturnArgs<ExtArgs extends runtime.Ty
    * The data used to create many ProductOptionValues.
    */
   data: Prisma.ProductOptionValueCreateManyInput | Prisma.ProductOptionValueCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

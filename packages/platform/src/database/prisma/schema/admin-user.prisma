@@ -3,13 +3,13 @@
 // ---------------------------------------------------------------------------
 
 model AdminUser {
-  id           String  @id @default(uuid())
-  email        String  @unique
-  passwordHash String  @map("password_hash")
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
   name         String?
-  role         String  @default("admin")
-  createdAt    String  @map("created_at")
-  updatedAt    String  @map("updated_at")
+  role         String   @default("admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("admin_users")
 }

@@ -19,8 +19,6 @@ export async function createCustomer(data: {
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
-  createdAt: string
-  updatedAt: string
 }) {
   await getDb().customer.create({ data })
 }

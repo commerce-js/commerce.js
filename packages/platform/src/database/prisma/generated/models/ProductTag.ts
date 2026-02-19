@@ -332,6 +332,7 @@ export type ProductTagCreateOrConnectWithoutProductInput = {
 
 export type ProductTagCreateManyProductInputEnvelope = {
   data: Prisma.ProductTagCreateManyProductInput | Prisma.ProductTagCreateManyProductInput[]
+  skipDuplicates?: boolean
 }
 
 export type ProductTagUpsertWithWhereUniqueWithoutProductInput = {
@@ -1084,6 +1085,7 @@ export type ProductTagCreateManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * The data used to create many ProductTags.
    */
   data: Prisma.ProductTagCreateManyInput | Prisma.ProductTagCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1102,6 +1104,7 @@ export type ProductTagCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    * The data used to create many ProductTags.
    */
   data: Prisma.ProductTagCreateManyInput | Prisma.ProductTagCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

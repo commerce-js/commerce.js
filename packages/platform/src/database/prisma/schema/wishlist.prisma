@@ -5,18 +5,18 @@
 model Wishlist {
   id         String         @id @default(uuid())
   customerId String         @map("customer_id")
-  createdAt  String         @map("created_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
   items      WishlistItem[]
 
   @@map("wishlists")
 }
 
 model WishlistItem {
-  id         String  @id @default(uuid())
-  wishlistId String  @map("wishlist_id")
-  productId  String  @map("product_id")
-  variantId  String? @map("variant_id")
-  addedAt    String  @map("added_at")
+  id         String   @id @default(uuid())
+  wishlistId String   @map("wishlist_id")
+  productId  String   @map("product_id")
+  variantId  String?  @map("variant_id")
+  addedAt    DateTime @default(now()) @map("added_at")
 
   wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
 

@@ -126,13 +126,10 @@ export function createAdminOrdersDomain(currency: string) {
       const order = await findOrderById(id)
       if (!order) throw new Error(`Order not found: ${id}`)
 
-      const now = new Date().toISOString()
-
       await updateOrderTracking(id, {
         trackingNumber: input.trackingNumber ?? null,
         trackingUrl: input.trackingUrl ?? null,
         status: 'shipped',
-        updatedAt: now,
       })
 
       await createOrderHistory({
@@ -140,7 +137,6 @@ export function createAdminOrdersDomain(currency: string) {
         fromStatus: order.status,
         toStatus: 'shipped',
         note: input.note ?? 'Order fulfilled',
-        createdAt: now,
       })
     },
 
@@ -148,16 +144,13 @@ export function createAdminOrdersDomain(currency: string) {
       const order = await findOrderById(id)
       if (!order) throw new Error(`Order not found: ${id}`)
 
-      const now = new Date().toISOString()
-
-      await updateOrder(id, { status: 'refunded', updatedAt: now })
+      await updateOrder(id, { status: 'refunded' })
 
       await createOrderHistory({
         orderId: id,
         fromStatus: order.status,
         toStatus: 'refunded',
         note: note ?? 'Order refunded',
-        createdAt: now,
       })
     },
   }

@@ -80,7 +80,6 @@ export function createCustomersDomain() {
       if (existing) throw new Error('Email already registered')
 
       const id = crypto.randomUUID()
-      const now = new Date().toISOString()
       const passwordHash = hashSync(input.password, 10)
 
       await dbCreateCustomer({
@@ -90,8 +89,6 @@ export function createCustomersDomain() {
         firstName: input.firstName ?? null,
         lastName: input.lastName ?? null,
         phone: input.phone ?? null,
-        createdAt: now,
-        updatedAt: now,
       })
 
       currentCustomerId = id
@@ -109,7 +106,7 @@ export function createCustomersDomain() {
     async updateCustomer(input: UpdateCustomerInput): Promise<Customer> {
       if (!currentCustomerId) throw new Error('Not authenticated')
 
-      const updates: any = { updatedAt: new Date().toISOString() }
+      const updates: any = {}
       if (input.email) updates.email = input.email
       if (input.firstName) updates.firstName = input.firstName
       if (input.lastName) updates.lastName = input.lastName

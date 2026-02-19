@@ -25,36 +25,25 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
   if (adapterName === 'platform') {
     const platform = await import('@commercejs/platform')
-    const { createPlatformAdapter, seedPrisma } = platform
+    const { createPlatformAdapter, seedPrisma, getDb } = platform
 
-    const dbUrl = process.env.DATABASE_URL || process.env.NUXT_DATABASE_URL
-    const dbPath = process.env.COMMERCE_DB_PATH || process.env.NUXT_COMMERCE_DB_PATH || './store.db'
-    const connectionString = dbUrl || dbPath
-    const isNeon = dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))
-
-    console.log('[commerce] Database driver:', isNeon ? 'neon' : 'sqlite')
-    console.log('[commerce] Connection string provided:', !!connectionString)
-
-    // For Neon: init client → migrate → create adapter → seed
-    // For SQLite: migrate → create adapter → seed (initPrisma is sync)
-    if (isNeon) {
-      // 1. Init the Neon Prisma client (migrateNeon needs it)
-      console.log('[commerce] Initializing Neon Prisma client...')
-      const { initPrismaNeon } = await import('@commercejs/platform')
-      await initPrismaNeon(connectionString)
-      console.log('[commerce] Neon Prisma client initialized')
-
-      // 2. Migrate (tables must exist before adapter seeds admin)
-      console.log('[commerce] Running Neon migrations...')
-      const { migrateNeon } = await import('@commercejs/platform')
-      await migrateNeon()
-      console.log('[commerce] Neon migrations complete')
-    } else {
-      const { migratePrisma } = await import('@commercejs/platform')
-      await migratePrisma()
+    const connectionString = process.env.DATABASE_URL || process.env.NUXT_DATABASE_URL
+    if (!connectionString) {
+      throw new Error('[@commercejs/nuxt] DATABASE_URL is required for platform adapter.')
     }
 
-    // 3. Create adapter (seeds initial admin user, skips client init since already done)
+    console.log('[commerce] Database: PostgreSQL (Neon)')
+
+    // 1. Run programmatic migrations (creates tables if they don't exist)
+    console.log('[commerce] Running migrations...')
+    const { migratePrisma } = await import('@commercejs/platform')
+    // initPrisma is called by createPlatformAdapter; we need to init first for migrations
+    const { initPrisma } = await import('@commercejs/platform')
+    await initPrisma(connectionString)
+    await migratePrisma()
+    console.log('[commerce] Migrations complete')
+
+    // 2. Create adapter (seeds initial admin user)
     console.log('[commerce] Creating platform adapter...')
     const result = await createPlatformAdapter({
       currency: process.env.COMMERCE_CURRENCY || 'SAR',
@@ -65,12 +54,9 @@ async function initAdapter(): Promise<CommerceAdapter> {
     _adminApi = result.admin
     console.log('[commerce] Platform adapter created successfully')
 
-    // 4. Seed demo data
+    // 3. Seed demo data
     try {
-      const db = isNeon
-        ? (await import('@commercejs/platform')).getNeonDb()
-        : undefined
-      await seedPrisma(db)
+      await seedPrisma(getDb())
       console.log('[commerce] Demo data seeded successfully')
     } catch (err: any) {
       if (err?.code !== 'P2002') {
@@ -120,4 +106,3 @@ export default defineNitroPlugin((nitroApp) => {
     ;(event.context as any)._commerceAdmin = _adminApi
   })
 })
-

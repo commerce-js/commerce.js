@@ -568,6 +568,7 @@ export type ReturnItemCreateOrConnectWithoutReturnReqInput = {
 
 export type ReturnItemCreateManyReturnReqInputEnvelope = {
   data: Prisma.ReturnItemCreateManyReturnReqInput | Prisma.ReturnItemCreateManyReturnReqInput[]
+  skipDuplicates?: boolean
 }
 
 export type ReturnItemUpsertWithWhereUniqueWithoutReturnReqInput = {
@@ -1408,6 +1409,7 @@ export type ReturnItemCreateManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * The data used to create many ReturnItems.
    */
   data: Prisma.ReturnItemCreateManyInput | Prisma.ReturnItemCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1426,6 +1428,7 @@ export type ReturnItemCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    * The data used to create many ReturnItems.
    */
   data: Prisma.ReturnItemCreateManyInput | Prisma.ReturnItemCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

@@ -1067,6 +1067,7 @@ export type CountryCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * The data used to create many Countries.
    */
   data: Prisma.CountryCreateManyInput | Prisma.CountryCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1085,6 +1086,7 @@ export type CountryCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    * The data used to create many Countries.
    */
   data: Prisma.CountryCreateManyInput | Prisma.CountryCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**

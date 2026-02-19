@@ -30,14 +30,13 @@ export type {
 // Config
 export type { PlatformConfig } from './types.js'
 
-// Database
-export { initDrizzle, getDrizzleDb, migrateDrizzle, initPrisma, getPrismaDb, migratePrisma } from './database/index.js'
-export type { DrizzleDatabase } from './database/drizzle/client.js'
+// Database (PostgreSQL via Neon adapter)
+export { initPrisma, getPrismaDb, getDb, migratePrisma } from './database/index.js'
 export type { PrismaDatabase } from './database/prisma/client.js'
 
-// Database — Neon (Cloud)
-export { initPrismaNeon, getNeonDb, migrateNeon } from './database/index.js'
-export type { NeonDatabase } from './database/neon/client.js'
+// Drizzle (secondary driver — for raw queries)
+export { initDrizzle, getDrizzleDb, migrateDrizzle } from './database/index.js'
+export type { DrizzleDatabase } from './database/drizzle/client.js'
 
 // Seed
 export { seedDrizzle } from './database/drizzle/seed.js'
@@ -45,4 +44,3 @@ export { seedPrisma } from './database/prisma/seed.js'
 
 // Drizzle schema (for raw queries — Prisma users access models via the client directly)
 export * as schema from './database/drizzle/schema/index.js'
-

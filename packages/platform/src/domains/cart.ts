@@ -17,7 +17,7 @@ import {
   findVariantById,
   findPrimaryImage,
 } from '../database/index.js'
-import { localized, discountablePrice, priceRequired, img, parseJsonField } from './helpers.js'
+import { localized, discountablePrice, priceRequired, img, parseJsonField, toNumber } from './helpers.js'
 
 export function createCartDomain(currency: string) {
   /** Build a full Cart object from cart row + items + product data */
@@ -31,14 +31,14 @@ export function createCartDomain(currency: string) {
       const product = await findProductById(item.productId)
       const primaryImg = await findPrimaryImage(item.productId)
 
-      let itemPrice = product?.price ?? 0
-      let compareAt = product?.compareAtPrice ?? null
+      let itemPrice = toNumber(product?.price)
+      let compareAt = product?.compareAtPrice
 
       if (item.variantId) {
         const variant = await findVariantById(item.variantId)
         if (variant?.price != null) {
-          itemPrice = variant.price
-          compareAt = variant.compareAtPrice ?? null
+          itemPrice = toNumber(variant.price)
+          compareAt = variant.compareAtPrice
         }
       }
 
@@ -51,7 +51,7 @@ export function createCartDomain(currency: string) {
         image: primaryImg ? img(primaryImg.url, primaryImg.altText) : null,
         quantity: item.quantity,
         price: discountablePrice(itemPrice, compareAt, currency)!,
-        totalPrice: priceRequired(itemPrice * item.quantity, currency),
+        totalPrice: priceRequired(toNumber(itemPrice) * item.quantity, currency),
       }
     }))
 
@@ -74,16 +74,15 @@ export function createCartDomain(currency: string) {
       couponCode: cartRow.couponCode ?? null,
       customerId: cartRow.customerId ?? null,
       itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0),
-      createdAt: cartRow.createdAt,
-      updatedAt: cartRow.updatedAt,
+      createdAt: cartRow.createdAt instanceof Date ? cartRow.createdAt.toISOString() : cartRow.createdAt,
+      updatedAt: cartRow.updatedAt instanceof Date ? cartRow.updatedAt.toISOString() : cartRow.updatedAt,
     }
   }
 
   return {
     async createCart(): Promise<Cart> {
       const id = crypto.randomUUID()
-      const now = new Date().toISOString()
-      await dbCreateCart(id, now)
+      await dbCreateCart(id)
       return buildCart(id)
     },
 
@@ -102,11 +101,10 @@ export function createCartDomain(currency: string) {
           productId: item.productId,
           variantId: item.variantId ?? null,
           quantity: item.quantity,
-          createdAt: new Date().toISOString(),
         })
       }
 
-      await updateCart(cartId, { updatedAt: new Date().toISOString() })
+      await updateCart(cartId, {})
       return buildCart(cartId)
     },
 
@@ -116,23 +114,23 @@ export function createCartDomain(currency: string) {
       } else {
         await updateCartItemQuantity(itemId, quantity)
       }
-      await updateCart(cartId, { updatedAt: new Date().toISOString() })
+      await updateCart(cartId, {})
       return buildCart(cartId)
     },
 
     async removeFromCart(cartId: string, itemId: string): Promise<Cart> {
       await deleteCartItem(itemId)
-      await updateCart(cartId, { updatedAt: new Date().toISOString() })
+      await updateCart(cartId, {})
       return buildCart(cartId)
     },
 
     async applyCoupon(cartId: string, code: string): Promise<Cart> {
-      await updateCart(cartId, { couponCode: code, updatedAt: new Date().toISOString() })
+      await updateCart(cartId, { couponCode: code })
       return buildCart(cartId)
     },
 
     async removeCoupon(cartId: string): Promise<Cart> {
-      await updateCart(cartId, { couponCode: null, updatedAt: new Date().toISOString() })
+      await updateCart(cartId, { couponCode: null })
       return buildCart(cartId)
     },
   }

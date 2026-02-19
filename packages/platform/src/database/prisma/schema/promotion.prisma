@@ -3,26 +3,26 @@
 // ---------------------------------------------------------------------------
 
 model Promotion {
-  id                   String   @id @default(uuid())
-  name                 String
-  nameAr               String?  @map("name_ar")
-  description          String?
-  descriptionAr        String?  @map("description_ar")
-  discountType         String   @default("percentage") @map("discount_type")
-  discountValue        Float    @default(0) @map("discount_value")
-  currency             String?
-  maxDiscount          Float?   @map("max_discount")
-  target               String   @default("order")
-  conditionsJson       String?  @map("conditions_json")
-  startsAt             String   @map("starts_at")
-  endsAt               String?  @map("ends_at")
-  isActive             Boolean  @default(true) @map("is_active")
-  requiresCoupon       Boolean  @default(false) @map("requires_coupon")
-  usageLimitPerCustomer Int?    @map("usage_limit_per_customer")
-  usageLimitTotal      Int?     @map("usage_limit_total")
-  createdAt            String   @map("created_at")
-  updatedAt            String   @map("updated_at")
-  coupons              Coupon[]
+  id                    String    @id @default(uuid())
+  name                  String
+  nameAr                String?   @map("name_ar")
+  description           String?
+  descriptionAr         String?   @map("description_ar")
+  discountType          String    @default("percentage") @map("discount_type")
+  discountValue         Decimal   @default(0) @map("discount_value") @db.Decimal(12, 2)
+  currency              String?
+  maxDiscount           Decimal?  @map("max_discount") @db.Decimal(12, 2)
+  target                String    @default("order")
+  conditions            Json?     @map("conditions_json")
+  startsAt              DateTime  @map("starts_at")
+  endsAt                DateTime? @map("ends_at")
+  isActive              Boolean   @default(true) @map("is_active")
+  requiresCoupon        Boolean   @default(false) @map("requires_coupon")
+  usageLimitPerCustomer Int?      @map("usage_limit_per_customer")
+  usageLimitTotal       Int?      @map("usage_limit_total")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  coupons               Coupon[]
 
   @@map("promotions")
 }

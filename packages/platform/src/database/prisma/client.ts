@@ -1,40 +1,32 @@
 // ---------------------------------------------------------------------------
-// Prisma client — singleton pattern
+// Prisma client — singleton pattern (PostgreSQL via Neon adapter)
 // ---------------------------------------------------------------------------
 
 import { PrismaClient } from './generated/client.js'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { Pool } from '@neondatabase/serverless'
+import { PrismaNeon } from '@prisma/adapter-neon'
 
 // Module-level client instance — set via initPrisma()
 let _prisma: InstanceType<typeof PrismaClient> | null = null
 
 /**
- * Initialize the Prisma client with SQLite (in-memory or file).
+ * Initialize the Prisma client with the Neon serverless adapter.
  *
- * @param url - SQLite path. Use ':memory:' for in-memory (tests),
- *              or a file path for persistent storage.
+ * @param connectionString - PostgreSQL connection string (e.g. from Neon)
  */
-export function initPrisma(url: string = ':memory:') {
-  const adapter = new PrismaBetterSqlite3({ url })
+export function initPrisma(connectionString: string) {
+  if (_prisma) return _prisma
+
+  const pool = new Pool({ connectionString })
+  const adapter = new PrismaNeon(pool as any)
   _prisma = new PrismaClient({ adapter })
   return _prisma
 }
 
 /** Get the current Prisma client. Throws if not initialized. */
 export function getDb() {
-  if (!_prisma) throw new Error('Prisma client not initialized. Call initPrisma() first.')
+  if (!_prisma) throw new Error('Prisma client not initialized. Call initPrisma(connectionString) first.')
   return _prisma
-}
-
-/**
- * Set the global Prisma client reference externally.
- *
- * Used by the Neon initialization path — `initPrismaNeon()` creates a Prisma
- * client backed by `@prisma/adapter-neon`, and this function registers it so
- * that all query modules (which call `getDb()`) use the Neon-backed client.
- */
-export function setDb(client: InstanceType<typeof PrismaClient>) {
-  _prisma = client
 }
 
 /** Prisma client type — for consumers who need to type-hint the client. */

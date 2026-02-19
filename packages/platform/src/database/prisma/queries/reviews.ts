@@ -55,7 +55,6 @@ export async function insertReview(data: {
       body: data.body ?? null,
       verified: data.verified ?? false,
       status: 'published',
-      createdAt: new Date().toISOString(),
     },
   })
 }

@@ -21,7 +21,7 @@ import {
   findOrderHistory,
   updateOrder,
 } from '../database/index.js'
-import { generateOrderNumber, localized, price, priceRequired, img, parseJsonField } from './helpers.js'
+import { generateOrderNumber, localized, price, priceRequired, img, parseJsonField, toNumber } from './helpers.js'
 
 export function createOrdersDomain(currency: string) {
   /** Map DB order row + items to unified Order type */
@@ -39,8 +39,8 @@ export function createOrdersDomain(currency: string) {
         name: localized(i.name, i.nameAr),
         image: i.image ? img(i.image, null) : null,
         quantity: i.quantity,
-        price: priceRequired(i.price, currency),
-        totalPrice: priceRequired(i.totalPrice, currency),
+        price: priceRequired(toNumber(i.price), currency),
+        totalPrice: priceRequired(toNumber(i.totalPrice), currency),
         fulfillmentStatus: i.fulfillmentStatus as any,
         productType: i.productType as any,
         digital: null,
@@ -79,7 +79,7 @@ export function createOrdersDomain(currency: string) {
   return {
     async createOrder(input: CreateOrderInput): Promise<Order> {
       const id = crypto.randomUUID()
-      const now = new Date().toISOString()
+
       const orderNumber = generateOrderNumber()
       const subtotal = input.items.reduce((sum, item) => sum + (item.unitPrice.amount * item.quantity), 0)
 
@@ -95,8 +95,6 @@ export function createOrdersDomain(currency: string) {
         billingAddress: input.billingAddress as any ?? null,
         note: input.note ?? null,
         requiresShipping: true,
-        createdAt: now,
-        updatedAt: now,
       })
 
       for (const item of input.items) {
@@ -115,7 +113,6 @@ export function createOrdersDomain(currency: string) {
         orderId: id,
         toStatus: 'pending',
         note: 'Order created',
-        createdAt: now,
       })
 
       const row = await findOrderById(id)
@@ -173,16 +170,13 @@ export function createOrdersDomain(currency: string) {
       const order = await findOrderById(orderId)
       if (!order) throw new Error(`Order not found: ${orderId}`)
 
-      const now = new Date().toISOString()
-
-      await updateOrder(orderId, { status: input.status, updatedAt: now })
+      await updateOrder(orderId, { status: input.status })
 
       await createOrderHistory({
         orderId,
         fromStatus: order.status,
         toStatus: input.status,
         note: input.note ?? null,
-        createdAt: now,
       })
     },
 

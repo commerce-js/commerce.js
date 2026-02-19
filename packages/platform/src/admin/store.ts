@@ -16,19 +16,25 @@ function mapStoreSettings(row: any): StoreSettings {
 
   try {
     if (row.supportedCurrencies) {
-      supportedCurrencies = typeof row.supportedCurrencies === 'string'
-        ? JSON.parse(row.supportedCurrencies)
-        : row.supportedCurrencies
+      supportedCurrencies = Array.isArray(row.supportedCurrencies)
+        ? row.supportedCurrencies
+        : typeof row.supportedCurrencies === 'string'
+          ? JSON.parse(row.supportedCurrencies)
+          : [row.currency]
     }
     if (row.supportedLocales) {
-      supportedLocales = typeof row.supportedLocales === 'string'
-        ? JSON.parse(row.supportedLocales)
-        : row.supportedLocales
+      supportedLocales = Array.isArray(row.supportedLocales)
+        ? row.supportedLocales
+        : typeof row.supportedLocales === 'string'
+          ? JSON.parse(row.supportedLocales)
+          : [row.locale]
     }
     if (row.socialLinks) {
-      socialLinks = typeof row.socialLinks === 'string'
-        ? JSON.parse(row.socialLinks)
-        : row.socialLinks
+      socialLinks = typeof row.socialLinks === 'object' && !Array.isArray(row.socialLinks)
+        ? row.socialLinks
+        : typeof row.socialLinks === 'string'
+          ? JSON.parse(row.socialLinks)
+          : null
     }
   } catch {}
 
@@ -57,15 +63,12 @@ export function createAdminStoreDomain() {
       let row = await findStoreInfo('default')
 
       if (!row) {
-        const now = new Date().toISOString()
         await dbCreateStoreInfo({
           id: 'default',
           name: 'My Store',
           currency: 'SAR',
           locale: 'en',
           timezone: 'Asia/Riyadh',
-          createdAt: now,
-          updatedAt: now,
         })
         row = await findStoreInfo('default')
       }
@@ -75,8 +78,7 @@ export function createAdminStoreDomain() {
     },
 
     async updateStoreSettings(input: UpdateStoreInput): Promise<StoreSettings> {
-      const now = new Date().toISOString()
-      const updates: Record<string, unknown> = { updatedAt: now }
+      const updates: Record<string, unknown> = {}
 
       if (input.name != null) updates.name = input.name
       if (input.nameAr !== undefined) updates.nameAr = input.nameAr

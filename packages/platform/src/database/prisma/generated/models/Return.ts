@@ -27,11 +27,11 @@ export type AggregateReturn = {
 }
 
 export type ReturnAvgAggregateOutputType = {
-  refundAmount: number | null
+  refundAmount: runtime.Decimal | null
 }
 
 export type ReturnSumAggregateOutputType = {
-  refundAmount: number | null
+  refundAmount: runtime.Decimal | null
 }
 
 export type ReturnMinAggregateOutputType = {
@@ -39,15 +39,15 @@ export type ReturnMinAggregateOutputType = {
   orderId: string | null
   orderNumber: string | null
   status: string | null
-  refundAmount: number | null
+  refundAmount: runtime.Decimal | null
   refundCurrency: string | null
   refundMethod: string | null
   returnShippingLabel: string | null
   returnTrackingNumber: string | null
   merchantNote: string | null
   customerNote: string | null
-  createdAt: string | null
-  updatedAt: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type ReturnMaxAggregateOutputType = {
@@ -55,15 +55,15 @@ export type ReturnMaxAggregateOutputType = {
   orderId: string | null
   orderNumber: string | null
   status: string | null
-  refundAmount: number | null
+  refundAmount: runtime.Decimal | null
   refundCurrency: string | null
   refundMethod: string | null
   returnShippingLabel: string | null
   returnTrackingNumber: string | null
   merchantNote: string | null
   customerNote: string | null
-  createdAt: string | null
-  updatedAt: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type ReturnCountAggregateOutputType = {
@@ -232,15 +232,15 @@ export type ReturnGroupByOutputType = {
   orderId: string
   orderNumber: string
   status: string
-  refundAmount: number | null
+  refundAmount: runtime.Decimal | null
   refundCurrency: string | null
   refundMethod: string | null
   returnShippingLabel: string | null
   returnTrackingNumber: string | null
   merchantNote: string | null
   customerNote: string | null
-  createdAt: string
-  updatedAt: string
+  createdAt: Date
+  updatedAt: Date
   _count: ReturnCountAggregateOutputType | null
   _avg: ReturnAvgAggregateOutputType | null
   _sum: ReturnSumAggregateOutputType | null
@@ -271,15 +271,15 @@ export type ReturnWhereInput = {
   orderId?: Prisma.StringFilter<"Return"> | string
   orderNumber?: Prisma.StringFilter<"Return"> | string
   status?: Prisma.StringFilter<"Return"> | string
-  refundAmount?: Prisma.FloatNullableFilter<"Return"> | number | null
+  refundAmount?: Prisma.DecimalNullableFilter<"Return"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.StringNullableFilter<"Return"> | string | null
   refundMethod?: Prisma.StringNullableFilter<"Return"> | string | null
   returnShippingLabel?: Prisma.StringNullableFilter<"Return"> | string | null
   returnTrackingNumber?: Prisma.StringNullableFilter<"Return"> | string | null
   merchantNote?: Prisma.StringNullableFilter<"Return"> | string | null
   customerNote?: Prisma.StringNullableFilter<"Return"> | string | null
-  createdAt?: Prisma.StringFilter<"Return"> | string
-  updatedAt?: Prisma.StringFilter<"Return"> | string
+  createdAt?: Prisma.DateTimeFilter<"Return"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Return"> | Date | string
   items?: Prisma.ReturnItemListRelationFilter
 }
 
@@ -308,15 +308,15 @@ export type ReturnWhereUniqueInput = Prisma.AtLeast<{
   orderId?: Prisma.StringFilter<"Return"> | string
   orderNumber?: Prisma.StringFilter<"Return"> | string
   status?: Prisma.StringFilter<"Return"> | string
-  refundAmount?: Prisma.FloatNullableFilter<"Return"> | number | null
+  refundAmount?: Prisma.DecimalNullableFilter<"Return"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.StringNullableFilter<"Return"> | string | null
   refundMethod?: Prisma.StringNullableFilter<"Return"> | string | null
   returnShippingLabel?: Prisma.StringNullableFilter<"Return"> | string | null
   returnTrackingNumber?: Prisma.StringNullableFilter<"Return"> | string | null
   merchantNote?: Prisma.StringNullableFilter<"Return"> | string | null
   customerNote?: Prisma.StringNullableFilter<"Return"> | string | null
-  createdAt?: Prisma.StringFilter<"Return"> | string
-  updatedAt?: Prisma.StringFilter<"Return"> | string
+  createdAt?: Prisma.DateTimeFilter<"Return"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Return"> | Date | string
   items?: Prisma.ReturnItemListRelationFilter
 }, "id">
 
@@ -349,15 +349,15 @@ export type ReturnScalarWhereWithAggregatesInput = {
   orderId?: Prisma.StringWithAggregatesFilter<"Return"> | string
   orderNumber?: Prisma.StringWithAggregatesFilter<"Return"> | string
   status?: Prisma.StringWithAggregatesFilter<"Return"> | string
-  refundAmount?: Prisma.FloatNullableWithAggregatesFilter<"Return"> | number | null
+  refundAmount?: Prisma.DecimalNullableWithAggregatesFilter<"Return"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.StringNullableWithAggregatesFilter<"Return"> | string | null
   refundMethod?: Prisma.StringNullableWithAggregatesFilter<"Return"> | string | null
   returnShippingLabel?: Prisma.StringNullableWithAggregatesFilter<"Return"> | string | null
   returnTrackingNumber?: Prisma.StringNullableWithAggregatesFilter<"Return"> | string | null
   merchantNote?: Prisma.StringNullableWithAggregatesFilter<"Return"> | string | null
   customerNote?: Prisma.StringNullableWithAggregatesFilter<"Return"> | string | null
-  createdAt?: Prisma.StringWithAggregatesFilter<"Return"> | string
-  updatedAt?: Prisma.StringWithAggregatesFilter<"Return"> | string
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"Return"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Return"> | Date | string
 }
 
 export type ReturnCreateInput = {
@@ -365,15 +365,15 @@ export type ReturnCreateInput = {
   orderId: string
   orderNumber: string
   status?: string
-  refundAmount?: number | null
+  refundAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: string | null
   refundMethod?: string | null
   returnShippingLabel?: string | null
   returnTrackingNumber?: string | null
   merchantNote?: string | null
   customerNote?: string | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
   items?: Prisma.ReturnItemCreateNestedManyWithoutReturnReqInput
 }
 
@@ -382,15 +382,15 @@ export type ReturnUncheckedCreateInput = {
   orderId: string
   orderNumber: string
   status?: string
-  refundAmount?: number | null
+  refundAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: string | null
   refundMethod?: string | null
   returnShippingLabel?: string | null
   returnTrackingNumber?: string | null
   merchantNote?: string | null
   customerNote?: string | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
   items?: Prisma.ReturnItemUncheckedCreateNestedManyWithoutReturnReqInput
 }
 
@@ -399,15 +399,15 @@ export type ReturnUpdateInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   orderNumber?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  refundAmount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  refundAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   refundMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnShippingLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.ReturnItemUpdateManyWithoutReturnReqNestedInput
 }
 
@@ -416,15 +416,15 @@ export type ReturnUncheckedUpdateInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   orderNumber?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  refundAmount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  refundAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   refundMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnShippingLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.ReturnItemUncheckedUpdateManyWithoutReturnReqNestedInput
 }
 
@@ -433,15 +433,15 @@ export type ReturnCreateManyInput = {
   orderId: string
   orderNumber: string
   status?: string
-  refundAmount?: number | null
+  refundAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: string | null
   refundMethod?: string | null
   returnShippingLabel?: string | null
   returnTrackingNumber?: string | null
   merchantNote?: string | null
   customerNote?: string | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type ReturnUpdateManyMutationInput = {
@@ -449,15 +449,15 @@ export type ReturnUpdateManyMutationInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   orderNumber?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  refundAmount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  refundAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   refundMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnShippingLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ReturnUncheckedUpdateManyInput = {
@@ -465,15 +465,15 @@ export type ReturnUncheckedUpdateManyInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   orderNumber?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  refundAmount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  refundAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   refundMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnShippingLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ReturnCountOrderByAggregateInput = {
@@ -556,15 +556,15 @@ export type ReturnCreateWithoutItemsInput = {
   orderId: string
   orderNumber: string
   status?: string
-  refundAmount?: number | null
+  refundAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: string | null
   refundMethod?: string | null
   returnShippingLabel?: string | null
   returnTrackingNumber?: string | null
   merchantNote?: string | null
   customerNote?: string | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type ReturnUncheckedCreateWithoutItemsInput = {
@@ -572,15 +572,15 @@ export type ReturnUncheckedCreateWithoutItemsInput = {
   orderId: string
   orderNumber: string
   status?: string
-  refundAmount?: number | null
+  refundAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: string | null
   refundMethod?: string | null
   returnShippingLabel?: string | null
   returnTrackingNumber?: string | null
   merchantNote?: string | null
   customerNote?: string | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type ReturnCreateOrConnectWithoutItemsInput = {
@@ -604,15 +604,15 @@ export type ReturnUpdateWithoutItemsInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   orderNumber?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  refundAmount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  refundAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   refundMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnShippingLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ReturnUncheckedUpdateWithoutItemsInput = {
@@ -620,15 +620,15 @@ export type ReturnUncheckedUpdateWithoutItemsInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   orderNumber?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  refundAmount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  refundAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   refundCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   refundMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnShippingLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -746,15 +746,15 @@ export type $ReturnPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     orderId: string
     orderNumber: string
     status: string
-    refundAmount: number | null
+    refundAmount: runtime.Decimal | null
     refundCurrency: string | null
     refundMethod: string | null
     returnShippingLabel: string | null
     returnTrackingNumber: string | null
     merchantNote: string | null
     customerNote: string | null
-    createdAt: string
-    updatedAt: string
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["return"]>
   composites: {}
 }
@@ -1183,15 +1183,15 @@ export interface ReturnFieldRefs {
   readonly orderId: Prisma.FieldRef<"Return", 'String'>
   readonly orderNumber: Prisma.FieldRef<"Return", 'String'>
   readonly status: Prisma.FieldRef<"Return", 'String'>
-  readonly refundAmount: Prisma.FieldRef<"Return", 'Float'>
+  readonly refundAmount: Prisma.FieldRef<"Return", 'Decimal'>
   readonly refundCurrency: Prisma.FieldRef<"Return", 'String'>
   readonly refundMethod: Prisma.FieldRef<"Return", 'String'>
   readonly returnShippingLabel: Prisma.FieldRef<"Return", 'String'>
   readonly returnTrackingNumber: Prisma.FieldRef<"Return", 'String'>
   readonly merchantNote: Prisma.FieldRef<"Return", 'String'>
   readonly customerNote: Prisma.FieldRef<"Return", 'String'>
-  readonly createdAt: Prisma.FieldRef<"Return", 'String'>
-  readonly updatedAt: Prisma.FieldRef<"Return", 'String'>
+  readonly createdAt: Prisma.FieldRef<"Return", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"Return", 'DateTime'>
 }
     
 
@@ -1421,6 +1421,7 @@ export type ReturnCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * The data used to create many Returns.
    */
   data: Prisma.ReturnCreateManyInput | Prisma.ReturnCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1439,6 +1440,7 @@ export type ReturnCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensio
    * The data used to create many Returns.
    */
   data: Prisma.ReturnCreateManyInput | Prisma.ReturnCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**

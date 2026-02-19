@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import type { CommerceAdapter, AdapterDomain } from '@commercejs/types'
-import type { PlatformConfig, DatabaseDriver } from './types.js'
+import type { PlatformConfig } from './types.js'
 import type { AdminAPI } from './admin/types.js'
 import { createAdminAPI } from './admin/index.js'
 import { createCatalogDomain } from './domains/catalog.js'
@@ -27,77 +27,26 @@ import {
 } from './domains/not-supported.js'
 
 /**
- * Detect the database driver from configuration or environment.
- *
- * Priority:
- * 1. Explicit `config.driver` value
- * 2. `DATABASE_URL` env var — if starts with `postgres://` or `postgresql://`, use Neon
- * 3. Default to SQLite
+ * Resolve the database connection string from config or environment.
  */
-function detectDriver(config: PlatformConfig): DatabaseDriver {
-  if (config.driver) return config.driver
-
-  const dbUrl = config.connectionString ?? globalThis.process?.env?.DATABASE_URL ?? ''
-  if (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://')) {
-    return 'neon'
+function resolveConnectionString(config: PlatformConfig): string {
+  const url = config.connectionString
+    ?? globalThis.process?.env?.DATABASE_URL
+    ?? ''
+  if (!url) {
+    throw new Error(
+      'DATABASE_URL is required. Pass `connectionString` in config or set DATABASE_URL env var.',
+    )
   }
-  return 'sqlite'
+  return url
 }
 
 /**
- * Initialize the database based on the detected driver.
- *
- * This auto-initializes the correct Prisma client so consumers
- * don't need to call `initPrisma()` / `initPrismaNeon()` manually.
- *
- * If the database is already initialized (e.g. via explicit `initPrisma()`
- * call in test setup), this is a no-op.
+ * Initialize the database — single PostgreSQL path via Neon adapter.
  */
-async function initDatabase(driver: DatabaseDriver, connectionString?: string) {
-  // Check if already initialized — don't stomp on existing setup
-  try {
-    const { getDb } = await import('./database/prisma/client.js')
-    getDb() // Throws if not initialized
-    return // Already initialized — skip
-  } catch {
-    // Not initialized yet — continue
-  }
-
-  if (driver === 'neon') {
-    const { setDb } = await import('./database/prisma/client.js')
-
-    // Check if the Neon client was already initialized externally
-    // (e.g. by the Nuxt plugin calling initPrismaNeon() before migrations)
-    try {
-      const { getNeonDb } = await import('./database/neon/client.js')
-      const existingClient = getNeonDb() // Throws if not initialized
-      setDb(existingClient as any)
-      return existingClient
-    } catch {
-      // Neon client not initialized yet — create it now
-    }
-
-    const { initPrismaNeon } = await import('./database/neon/client.js')
-    if (!connectionString) {
-      connectionString = globalThis.process?.env?.DATABASE_URL
-    }
-    if (!connectionString) {
-      throw new Error(
-        'Neon driver requires a connection string. Pass `connectionString` in config or set DATABASE_URL env var.',
-      )
-    }
-    const neonClient = await initPrismaNeon(connectionString)
-
-    // Bridge: register the Neon-backed client as the global getDb() target
-    // so all query modules (catalog, cart, orders, etc.) use the Neon client.
-    setDb(neonClient as any)
-
-    return neonClient
-  }
-
-  // Default: SQLite
+async function initDatabase(connectionString: string) {
   const { initPrisma } = await import('./database/prisma/client.js')
-  return initPrisma(connectionString ?? ':memory:')
+  await initPrisma(connectionString)
 }
 
 /** Result of createPlatformAdapter — storefront adapter + admin API */
@@ -113,28 +62,20 @@ export interface PlatformAdapterResult {
  *
  * Returns both the storefront adapter and the admin API.
  *
- * @example Auto-detect (recommended)
- * ```ts
- * const { adapter, admin } = await createPlatformAdapter({ currency: 'SAR' })
- * const commerce = createCommerce({ adapter })
- * // Admin operations:
- * await admin.createProduct({ name: 'T-Shirt', price: 99 })
- * ```
- *
- * @example Explicit Neon (cloud)
+ * @example
  * ```ts
  * const { adapter, admin } = await createPlatformAdapter({
- *   driver: 'neon',
  *   connectionString: process.env.DATABASE_URL,
+ *   currency: 'SAR',
  * })
  * ```
  */
 export async function createPlatformAdapter(config: PlatformConfig = {}): Promise<PlatformAdapterResult> {
   const currency = config.currency ?? 'SAR'
-  const driver = detectDriver(config)
+  const connectionString = resolveConnectionString(config)
 
   // Auto-initialize the database
-  await initDatabase(driver, config.connectionString)
+  await initDatabase(connectionString)
 
   const catalog = createCatalogDomain(currency)
   const cart = createCartDomain(currency)

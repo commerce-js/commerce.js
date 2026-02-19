@@ -3,24 +3,24 @@
 // ---------------------------------------------------------------------------
 
 model StoreInfo {
-  id                  String  @id @default("default")
-  name                String  @default("My Store")
-  nameAr              String? @map("name_ar")
+  id                  String   @id @default("default")
+  name                String   @default("My Store")
+  nameAr              String?  @map("name_ar")
   description         String?
-  descriptionAr       String? @map("description_ar")
+  descriptionAr       String?  @map("description_ar")
   logo                String?
   favicon             String?
-  currency            String  @default("SAR")
-  locale              String  @default("en")
-  supportedCurrencies String? @default("[\"SAR\"]") @map("supported_currencies")
-  supportedLocales    String? @default("[\"en\",\"ar\"]") @map("supported_locales")
-  timezone            String  @default("Asia/Riyadh")
-  contactEmail        String? @map("contact_email")
-  contactPhone        String? @map("contact_phone")
+  currency            String   @default("SAR")
+  locale              String   @default("en")
+  supportedCurrencies Json?    @default("[\"SAR\"]") @map("supported_currencies")
+  supportedLocales    Json?    @default("[\"en\",\"ar\"]") @map("supported_locales")
+  timezone            String   @default("Asia/Riyadh")
+  contactEmail        String?  @map("contact_email")
+  contactPhone        String?  @map("contact_phone")
   address             String?
-  socialLinks         String? @map("social_links")
-  createdAt           String  @map("created_at")
-  updatedAt           String  @map("updated_at")
+  socialLinks         Json?    @map("social_links")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("store_info")
 }

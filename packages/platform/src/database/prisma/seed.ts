@@ -1,17 +1,15 @@
 // ---------------------------------------------------------------------------
-// Seed — populate the database with demo data (Prisma ORM — driver-agnostic)
+// Seed — populate the database with demo data (Prisma ORM — PostgreSQL)
 // ---------------------------------------------------------------------------
 
 import { getDb } from './client.js'
 
 /**
  * Seed the database with demo products, categories, and store info via Prisma.
- * Accepts an optional Prisma client — if not provided, falls back to getDb() (SQLite).
- * This allows the same seed logic to work with both SQLite and Neon drivers.
+ * Accepts an optional Prisma client — if not provided, falls back to getDb().
  */
 export async function seedPrisma(db?: any) {
   const prisma = db ?? getDb()
-  const now = new Date().toISOString()
 
   // ---- Store ----
   await prisma.storeInfo.create({
@@ -24,10 +22,8 @@ export async function seedPrisma(db?: any) {
       currency: 'SAR',
       locale: 'en',
       timezone: 'Asia/Riyadh',
-      supportedCurrencies: '["SAR","AED","USD"]',
-      supportedLocales: '["en","ar"]',
-      createdAt: now,
-      updatedAt: now,
+      supportedCurrencies: ['SAR', 'AED', 'USD'],
+      supportedLocales: ['en', 'ar'],
     },
   })
 
@@ -39,7 +35,7 @@ export async function seedPrisma(db?: any) {
   ]
 
   for (const cat of categories) {
-    await prisma.category.create({ data: { ...cat, createdAt: now, updatedAt: now } })
+    await prisma.category.create({ data: cat })
   }
 
   // ---- Products ----
@@ -78,7 +74,7 @@ export async function seedPrisma(db?: any) {
 
   for (const product of products) {
     const { categoryId, ...productData } = product
-    await prisma.product.create({ data: { ...productData, createdAt: now, updatedAt: now } })
+    await prisma.product.create({ data: productData })
     await prisma.productCategory.create({ data: { productId: product.id, categoryId } })
   }
 
@@ -112,17 +108,17 @@ export async function seedPrisma(db?: any) {
   ]
 
   for (const brand of brands) {
-    await prisma.brand.create({ data: { ...brand, createdAt: now, updatedAt: now } })
+    await prisma.brand.create({ data: brand })
   }
 
   // ---- Countries ----
   const countries = [
-    { id: 'sa', code: 'SA', name: 'Saudi Arabia', nameAr: 'المملكة العربية السعودية', callingCode: '+966', currency: 'SAR' },
-    { id: 'ae', code: 'AE', name: 'United Arab Emirates', nameAr: 'الإمارات العربية المتحدة', callingCode: '+971', currency: 'AED' },
-    { id: 'kw', code: 'KW', name: 'Kuwait', nameAr: 'الكويت', callingCode: '+965', currency: 'KWD' },
-    { id: 'bh', code: 'BH', name: 'Bahrain', nameAr: 'البحرين', callingCode: '+973', currency: 'BHD' },
-    { id: 'om', code: 'OM', name: 'Oman', nameAr: 'عمان', callingCode: '+968', currency: 'OMR' },
-    { id: 'qa', code: 'QA', name: 'Qatar', nameAr: 'قطر', callingCode: '+974', currency: 'QAR' },
+    { code: 'SA', name: 'Saudi Arabia', nameAr: 'المملكة العربية السعودية', callingCode: '+966', currency: 'SAR' },
+    { code: 'AE', name: 'United Arab Emirates', nameAr: 'الإمارات العربية المتحدة', callingCode: '+971', currency: 'AED' },
+    { code: 'KW', name: 'Kuwait', nameAr: 'الكويت', callingCode: '+965', currency: 'KWD' },
+    { code: 'BH', name: 'Bahrain', nameAr: 'البحرين', callingCode: '+973', currency: 'BHD' },
+    { code: 'OM', name: 'Oman', nameAr: 'عمان', callingCode: '+968', currency: 'OMR' },
+    { code: 'QA', name: 'Qatar', nameAr: 'قطر', callingCode: '+974', currency: 'QAR' },
   ]
 
   for (const country of countries) {
@@ -131,12 +127,12 @@ export async function seedPrisma(db?: any) {
 
   // ---- Reviews ----
   const reviews = [
-    { productId: 'prod-1', authorName: 'Ahmed', rating: 5, title: 'Excellent quality', body: 'Best t-shirt I have ever bought. The cotton is incredibly soft.', verified: true, status: 'published', createdAt: now },
-    { productId: 'prod-1', authorName: 'Sara', rating: 4, title: 'Good fit', body: 'Nice shirt, true to size. Would buy again.', verified: true, status: 'published', createdAt: now },
-    { productId: 'prod-1', authorName: 'Omar', rating: 5, title: 'Love it', body: 'Perfect for everyday wear.', verified: false, status: 'published', createdAt: now },
-    { productId: 'prod-2', authorName: 'Fatima', rating: 5, title: 'Amazing sound', body: 'Crystal clear audio and the noise cancellation is top-notch.', verified: true, status: 'published', createdAt: now },
-    { productId: 'prod-2', authorName: 'Khalid', rating: 3, title: 'Decent', body: 'Good sound but battery life could be better.', verified: true, status: 'published', createdAt: now },
-    { productId: 'prod-3', authorName: 'Noura', rating: 4, title: 'Beautiful bag', body: 'Gorgeous leather, arrived well-packaged.', verified: true, status: 'published', createdAt: now },
+    { productId: 'prod-1', authorName: 'Ahmed', rating: 5, title: 'Excellent quality', body: 'Best t-shirt I have ever bought. The cotton is incredibly soft.', verified: true, status: 'published' },
+    { productId: 'prod-1', authorName: 'Sara', rating: 4, title: 'Good fit', body: 'Nice shirt, true to size. Would buy again.', verified: true, status: 'published' },
+    { productId: 'prod-1', authorName: 'Omar', rating: 5, title: 'Love it', body: 'Perfect for everyday wear.', verified: false, status: 'published' },
+    { productId: 'prod-2', authorName: 'Fatima', rating: 5, title: 'Amazing sound', body: 'Crystal clear audio and the noise cancellation is top-notch.', verified: true, status: 'published' },
+    { productId: 'prod-2', authorName: 'Khalid', rating: 3, title: 'Decent', body: 'Good sound but battery life could be better.', verified: true, status: 'published' },
+    { productId: 'prod-3', authorName: 'Noura', rating: 4, title: 'Beautiful bag', body: 'Gorgeous leather, arrived well-packaged.', verified: true, status: 'published' },
   ]
 
   for (const review of reviews) {

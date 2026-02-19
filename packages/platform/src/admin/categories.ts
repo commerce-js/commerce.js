@@ -40,7 +40,6 @@ export function createAdminCategoriesDomain() {
   return {
     async createCategory(input: CreateCategoryInput): Promise<Category> {
       const id = crypto.randomUUID()
-      const now = new Date().toISOString()
       const slug = input.slug ?? slugify(input.name)
 
       await insertCategory({
@@ -53,8 +52,6 @@ export function createAdminCategoriesDomain() {
         image: input.image ?? null,
         parentId: input.parentId ?? null,
         sortOrder: input.sortOrder ?? 0,
-        createdAt: now,
-        updatedAt: now,
       })
 
       const row = await findCategoryById(id)
@@ -62,8 +59,7 @@ export function createAdminCategoriesDomain() {
     },
 
     async updateCategory(id: string, input: UpdateCategoryInput): Promise<Category> {
-      const now = new Date().toISOString()
-      const updates: Record<string, unknown> = { updatedAt: now }
+      const updates: Record<string, unknown> = {}
 
       if (input.name != null) updates.name = input.name
       if (input.nameAr !== undefined) updates.nameAr = input.nameAr

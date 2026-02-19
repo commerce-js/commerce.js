@@ -34,15 +34,12 @@ export type StoreInfoMinAggregateOutputType = {
   favicon: string | null
   currency: string | null
   locale: string | null
-  supportedCurrencies: string | null
-  supportedLocales: string | null
   timezone: string | null
   contactEmail: string | null
   contactPhone: string | null
   address: string | null
-  socialLinks: string | null
-  createdAt: string | null
-  updatedAt: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type StoreInfoMaxAggregateOutputType = {
@@ -55,15 +52,12 @@ export type StoreInfoMaxAggregateOutputType = {
   favicon: string | null
   currency: string | null
   locale: string | null
-  supportedCurrencies: string | null
-  supportedLocales: string | null
   timezone: string | null
   contactEmail: string | null
   contactPhone: string | null
   address: string | null
-  socialLinks: string | null
-  createdAt: string | null
-  updatedAt: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type StoreInfoCountAggregateOutputType = {
@@ -99,13 +93,10 @@ export type StoreInfoMinAggregateInputType = {
   favicon?: true
   currency?: true
   locale?: true
-  supportedCurrencies?: true
-  supportedLocales?: true
   timezone?: true
   contactEmail?: true
   contactPhone?: true
   address?: true
-  socialLinks?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -120,13 +111,10 @@ export type StoreInfoMaxAggregateInputType = {
   favicon?: true
   currency?: true
   locale?: true
-  supportedCurrencies?: true
-  supportedLocales?: true
   timezone?: true
   contactEmail?: true
   contactPhone?: true
   address?: true
-  socialLinks?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -235,15 +223,15 @@ export type StoreInfoGroupByOutputType = {
   favicon: string | null
   currency: string
   locale: string
-  supportedCurrencies: string | null
-  supportedLocales: string | null
+  supportedCurrencies: runtime.JsonValue | null
+  supportedLocales: runtime.JsonValue | null
   timezone: string
   contactEmail: string | null
   contactPhone: string | null
   address: string | null
-  socialLinks: string | null
-  createdAt: string
-  updatedAt: string
+  socialLinks: runtime.JsonValue | null
+  createdAt: Date
+  updatedAt: Date
   _count: StoreInfoCountAggregateOutputType | null
   _min: StoreInfoMinAggregateOutputType | null
   _max: StoreInfoMaxAggregateOutputType | null
@@ -277,15 +265,15 @@ export type StoreInfoWhereInput = {
   favicon?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   currency?: Prisma.StringFilter<"StoreInfo"> | string
   locale?: Prisma.StringFilter<"StoreInfo"> | string
-  supportedCurrencies?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
-  supportedLocales?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  supportedCurrencies?: Prisma.JsonNullableFilter<"StoreInfo">
+  supportedLocales?: Prisma.JsonNullableFilter<"StoreInfo">
   timezone?: Prisma.StringFilter<"StoreInfo"> | string
   contactEmail?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   contactPhone?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   address?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
-  socialLinks?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
-  createdAt?: Prisma.StringFilter<"StoreInfo"> | string
-  updatedAt?: Prisma.StringFilter<"StoreInfo"> | string
+  socialLinks?: Prisma.JsonNullableFilter<"StoreInfo">
+  createdAt?: Prisma.DateTimeFilter<"StoreInfo"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"StoreInfo"> | Date | string
 }
 
 export type StoreInfoOrderByWithRelationInput = {
@@ -322,15 +310,15 @@ export type StoreInfoWhereUniqueInput = Prisma.AtLeast<{
   favicon?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   currency?: Prisma.StringFilter<"StoreInfo"> | string
   locale?: Prisma.StringFilter<"StoreInfo"> | string
-  supportedCurrencies?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
-  supportedLocales?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  supportedCurrencies?: Prisma.JsonNullableFilter<"StoreInfo">
+  supportedLocales?: Prisma.JsonNullableFilter<"StoreInfo">
   timezone?: Prisma.StringFilter<"StoreInfo"> | string
   contactEmail?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   contactPhone?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   address?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
-  socialLinks?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
-  createdAt?: Prisma.StringFilter<"StoreInfo"> | string
-  updatedAt?: Prisma.StringFilter<"StoreInfo"> | string
+  socialLinks?: Prisma.JsonNullableFilter<"StoreInfo">
+  createdAt?: Prisma.DateTimeFilter<"StoreInfo"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"StoreInfo"> | Date | string
 }, "id">
 
 export type StoreInfoOrderByWithAggregationInput = {
@@ -370,15 +358,15 @@ export type StoreInfoScalarWhereWithAggregatesInput = {
   favicon?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
   currency?: Prisma.StringWithAggregatesFilter<"StoreInfo"> | string
   locale?: Prisma.StringWithAggregatesFilter<"StoreInfo"> | string
-  supportedCurrencies?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
-  supportedLocales?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
+  supportedCurrencies?: Prisma.JsonNullableWithAggregatesFilter<"StoreInfo">
+  supportedLocales?: Prisma.JsonNullableWithAggregatesFilter<"StoreInfo">
   timezone?: Prisma.StringWithAggregatesFilter<"StoreInfo"> | string
   contactEmail?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
   contactPhone?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
   address?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
-  socialLinks?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
-  createdAt?: Prisma.StringWithAggregatesFilter<"StoreInfo"> | string
-  updatedAt?: Prisma.StringWithAggregatesFilter<"StoreInfo"> | string
+  socialLinks?: Prisma.JsonNullableWithAggregatesFilter<"StoreInfo">
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"StoreInfo"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"StoreInfo"> | Date | string
 }
 
 export type StoreInfoCreateInput = {
@@ -391,15 +379,15 @@ export type StoreInfoCreateInput = {
   favicon?: string | null
   currency?: string
   locale?: string
-  supportedCurrencies?: string | null
-  supportedLocales?: string | null
+  supportedCurrencies?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  supportedLocales?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   timezone?: string
   contactEmail?: string | null
   contactPhone?: string | null
   address?: string | null
-  socialLinks?: string | null
-  createdAt: string
-  updatedAt: string
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type StoreInfoUncheckedCreateInput = {
@@ -412,15 +400,15 @@ export type StoreInfoUncheckedCreateInput = {
   favicon?: string | null
   currency?: string
   locale?: string
-  supportedCurrencies?: string | null
-  supportedLocales?: string | null
+  supportedCurrencies?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  supportedLocales?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   timezone?: string
   contactEmail?: string | null
   contactPhone?: string | null
   address?: string | null
-  socialLinks?: string | null
-  createdAt: string
-  updatedAt: string
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type StoreInfoUpdateInput = {
@@ -433,15 +421,15 @@ export type StoreInfoUpdateInput = {
   favicon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  supportedCurrencies?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  supportedLocales?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  supportedCurrencies?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  supportedLocales?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  socialLinks?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type StoreInfoUncheckedUpdateInput = {
@@ -454,15 +442,15 @@ export type StoreInfoUncheckedUpdateInput = {
   favicon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  supportedCurrencies?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  supportedLocales?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  supportedCurrencies?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  supportedLocales?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  socialLinks?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type StoreInfoCreateManyInput = {
@@ -475,15 +463,15 @@ export type StoreInfoCreateManyInput = {
   favicon?: string | null
   currency?: string
   locale?: string
-  supportedCurrencies?: string | null
-  supportedLocales?: string | null
+  supportedCurrencies?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  supportedLocales?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   timezone?: string
   contactEmail?: string | null
   contactPhone?: string | null
   address?: string | null
-  socialLinks?: string | null
-  createdAt: string
-  updatedAt: string
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type StoreInfoUpdateManyMutationInput = {
@@ -496,15 +484,15 @@ export type StoreInfoUpdateManyMutationInput = {
   favicon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  supportedCurrencies?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  supportedLocales?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  supportedCurrencies?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  supportedLocales?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  socialLinks?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type StoreInfoUncheckedUpdateManyInput = {
@@ -517,15 +505,15 @@ export type StoreInfoUncheckedUpdateManyInput = {
   favicon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  supportedCurrencies?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  supportedLocales?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  supportedCurrencies?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  supportedLocales?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  socialLinks?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type StoreInfoCountOrderByAggregateInput = {
@@ -559,13 +547,10 @@ export type StoreInfoMaxOrderByAggregateInput = {
   favicon?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   locale?: Prisma.SortOrder
-  supportedCurrencies?: Prisma.SortOrder
-  supportedLocales?: Prisma.SortOrder
   timezone?: Prisma.SortOrder
   contactEmail?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   address?: Prisma.SortOrder
-  socialLinks?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -580,13 +565,10 @@ export type StoreInfoMinOrderByAggregateInput = {
   favicon?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   locale?: Prisma.SortOrder
-  supportedCurrencies?: Prisma.SortOrder
-  supportedLocales?: Prisma.SortOrder
   timezone?: Prisma.SortOrder
   contactEmail?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   address?: Prisma.SortOrder
-  socialLinks?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -692,15 +674,15 @@ export type $StoreInfoPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     favicon: string | null
     currency: string
     locale: string
-    supportedCurrencies: string | null
-    supportedLocales: string | null
+    supportedCurrencies: runtime.JsonValue | null
+    supportedLocales: runtime.JsonValue | null
     timezone: string
     contactEmail: string | null
     contactPhone: string | null
     address: string | null
-    socialLinks: string | null
-    createdAt: string
-    updatedAt: string
+    socialLinks: runtime.JsonValue | null
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["storeInfo"]>
   composites: {}
 }
@@ -1133,15 +1115,15 @@ export interface StoreInfoFieldRefs {
   readonly favicon: Prisma.FieldRef<"StoreInfo", 'String'>
   readonly currency: Prisma.FieldRef<"StoreInfo", 'String'>
   readonly locale: Prisma.FieldRef<"StoreInfo", 'String'>
-  readonly supportedCurrencies: Prisma.FieldRef<"StoreInfo", 'String'>
-  readonly supportedLocales: Prisma.FieldRef<"StoreInfo", 'String'>
+  readonly supportedCurrencies: Prisma.FieldRef<"StoreInfo", 'Json'>
+  readonly supportedLocales: Prisma.FieldRef<"StoreInfo", 'Json'>
   readonly timezone: Prisma.FieldRef<"StoreInfo", 'String'>
   readonly contactEmail: Prisma.FieldRef<"StoreInfo", 'String'>
   readonly contactPhone: Prisma.FieldRef<"StoreInfo", 'String'>
   readonly address: Prisma.FieldRef<"StoreInfo", 'String'>
-  readonly socialLinks: Prisma.FieldRef<"StoreInfo", 'String'>
-  readonly createdAt: Prisma.FieldRef<"StoreInfo", 'String'>
-  readonly updatedAt: Prisma.FieldRef<"StoreInfo", 'String'>
+  readonly socialLinks: Prisma.FieldRef<"StoreInfo", 'Json'>
+  readonly createdAt: Prisma.FieldRef<"StoreInfo", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"StoreInfo", 'DateTime'>
 }
     
 
@@ -1347,6 +1329,7 @@ export type StoreInfoCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * The data used to create many StoreInfos.
    */
   data: Prisma.StoreInfoCreateManyInput | Prisma.StoreInfoCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1365,6 +1348,7 @@ export type StoreInfoCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exten
    * The data used to create many StoreInfos.
    */
   data: Prisma.StoreInfoCreateManyInput | Prisma.StoreInfoCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**

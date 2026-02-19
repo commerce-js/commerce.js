@@ -28,8 +28,6 @@ export async function insertProduct(data: {
   vatRate?: number | null
   requiresShipping?: boolean
   isDropshipped?: boolean
-  createdAt: string
-  updatedAt: string
 }) {
   return getDb().product.create({ data })
 }
@@ -176,8 +174,6 @@ export async function insertCategory(data: {
   image?: string | null
   parentId?: string | null
   sortOrder?: number
-  createdAt: string
-  updatedAt: string
 }) {
   return getDb().category.create({ data })
 }

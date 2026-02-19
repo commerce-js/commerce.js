@@ -52,13 +52,8 @@ export function createAdminAuthDomain() {
       const valid = compareSync(currentPassword, row.passwordHash ?? (row as any).password_hash)
       if (!valid) throw new Error('Current password is incorrect')
 
-      const now = new Date().toISOString()
       await updateAdminUser(adminId, {
         passwordHash: hashSync(newPassword, 10),
-        updatedAt: now,
-        // Drizzle uses snake_case column mapping
-        password_hash: hashSync(newPassword, 10),
-        updated_at: now,
       })
     },
 
@@ -74,7 +69,6 @@ export function createAdminAuthDomain() {
       const existing = await findAdminByEmail(input.email)
       if (existing) throw new Error('Admin with this email already exists')
 
-      const now = new Date().toISOString()
       const id = crypto.randomUUID()
 
       await createAdminUser({
@@ -83,8 +77,6 @@ export function createAdminAuthDomain() {
         passwordHash: hashSync(input.password, 10),
         name: input.name,
         role: input.role || 'admin',
-        createdAt: now,
-        updatedAt: now,
       })
 
       const created = await findAdminById(id)
@@ -139,15 +131,12 @@ export function createAdminAuthDomain() {
         return
       }
 
-      const now = new Date().toISOString()
       await createAdminUser({
         id: crypto.randomUUID(),
         email,
         passwordHash: hashSync(password, 10),
         name: 'Admin',
         role: 'owner',
-        createdAt: now,
-        updatedAt: now,
       })
     },
   }

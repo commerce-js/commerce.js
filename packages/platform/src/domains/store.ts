@@ -12,15 +12,12 @@ export function createStoreDomain() {
       let row = await findStoreInfo('default')
 
       if (!row) {
-        const now = new Date().toISOString()
         await dbCreateStoreInfo({
           id: 'default',
           name: 'My Store',
           currency: 'SAR',
           locale: 'en',
           timezone: 'Asia/Riyadh',
-          createdAt: now,
-          updatedAt: now,
         })
         row = await findStoreInfo('default')
       }
@@ -31,12 +28,12 @@ export function createStoreDomain() {
         name: localized(row.name, row.nameAr),
         description: row.description ? localized(row.description, row.descriptionAr) : null,
         logo: row.logo ? img(row.logo, 'Store logo') : null,
-        currencies: (row.supportedCurrencies ?? [row.currency]).map((c: string) => ({
+        currencies: ((row.supportedCurrencies ?? [row.currency]) as string[]).map((c: string) => ({
           code: c,
           symbol: c === 'SAR' ? 'ر.س' : c === 'AED' ? 'د.إ' : c,
           isDefault: c === row.currency,
         })),
-        locales: (row.supportedLocales ?? [row.locale]).map((l: string) => ({
+        locales: ((row.supportedLocales ?? [row.locale]) as string[]).map((l: string) => ({
           code: l,
           name: l === 'ar' ? 'العربية' : l === 'en' ? 'English' : l,
           direction: l === 'ar' ? 'rtl' as const : 'ltr' as const,

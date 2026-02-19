@@ -9,32 +9,49 @@ export function localized(en: string | null, ar: string | null): LocalizedString
   return { en: en ?? '', ar: ar ?? '' }
 }
 
-/** Create a Price from a numeric value + currency */
-export function price(amount: number | null | undefined, currency: string): Maybe<Price> {
+/**
+ * Convert a Prisma Decimal (or number) to a plain number.
+ * Prisma returns Decimal fields as `Prisma.Decimal` objects which have `.toNumber()`.
+ */
+export function toNumber(value: any): number {
+  if (value == null) return 0
+  if (typeof value === 'number') return value
+  if (typeof value?.toNumber === 'function') return value.toNumber()
+  return Number(value)
+}
+
+/** Create a Price from a numeric/Decimal value + currency */
+export function price(amount: any, currency: string): Maybe<Price> {
   if (amount == null) return null
-  return { amount, currency, formatted: `${amount} ${currency}` }
+  const n = toNumber(amount)
+  return { amount: n, currency, formatted: `${n} ${currency}` }
 }
 
 /** Create a non-null Price (for required fields) */
-export function priceRequired(amount: number, currency: string): Price {
-  return { amount, currency, formatted: `${amount} ${currency}` }
+export function priceRequired(amount: any, currency: string): Price {
+  const n = toNumber(amount)
+  return { amount: n, currency, formatted: `${n} ${currency}` }
 }
 
 /** Create a DiscountablePrice from price + compareAt */
 export function discountablePrice(
-  amount: number | null,
-  compareAt: number | null,
+  amount: any,
+  compareAt: any,
   currency: string,
 ): Maybe<DiscountablePrice> {
   if (amount == null) return null
+  const a = toNumber(amount)
   const base: DiscountablePrice = {
-    amount,
+    amount: a,
     currency,
-    formatted: `${amount} ${currency}`,
+    formatted: `${a} ${currency}`,
   }
-  if (compareAt != null && compareAt > amount) {
-    base.originalAmount = compareAt
-    base.discountPercent = Math.round(((compareAt - amount) / compareAt) * 100)
+  if (compareAt != null) {
+    const c = toNumber(compareAt)
+    if (c > a) {
+      base.originalAmount = c
+      base.discountPercent = Math.round(((c - a) / c) * 100)
+    }
   }
   return base
 }
@@ -49,7 +66,8 @@ export function img(url: string, altText: string | null): Image {
 
 /**
  * Safely parse a JSON field from the database.
- * SQLite stores JSON as text — this handles string, object, and null values.
+ * With PostgreSQL native Json type, Prisma returns objects directly.
+ * This also handles legacy string values for compatibility.
  */
 export function parseJsonField(value: unknown): any {
   if (value == null) return null

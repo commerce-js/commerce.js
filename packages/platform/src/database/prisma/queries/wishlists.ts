@@ -10,7 +10,7 @@ export async function findWishlistByCustomer(customerId: string) {
 
 export async function createWishlist(customerId: string) {
   return getDb().wishlist.create({
-    data: { customerId, createdAt: new Date().toISOString() },
+    data: { customerId },
   })
 }
 
@@ -28,7 +28,6 @@ export async function insertWishlistItem(data: {
       wishlistId: data.wishlistId,
       productId: data.productId,
       variantId: data.variantId ?? null,
-      addedAt: new Date().toISOString(),
     },
   })
 }

@@ -4,21 +4,9 @@
 
 import { getDb } from '../client.js'
 
-/** Serialize any object values to JSON strings for Prisma's String columns */
-function serializeObjects(data: Record<string, any>): Record<string, any> {
-  const out: Record<string, any> = {}
-  for (const [key, value] of Object.entries(data)) {
-    if (value !== null && value !== undefined && typeof value === 'object' && !(value instanceof Date)) {
-      out[key] = JSON.stringify(value)
-    } else {
-      out[key] = value
-    }
-  }
-  return out
-}
-
 export async function createOrder(data: Record<string, any>) {
-  await getDb().order.create({ data: serializeObjects(data) as any })
+  // With native Json type, Prisma handles object serialization directly
+  await getDb().order.create({ data: data as any })
 }
 
 export async function createOrderItem(data: Record<string, any>) {
@@ -53,5 +41,6 @@ export async function findOrderHistory(orderId: string) {
 }
 
 export async function updateOrder(orderId: string, data: Record<string, any>) {
-  await getDb().order.update({ where: { id: orderId }, data: serializeObjects(data) })
+  // With native Json type, Prisma handles object serialization directly
+  await getDb().order.update({ where: { id: orderId }, data })
 }

@@ -27,15 +27,15 @@ export type AggregatePromotion = {
 }
 
 export type PromotionAvgAggregateOutputType = {
-  discountValue: number | null
-  maxDiscount: number | null
+  discountValue: runtime.Decimal | null
+  maxDiscount: runtime.Decimal | null
   usageLimitPerCustomer: number | null
   usageLimitTotal: number | null
 }
 
 export type PromotionSumAggregateOutputType = {
-  discountValue: number | null
-  maxDiscount: number | null
+  discountValue: runtime.Decimal | null
+  maxDiscount: runtime.Decimal | null
   usageLimitPerCustomer: number | null
   usageLimitTotal: number | null
 }
@@ -47,19 +47,18 @@ export type PromotionMinAggregateOutputType = {
   description: string | null
   descriptionAr: string | null
   discountType: string | null
-  discountValue: number | null
+  discountValue: runtime.Decimal | null
   currency: string | null
-  maxDiscount: number | null
+  maxDiscount: runtime.Decimal | null
   target: string | null
-  conditionsJson: string | null
-  startsAt: string | null
-  endsAt: string | null
+  startsAt: Date | null
+  endsAt: Date | null
   isActive: boolean | null
   requiresCoupon: boolean | null
   usageLimitPerCustomer: number | null
   usageLimitTotal: number | null
-  createdAt: string | null
-  updatedAt: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type PromotionMaxAggregateOutputType = {
@@ -69,19 +68,18 @@ export type PromotionMaxAggregateOutputType = {
   description: string | null
   descriptionAr: string | null
   discountType: string | null
-  discountValue: number | null
+  discountValue: runtime.Decimal | null
   currency: string | null
-  maxDiscount: number | null
+  maxDiscount: runtime.Decimal | null
   target: string | null
-  conditionsJson: string | null
-  startsAt: string | null
-  endsAt: string | null
+  startsAt: Date | null
+  endsAt: Date | null
   isActive: boolean | null
   requiresCoupon: boolean | null
   usageLimitPerCustomer: number | null
   usageLimitTotal: number | null
-  createdAt: string | null
-  updatedAt: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type PromotionCountAggregateOutputType = {
@@ -95,7 +93,7 @@ export type PromotionCountAggregateOutputType = {
   currency: number
   maxDiscount: number
   target: number
-  conditionsJson: number
+  conditions: number
   startsAt: number
   endsAt: number
   isActive: number
@@ -133,7 +131,6 @@ export type PromotionMinAggregateInputType = {
   currency?: true
   maxDiscount?: true
   target?: true
-  conditionsJson?: true
   startsAt?: true
   endsAt?: true
   isActive?: true
@@ -155,7 +152,6 @@ export type PromotionMaxAggregateInputType = {
   currency?: true
   maxDiscount?: true
   target?: true
-  conditionsJson?: true
   startsAt?: true
   endsAt?: true
   isActive?: true
@@ -177,7 +173,7 @@ export type PromotionCountAggregateInputType = {
   currency?: true
   maxDiscount?: true
   target?: true
-  conditionsJson?: true
+  conditions?: true
   startsAt?: true
   endsAt?: true
   isActive?: true
@@ -282,19 +278,19 @@ export type PromotionGroupByOutputType = {
   description: string | null
   descriptionAr: string | null
   discountType: string
-  discountValue: number
+  discountValue: runtime.Decimal
   currency: string | null
-  maxDiscount: number | null
+  maxDiscount: runtime.Decimal | null
   target: string
-  conditionsJson: string | null
-  startsAt: string
-  endsAt: string | null
+  conditions: runtime.JsonValue | null
+  startsAt: Date
+  endsAt: Date | null
   isActive: boolean
   requiresCoupon: boolean
   usageLimitPerCustomer: number | null
   usageLimitTotal: number | null
-  createdAt: string
-  updatedAt: string
+  createdAt: Date
+  updatedAt: Date
   _count: PromotionCountAggregateOutputType | null
   _avg: PromotionAvgAggregateOutputType | null
   _sum: PromotionSumAggregateOutputType | null
@@ -327,19 +323,19 @@ export type PromotionWhereInput = {
   description?: Prisma.StringNullableFilter<"Promotion"> | string | null
   descriptionAr?: Prisma.StringNullableFilter<"Promotion"> | string | null
   discountType?: Prisma.StringFilter<"Promotion"> | string
-  discountValue?: Prisma.FloatFilter<"Promotion"> | number
+  discountValue?: Prisma.DecimalFilter<"Promotion"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringNullableFilter<"Promotion"> | string | null
-  maxDiscount?: Prisma.FloatNullableFilter<"Promotion"> | number | null
+  maxDiscount?: Prisma.DecimalNullableFilter<"Promotion"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringFilter<"Promotion"> | string
-  conditionsJson?: Prisma.StringNullableFilter<"Promotion"> | string | null
-  startsAt?: Prisma.StringFilter<"Promotion"> | string
-  endsAt?: Prisma.StringNullableFilter<"Promotion"> | string | null
+  conditions?: Prisma.JsonNullableFilter<"Promotion">
+  startsAt?: Prisma.DateTimeFilter<"Promotion"> | Date | string
+  endsAt?: Prisma.DateTimeNullableFilter<"Promotion"> | Date | string | null
   isActive?: Prisma.BoolFilter<"Promotion"> | boolean
   requiresCoupon?: Prisma.BoolFilter<"Promotion"> | boolean
   usageLimitPerCustomer?: Prisma.IntNullableFilter<"Promotion"> | number | null
   usageLimitTotal?: Prisma.IntNullableFilter<"Promotion"> | number | null
-  createdAt?: Prisma.StringFilter<"Promotion"> | string
-  updatedAt?: Prisma.StringFilter<"Promotion"> | string
+  createdAt?: Prisma.DateTimeFilter<"Promotion"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Promotion"> | Date | string
   coupons?: Prisma.CouponListRelationFilter
 }
 
@@ -354,7 +350,7 @@ export type PromotionOrderByWithRelationInput = {
   currency?: Prisma.SortOrderInput | Prisma.SortOrder
   maxDiscount?: Prisma.SortOrderInput | Prisma.SortOrder
   target?: Prisma.SortOrder
-  conditionsJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  conditions?: Prisma.SortOrderInput | Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   endsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -376,19 +372,19 @@ export type PromotionWhereUniqueInput = Prisma.AtLeast<{
   description?: Prisma.StringNullableFilter<"Promotion"> | string | null
   descriptionAr?: Prisma.StringNullableFilter<"Promotion"> | string | null
   discountType?: Prisma.StringFilter<"Promotion"> | string
-  discountValue?: Prisma.FloatFilter<"Promotion"> | number
+  discountValue?: Prisma.DecimalFilter<"Promotion"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringNullableFilter<"Promotion"> | string | null
-  maxDiscount?: Prisma.FloatNullableFilter<"Promotion"> | number | null
+  maxDiscount?: Prisma.DecimalNullableFilter<"Promotion"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringFilter<"Promotion"> | string
-  conditionsJson?: Prisma.StringNullableFilter<"Promotion"> | string | null
-  startsAt?: Prisma.StringFilter<"Promotion"> | string
-  endsAt?: Prisma.StringNullableFilter<"Promotion"> | string | null
+  conditions?: Prisma.JsonNullableFilter<"Promotion">
+  startsAt?: Prisma.DateTimeFilter<"Promotion"> | Date | string
+  endsAt?: Prisma.DateTimeNullableFilter<"Promotion"> | Date | string | null
   isActive?: Prisma.BoolFilter<"Promotion"> | boolean
   requiresCoupon?: Prisma.BoolFilter<"Promotion"> | boolean
   usageLimitPerCustomer?: Prisma.IntNullableFilter<"Promotion"> | number | null
   usageLimitTotal?: Prisma.IntNullableFilter<"Promotion"> | number | null
-  createdAt?: Prisma.StringFilter<"Promotion"> | string
-  updatedAt?: Prisma.StringFilter<"Promotion"> | string
+  createdAt?: Prisma.DateTimeFilter<"Promotion"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Promotion"> | Date | string
   coupons?: Prisma.CouponListRelationFilter
 }, "id">
 
@@ -403,7 +399,7 @@ export type PromotionOrderByWithAggregationInput = {
   currency?: Prisma.SortOrderInput | Prisma.SortOrder
   maxDiscount?: Prisma.SortOrderInput | Prisma.SortOrder
   target?: Prisma.SortOrder
-  conditionsJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  conditions?: Prisma.SortOrderInput | Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   endsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -429,19 +425,19 @@ export type PromotionScalarWhereWithAggregatesInput = {
   description?: Prisma.StringNullableWithAggregatesFilter<"Promotion"> | string | null
   descriptionAr?: Prisma.StringNullableWithAggregatesFilter<"Promotion"> | string | null
   discountType?: Prisma.StringWithAggregatesFilter<"Promotion"> | string
-  discountValue?: Prisma.FloatWithAggregatesFilter<"Promotion"> | number
+  discountValue?: Prisma.DecimalWithAggregatesFilter<"Promotion"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringNullableWithAggregatesFilter<"Promotion"> | string | null
-  maxDiscount?: Prisma.FloatNullableWithAggregatesFilter<"Promotion"> | number | null
+  maxDiscount?: Prisma.DecimalNullableWithAggregatesFilter<"Promotion"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringWithAggregatesFilter<"Promotion"> | string
-  conditionsJson?: Prisma.StringNullableWithAggregatesFilter<"Promotion"> | string | null
-  startsAt?: Prisma.StringWithAggregatesFilter<"Promotion"> | string
-  endsAt?: Prisma.StringNullableWithAggregatesFilter<"Promotion"> | string | null
+  conditions?: Prisma.JsonNullableWithAggregatesFilter<"Promotion">
+  startsAt?: Prisma.DateTimeWithAggregatesFilter<"Promotion"> | Date | string
+  endsAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Promotion"> | Date | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Promotion"> | boolean
   requiresCoupon?: Prisma.BoolWithAggregatesFilter<"Promotion"> | boolean
   usageLimitPerCustomer?: Prisma.IntNullableWithAggregatesFilter<"Promotion"> | number | null
   usageLimitTotal?: Prisma.IntNullableWithAggregatesFilter<"Promotion"> | number | null
-  createdAt?: Prisma.StringWithAggregatesFilter<"Promotion"> | string
-  updatedAt?: Prisma.StringWithAggregatesFilter<"Promotion"> | string
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"Promotion"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Promotion"> | Date | string
 }
 
 export type PromotionCreateInput = {
@@ -451,19 +447,19 @@ export type PromotionCreateInput = {
   description?: string | null
   descriptionAr?: string | null
   discountType?: string
-  discountValue?: number
+  discountValue?: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string | null
-  maxDiscount?: number | null
+  maxDiscount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: string
-  conditionsJson?: string | null
-  startsAt: string
-  endsAt?: string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt: Date | string
+  endsAt?: Date | string | null
   isActive?: boolean
   requiresCoupon?: boolean
   usageLimitPerCustomer?: number | null
   usageLimitTotal?: number | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
   coupons?: Prisma.CouponCreateNestedManyWithoutPromotionInput
 }
 
@@ -474,19 +470,19 @@ export type PromotionUncheckedCreateInput = {
   description?: string | null
   descriptionAr?: string | null
   discountType?: string
-  discountValue?: number
+  discountValue?: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string | null
-  maxDiscount?: number | null
+  maxDiscount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: string
-  conditionsJson?: string | null
-  startsAt: string
-  endsAt?: string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt: Date | string
+  endsAt?: Date | string | null
   isActive?: boolean
   requiresCoupon?: boolean
   usageLimitPerCustomer?: number | null
   usageLimitTotal?: number | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
   coupons?: Prisma.CouponUncheckedCreateNestedManyWithoutPromotionInput
 }
 
@@ -497,19 +493,19 @@ export type PromotionUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   descriptionAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
-  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountValue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  maxDiscount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDiscount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringFieldUpdateOperationsInput | string
-  conditionsJson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startsAt?: Prisma.StringFieldUpdateOperationsInput | string
-  endsAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCoupon?: Prisma.BoolFieldUpdateOperationsInput | boolean
   usageLimitPerCustomer?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   usageLimitTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   coupons?: Prisma.CouponUpdateManyWithoutPromotionNestedInput
 }
 
@@ -520,19 +516,19 @@ export type PromotionUncheckedUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   descriptionAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
-  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountValue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  maxDiscount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDiscount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringFieldUpdateOperationsInput | string
-  conditionsJson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startsAt?: Prisma.StringFieldUpdateOperationsInput | string
-  endsAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCoupon?: Prisma.BoolFieldUpdateOperationsInput | boolean
   usageLimitPerCustomer?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   usageLimitTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   coupons?: Prisma.CouponUncheckedUpdateManyWithoutPromotionNestedInput
 }
 
@@ -543,19 +539,19 @@ export type PromotionCreateManyInput = {
   description?: string | null
   descriptionAr?: string | null
   discountType?: string
-  discountValue?: number
+  discountValue?: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string | null
-  maxDiscount?: number | null
+  maxDiscount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: string
-  conditionsJson?: string | null
-  startsAt: string
-  endsAt?: string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt: Date | string
+  endsAt?: Date | string | null
   isActive?: boolean
   requiresCoupon?: boolean
   usageLimitPerCustomer?: number | null
   usageLimitTotal?: number | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type PromotionUpdateManyMutationInput = {
@@ -565,19 +561,19 @@ export type PromotionUpdateManyMutationInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   descriptionAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
-  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountValue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  maxDiscount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDiscount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringFieldUpdateOperationsInput | string
-  conditionsJson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startsAt?: Prisma.StringFieldUpdateOperationsInput | string
-  endsAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCoupon?: Prisma.BoolFieldUpdateOperationsInput | boolean
   usageLimitPerCustomer?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   usageLimitTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PromotionUncheckedUpdateManyInput = {
@@ -587,19 +583,19 @@ export type PromotionUncheckedUpdateManyInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   descriptionAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
-  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountValue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  maxDiscount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDiscount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringFieldUpdateOperationsInput | string
-  conditionsJson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startsAt?: Prisma.StringFieldUpdateOperationsInput | string
-  endsAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCoupon?: Prisma.BoolFieldUpdateOperationsInput | boolean
   usageLimitPerCustomer?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   usageLimitTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PromotionCountOrderByAggregateInput = {
@@ -613,7 +609,7 @@ export type PromotionCountOrderByAggregateInput = {
   currency?: Prisma.SortOrder
   maxDiscount?: Prisma.SortOrder
   target?: Prisma.SortOrder
-  conditionsJson?: Prisma.SortOrder
+  conditions?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   endsAt?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -642,7 +638,6 @@ export type PromotionMaxOrderByAggregateInput = {
   currency?: Prisma.SortOrder
   maxDiscount?: Prisma.SortOrder
   target?: Prisma.SortOrder
-  conditionsJson?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   endsAt?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -664,7 +659,6 @@ export type PromotionMinOrderByAggregateInput = {
   currency?: Prisma.SortOrder
   maxDiscount?: Prisma.SortOrder
   target?: Prisma.SortOrder
-  conditionsJson?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   endsAt?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -685,6 +679,10 @@ export type PromotionSumOrderByAggregateInput = {
 export type PromotionScalarRelationFilter = {
   is?: Prisma.PromotionWhereInput
   isNot?: Prisma.PromotionWhereInput
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type PromotionCreateNestedOneWithoutCouponsInput = {
@@ -708,19 +706,19 @@ export type PromotionCreateWithoutCouponsInput = {
   description?: string | null
   descriptionAr?: string | null
   discountType?: string
-  discountValue?: number
+  discountValue?: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string | null
-  maxDiscount?: number | null
+  maxDiscount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: string
-  conditionsJson?: string | null
-  startsAt: string
-  endsAt?: string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt: Date | string
+  endsAt?: Date | string | null
   isActive?: boolean
   requiresCoupon?: boolean
   usageLimitPerCustomer?: number | null
   usageLimitTotal?: number | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type PromotionUncheckedCreateWithoutCouponsInput = {
@@ -730,19 +728,19 @@ export type PromotionUncheckedCreateWithoutCouponsInput = {
   description?: string | null
   descriptionAr?: string | null
   discountType?: string
-  discountValue?: number
+  discountValue?: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string | null
-  maxDiscount?: number | null
+  maxDiscount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: string
-  conditionsJson?: string | null
-  startsAt: string
-  endsAt?: string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt: Date | string
+  endsAt?: Date | string | null
   isActive?: boolean
   requiresCoupon?: boolean
   usageLimitPerCustomer?: number | null
   usageLimitTotal?: number | null
-  createdAt: string
-  updatedAt: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type PromotionCreateOrConnectWithoutCouponsInput = {
@@ -768,19 +766,19 @@ export type PromotionUpdateWithoutCouponsInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   descriptionAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
-  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountValue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  maxDiscount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDiscount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringFieldUpdateOperationsInput | string
-  conditionsJson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startsAt?: Prisma.StringFieldUpdateOperationsInput | string
-  endsAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCoupon?: Prisma.BoolFieldUpdateOperationsInput | boolean
   usageLimitPerCustomer?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   usageLimitTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PromotionUncheckedUpdateWithoutCouponsInput = {
@@ -790,19 +788,19 @@ export type PromotionUncheckedUpdateWithoutCouponsInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   descriptionAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
-  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountValue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  maxDiscount?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDiscount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   target?: Prisma.StringFieldUpdateOperationsInput | string
-  conditionsJson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startsAt?: Prisma.StringFieldUpdateOperationsInput | string
-  endsAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  conditions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCoupon?: Prisma.BoolFieldUpdateOperationsInput | boolean
   usageLimitPerCustomer?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   usageLimitTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
-  updatedAt?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -847,7 +845,7 @@ export type PromotionSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   currency?: boolean
   maxDiscount?: boolean
   target?: boolean
-  conditionsJson?: boolean
+  conditions?: boolean
   startsAt?: boolean
   endsAt?: boolean
   isActive?: boolean
@@ -871,7 +869,7 @@ export type PromotionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   currency?: boolean
   maxDiscount?: boolean
   target?: boolean
-  conditionsJson?: boolean
+  conditions?: boolean
   startsAt?: boolean
   endsAt?: boolean
   isActive?: boolean
@@ -893,7 +891,7 @@ export type PromotionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   currency?: boolean
   maxDiscount?: boolean
   target?: boolean
-  conditionsJson?: boolean
+  conditions?: boolean
   startsAt?: boolean
   endsAt?: boolean
   isActive?: boolean
@@ -915,7 +913,7 @@ export type PromotionSelectScalar = {
   currency?: boolean
   maxDiscount?: boolean
   target?: boolean
-  conditionsJson?: boolean
+  conditions?: boolean
   startsAt?: boolean
   endsAt?: boolean
   isActive?: boolean
@@ -926,7 +924,7 @@ export type PromotionSelectScalar = {
   updatedAt?: boolean
 }
 
-export type PromotionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "nameAr" | "description" | "descriptionAr" | "discountType" | "discountValue" | "currency" | "maxDiscount" | "target" | "conditionsJson" | "startsAt" | "endsAt" | "isActive" | "requiresCoupon" | "usageLimitPerCustomer" | "usageLimitTotal" | "createdAt" | "updatedAt", ExtArgs["result"]["promotion"]>
+export type PromotionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "nameAr" | "description" | "descriptionAr" | "discountType" | "discountValue" | "currency" | "maxDiscount" | "target" | "conditions" | "startsAt" | "endsAt" | "isActive" | "requiresCoupon" | "usageLimitPerCustomer" | "usageLimitTotal" | "createdAt" | "updatedAt", ExtArgs["result"]["promotion"]>
 export type PromotionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   coupons?: boolean | Prisma.Promotion$couponsArgs<ExtArgs>
   _count?: boolean | Prisma.PromotionCountOutputTypeDefaultArgs<ExtArgs>
@@ -946,19 +944,19 @@ export type $PromotionPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     description: string | null
     descriptionAr: string | null
     discountType: string
-    discountValue: number
+    discountValue: runtime.Decimal
     currency: string | null
-    maxDiscount: number | null
+    maxDiscount: runtime.Decimal | null
     target: string
-    conditionsJson: string | null
-    startsAt: string
-    endsAt: string | null
+    conditions: runtime.JsonValue | null
+    startsAt: Date
+    endsAt: Date | null
     isActive: boolean
     requiresCoupon: boolean
     usageLimitPerCustomer: number | null
     usageLimitTotal: number | null
-    createdAt: string
-    updatedAt: string
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["promotion"]>
   composites: {}
 }
@@ -1389,19 +1387,19 @@ export interface PromotionFieldRefs {
   readonly description: Prisma.FieldRef<"Promotion", 'String'>
   readonly descriptionAr: Prisma.FieldRef<"Promotion", 'String'>
   readonly discountType: Prisma.FieldRef<"Promotion", 'String'>
-  readonly discountValue: Prisma.FieldRef<"Promotion", 'Float'>
+  readonly discountValue: Prisma.FieldRef<"Promotion", 'Decimal'>
   readonly currency: Prisma.FieldRef<"Promotion", 'String'>
-  readonly maxDiscount: Prisma.FieldRef<"Promotion", 'Float'>
+  readonly maxDiscount: Prisma.FieldRef<"Promotion", 'Decimal'>
   readonly target: Prisma.FieldRef<"Promotion", 'String'>
-  readonly conditionsJson: Prisma.FieldRef<"Promotion", 'String'>
-  readonly startsAt: Prisma.FieldRef<"Promotion", 'String'>
-  readonly endsAt: Prisma.FieldRef<"Promotion", 'String'>
+  readonly conditions: Prisma.FieldRef<"Promotion", 'Json'>
+  readonly startsAt: Prisma.FieldRef<"Promotion", 'DateTime'>
+  readonly endsAt: Prisma.FieldRef<"Promotion", 'DateTime'>
   readonly isActive: Prisma.FieldRef<"Promotion", 'Boolean'>
   readonly requiresCoupon: Prisma.FieldRef<"Promotion", 'Boolean'>
   readonly usageLimitPerCustomer: Prisma.FieldRef<"Promotion", 'Int'>
   readonly usageLimitTotal: Prisma.FieldRef<"Promotion", 'Int'>
-  readonly createdAt: Prisma.FieldRef<"Promotion", 'String'>
-  readonly updatedAt: Prisma.FieldRef<"Promotion", 'String'>
+  readonly createdAt: Prisma.FieldRef<"Promotion", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"Promotion", 'DateTime'>
 }
     
 
@@ -1631,6 +1629,7 @@ export type PromotionCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * The data used to create many Promotions.
    */
   data: Prisma.PromotionCreateManyInput | Prisma.PromotionCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1649,6 +1648,7 @@ export type PromotionCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exten
    * The data used to create many Promotions.
    */
   data: Prisma.PromotionCreateManyInput | Prisma.PromotionCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**

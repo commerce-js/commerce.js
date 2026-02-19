@@ -22,7 +22,7 @@ export function createReviewsDomain() {
         title: r.title ?? null,
         body: r.body ?? null,
         verified: Boolean(r.verified),
-        createdAt: r.createdAt,
+        createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
       }))
 
       const page = params?.page ?? 1
@@ -70,7 +70,7 @@ export function createReviewsDomain() {
         title: latest.title ?? null,
         body: latest.body ?? null,
         verified: Boolean(latest.verified),
-        createdAt: latest.createdAt,
+        createdAt: latest.createdAt instanceof Date ? latest.createdAt.toISOString() : latest.createdAt,
       }
     },
   }

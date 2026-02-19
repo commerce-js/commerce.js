@@ -137,7 +137,6 @@ export function createAdminProductsDomain(currency: string) {
 
     async createProduct(input: CreateProductInput): Promise<Product> {
       const id = crypto.randomUUID()
-      const now = new Date().toISOString()
 
       // Generate slug — check for uniqueness
       let slug = input.slug ?? slugify(input.name)
@@ -166,8 +165,6 @@ export function createAdminProductsDomain(currency: string) {
         vatRate: input.vatRate ?? null,
         requiresShipping: input.requiresShipping ?? true,
         isDropshipped: input.isDropshipped ?? false,
-        createdAt: now,
-        updatedAt: now,
       })
 
       // Create relations
@@ -231,8 +228,7 @@ export function createAdminProductsDomain(currency: string) {
     },
 
     async updateProduct(id: string, input: UpdateProductInput): Promise<Product> {
-      const now = new Date().toISOString()
-      const updates: Record<string, unknown> = { updatedAt: now }
+      const updates: Record<string, unknown> = {}
 
       if (input.name != null) updates.name = input.name
       if (input.nameAr !== undefined) updates.nameAr = input.nameAr

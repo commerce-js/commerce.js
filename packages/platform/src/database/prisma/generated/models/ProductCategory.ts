@@ -359,6 +359,7 @@ export type ProductCategoryCreateOrConnectWithoutCategoryInput = {
 
 export type ProductCategoryCreateManyCategoryInputEnvelope = {
   data: Prisma.ProductCategoryCreateManyCategoryInput | Prisma.ProductCategoryCreateManyCategoryInput[]
+  skipDuplicates?: boolean
 }
 
 export type ProductCategoryUpsertWithWhereUniqueWithoutCategoryInput = {
@@ -400,6 +401,7 @@ export type ProductCategoryCreateOrConnectWithoutProductInput = {
 
 export type ProductCategoryCreateManyProductInputEnvelope = {
   data: Prisma.ProductCategoryCreateManyProductInput | Prisma.ProductCategoryCreateManyProductInput[]
+  skipDuplicates?: boolean
 }
 
 export type ProductCategoryUpsertWithWhereUniqueWithoutProductInput = {
@@ -1157,6 +1159,7 @@ export type ProductCategoryCreateManyArgs<ExtArgs extends runtime.Types.Extensio
    * The data used to create many ProductCategories.
    */
   data: Prisma.ProductCategoryCreateManyInput | Prisma.ProductCategoryCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1175,6 +1178,7 @@ export type ProductCategoryCreateManyAndReturnArgs<ExtArgs extends runtime.Types
    * The data used to create many ProductCategories.
    */
   data: Prisma.ProductCategoryCreateManyInput | Prisma.ProductCategoryCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

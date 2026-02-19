@@ -4,8 +4,8 @@
 
 import { getDb } from '../client.js'
 
-export async function createCart(id: string, now: string) {
-  await getDb().cart.create({ data: { id, createdAt: now, updatedAt: now } })
+export async function createCart(id: string) {
+  await getDb().cart.create({ data: { id } })
 }
 
 export async function findCart(cartId: string) {
@@ -31,7 +31,6 @@ export async function insertCartItem(item: {
   productId: string
   variantId?: string | null
   quantity: number
-  createdAt: string
 }) {
   await getDb().cartItem.create({
     data: {
@@ -39,7 +38,6 @@ export async function insertCartItem(item: {
       productId: item.productId,
       variantId: item.variantId ?? null,
       quantity: item.quantity,
-      createdAt: item.createdAt,
     },
   })
 }
@@ -53,16 +51,8 @@ export async function deleteCartItem(itemId: string) {
 }
 
 export async function updateCart(cartId: string, data: Record<string, any>) {
-  // Serialize any object values to JSON strings (e.g., shippingAddress, billingAddress)
-  const prismaData: Record<string, any> = {}
-  for (const [key, value] of Object.entries(data)) {
-    if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
-      prismaData[key] = JSON.stringify(value)
-    } else {
-      prismaData[key] = value
-    }
-  }
-  await getDb().cart.update({ where: { id: cartId }, data: prismaData })
+  // With native Json type, Prisma handles object serialization directly
+  await getDb().cart.update({ where: { id: cartId }, data })
 }
 
 export async function deleteCart(cartId: string) {

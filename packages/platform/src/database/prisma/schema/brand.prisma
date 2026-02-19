@@ -11,8 +11,8 @@ model Brand {
   description   String?
   descriptionAr String?  @map("description_ar")
   isActive      Boolean  @default(true) @map("is_active")
-  createdAt     String   @map("created_at")
-  updatedAt     String   @map("updated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("brands")
 }

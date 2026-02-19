@@ -21,15 +21,12 @@ export async function insertReturn(data: {
   orderNumber: string
   customerNote?: string | null
 }) {
-  const now = new Date().toISOString()
   return getDb().return.create({
     data: {
       orderId: data.orderId,
       orderNumber: data.orderNumber,
       status: 'requested',
       customerNote: data.customerNote ?? null,
-      createdAt: now,
-      updatedAt: now,
     },
   })
 }
@@ -63,9 +60,8 @@ export async function insertReturnItem(data: {
 }
 
 export async function updateReturnStatus(returnId: string, status: string) {
-  const now = new Date().toISOString()
   return getDb().return.update({
     where: { id: returnId },
-    data: { status, updatedAt: now },
+    data: { status },
   })
 }

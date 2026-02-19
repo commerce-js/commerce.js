@@ -448,6 +448,7 @@ export type ProductImageCreateOrConnectWithoutProductInput = {
 
 export type ProductImageCreateManyProductInputEnvelope = {
   data: Prisma.ProductImageCreateManyProductInput | Prisma.ProductImageCreateManyProductInput[]
+  skipDuplicates?: boolean
 }
 
 export type ProductImageUpsertWithWhereUniqueWithoutProductInput = {
@@ -1233,6 +1234,7 @@ export type ProductImageCreateManyArgs<ExtArgs extends runtime.Types.Extensions.
    * The data used to create many ProductImages.
    */
   data: Prisma.ProductImageCreateManyInput | Prisma.ProductImageCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1251,6 +1253,7 @@ export type ProductImageCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ex
    * The data used to create many ProductImages.
    */
   data: Prisma.ProductImageCreateManyInput | Prisma.ProductImageCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

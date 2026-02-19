@@ -7,15 +7,15 @@ model Return {
   orderId               String       @map("order_id")
   orderNumber           String       @map("order_number")
   status                String       @default("requested")
-  refundAmount          Float?       @map("refund_amount")
+  refundAmount          Decimal?     @map("refund_amount") @db.Decimal(12, 2)
   refundCurrency        String?      @map("refund_currency")
   refundMethod          String?      @map("refund_method")
   returnShippingLabel   String?      @map("return_shipping_label")
   returnTrackingNumber  String?      @map("return_tracking_number")
   merchantNote          String?      @map("merchant_note")
   customerNote          String?      @map("customer_note")
-  createdAt             String       @map("created_at")
-  updatedAt             String       @map("updated_at")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
   items                 ReturnItem[]
 
   @@map("returns")

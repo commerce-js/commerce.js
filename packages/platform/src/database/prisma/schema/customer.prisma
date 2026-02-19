@@ -3,15 +3,15 @@
 // ---------------------------------------------------------------------------
 
 model Customer {
-  id               String  @id @default(uuid())
-  email            String  @unique
-  passwordHash     String  @map("password_hash")
-  firstName        String? @map("first_name")
-  lastName         String? @map("last_name")
+  id               String   @id @default(uuid())
+  email            String   @unique
+  passwordHash     String   @map("password_hash")
+  firstName        String?  @map("first_name")
+  lastName         String?  @map("last_name")
   phone            String?
-  defaultAddressId String? @map("default_address_id")
-  createdAt        String  @map("created_at")
-  updatedAt        String  @map("updated_at")
+  defaultAddressId String?  @map("default_address_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   addresses CustomerAddress[]
   carts     Cart[]
