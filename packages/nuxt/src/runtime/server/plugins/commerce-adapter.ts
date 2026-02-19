@@ -17,20 +17,22 @@ async function initAdapter(): Promise<CommerceAdapter> {
   const adapterName = process.env.COMMERCE_ADAPTER || process.env.NUXT_COMMERCE_ADAPTER || 'salla'
 
   if (adapterName === 'platform') {
-    // Platform adapter — native CommerceJS engine
-    // Auto-detects driver from DATABASE_URL (sqlite or neon)
     const platform = await import('@commercejs/platform')
     const { createPlatformAdapter, seedPrisma } = platform
 
     const dbUrl = process.env.DATABASE_URL || process.env.NUXT_DATABASE_URL
     const dbPath = process.env.COMMERCE_DB_PATH || process.env.NUXT_COMMERCE_DB_PATH || './store.db'
-
-    // Use DATABASE_URL for Neon/Postgres, fall back to local SQLite path
     const connectionString = dbUrl || dbPath
     const isNeon = dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))
 
-    // Run migrations FIRST — tables must exist before adapter seeds admin
+    // For Neon: init client → migrate → create adapter → seed
+    // For SQLite: migrate → create adapter → seed (initPrisma is sync)
     if (isNeon) {
+      // 1. Init the Neon Prisma client (migrateNeon needs it)
+      const { initPrismaNeon } = await import('@commercejs/platform')
+      await initPrismaNeon(connectionString)
+
+      // 2. Migrate (tables must exist before adapter seeds admin)
       const { migrateNeon } = await import('@commercejs/platform')
       await migrateNeon()
     } else {
@@ -38,7 +40,7 @@ async function initAdapter(): Promise<CommerceAdapter> {
       await migratePrisma()
     }
 
-    // NOW create the adapter (this also seeds the initial admin user)
+    // 3. Create adapter (seeds initial admin user, skips client init since already done)
     const result = await createPlatformAdapter({
       currency: process.env.COMMERCE_CURRENCY || 'SAR',
       connectionString,
@@ -47,18 +49,14 @@ async function initAdapter(): Promise<CommerceAdapter> {
     _adapter = result.adapter
     _adminApi = result.admin
 
-    // Auto-seed demo data if the database is fresh (no products yet)
-    // Pass the correct Prisma client — Neon and SQLite use separate singletons
+    // 4. Seed demo data
     try {
-      let db: any
-      if (isNeon) {
-        const { getNeonDb } = await import('@commercejs/platform')
-        db = getNeonDb()
-      }
+      const db = isNeon
+        ? (await import('@commercejs/platform')).getNeonDb()
+        : undefined
       await seedPrisma(db)
       console.log('[commerce] Demo data seeded successfully')
     } catch (err: any) {
-      // Already seeded or seed error — log for debugging
       if (err?.code !== 'P2002') {
         console.warn('[commerce] Seed skipped:', err?.message || err)
       }
