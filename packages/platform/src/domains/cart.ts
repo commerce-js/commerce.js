@@ -104,7 +104,7 @@ export function createCartDomain(currency: string) {
         })
       }
 
-      await updateCart(cartId, {})
+      await updateCart(cartId, { updatedAt: new Date() })
       return buildCart(cartId)
     },
 
@@ -114,13 +114,13 @@ export function createCartDomain(currency: string) {
       } else {
         await updateCartItemQuantity(itemId, quantity)
       }
-      await updateCart(cartId, {})
+      await updateCart(cartId, { updatedAt: new Date() })
       return buildCart(cartId)
     },
 
     async removeFromCart(cartId: string, itemId: string): Promise<Cart> {
       await deleteCartItem(itemId)
-      await updateCart(cartId, {})
+      await updateCart(cartId, { updatedAt: new Date() })
       return buildCart(cartId)
     },
 
