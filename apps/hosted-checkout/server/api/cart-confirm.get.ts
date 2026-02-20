@@ -1,11 +1,4 @@
-// ---------------------------------------------------------------------------
-// GET /api/cart-confirm — Handle 3DS redirect back from Tap
-// ---------------------------------------------------------------------------
-// Query: { cartId, returnUrl, tap_id }
-// After 3DS, Tap redirects here. We check charge status and place order.
-// ---------------------------------------------------------------------------
-
-import { createCheckoutDomain } from '@commercejs/platform'
+import { createCheckoutDomain, createOrdersDomain } from '@commercejs/platform'
 import { useTapProviderFromEnv } from '../utils/tap'
 import { ensureDb } from '../utils/db'
 
@@ -33,6 +26,13 @@ export default defineEventHandler(async (event) => {
       // Payment successful — place the order
       const checkoutDomain = createCheckoutDomain(currency)
       const order = await checkoutDomain.placeOrder(cartId)
+
+      // Update status from 'pending' to 'processing' since payment is captured
+      const ordersDomain = createOrdersDomain(currency)
+      await ordersDomain.updateOrderStatus(order.id, {
+        status: 'processing',
+        note: `Card payment captured (Tap charge: ${tapId})`,
+      })
 
       // Redirect to storefront order confirmation
       const redirectTo = returnUrl
