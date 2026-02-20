@@ -148,6 +148,9 @@ importers:
       '@commercejs/payment-tap':
         specifier: workspace:*
         version: link:../../packages/payment-tap
+      '@commercejs/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
       '@commercejs/types':
         specifier: workspace:*
         version: link:../../packages/types

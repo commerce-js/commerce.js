@@ -5,7 +5,13 @@ const { t } = useLocalizedString()
 const { formatPrice } = usePrice()
 const route = useRoute()
 
-const orderId = computed(() => route.query.orderId as string)
+const orderId = computed(() => (route.query.orderId || route.query.id) as string)
+
+// Clear cart cookie when we have a confirmed order
+if (orderId.value) {
+  const cartCookie = useCookie('commerce_cart_id')
+  cartCookie.value = null
+}
 
 // Read order from Nuxt state (set by checkout.vue on placeOrder)
 const placedOrder = useState<Order | null>('commerce_placed_order', () => null)

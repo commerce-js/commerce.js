@@ -123,6 +123,19 @@ const placedOrder = useState<Order | null>('commerce_placed_order', () => null)
 
 async function handlePlaceOrder() {
   try {
+    // Card payments redirect to hosted checkout for Tap processing
+    if (selectedPaymentId.value === 'card') {
+      const checkoutUrl = 'https://checkout.commercejs.cloud'
+      const returnUrl = encodeURIComponent(window.location.origin)
+      isNavigatingToConfirmation.value = true
+      await navigateTo(
+        `${checkoutUrl}/pay/cart?id=${cartId.value}&return=${returnUrl}`,
+        { external: true },
+      )
+      return
+    }
+
+    // COD and other methods — place order directly
     const order = await placeOrder()
     placedOrder.value = order
     isNavigatingToConfirmation.value = true

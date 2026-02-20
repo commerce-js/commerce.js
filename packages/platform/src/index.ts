@@ -41,3 +41,8 @@ export type { DrizzleDatabase } from './database/drizzle/client.js'
 
 // Drizzle schema (for raw queries)
 export * as schema from './database/drizzle/schema/index.js'
+
+// Domain factories (for standalone use outside the adapter)
+export { createCartDomain } from './domains/cart.js'
+export { createCheckoutDomain } from './domains/checkout.js'
+export { createCatalogDomain } from './domains/catalog.js'

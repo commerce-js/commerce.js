@@ -13,6 +13,7 @@
   "dependencies": {
     "@commercejs/checkout": "workspace:*",
     "@commercejs/payment-tap": "workspace:*",
+    "@commercejs/platform": "workspace:*",
     "@commercejs/types": "workspace:*",
     "@commercejs/webhook-verifier": "workspace:*",
     "nuxt": "^4.3.1",

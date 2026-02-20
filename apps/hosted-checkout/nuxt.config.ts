@@ -23,6 +23,10 @@ export default defineNuxtConfig({
   // No extra modules needed — this is a minimal, focused checkout app
 
   runtimeConfig: {
+    // Database URL for shared Neon DB
+    databaseUrl: process.env.DATABASE_URL || '',
+    // Store currency
+    commerceCurrency: process.env.COMMERCE_CURRENCY || 'BHD',
     // Merchant's Tap secret key — per-merchant in production
     tapSecretKey: process.env.TAP_SECRET_KEY || '',
     // Webhook secret for Tap
