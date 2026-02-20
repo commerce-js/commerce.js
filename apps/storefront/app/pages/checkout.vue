@@ -42,6 +42,9 @@ const steps = [
   { id: 'review', title: 'Review', icon: 'i-heroicons-clipboard-document-check' },
 ]
 
+// ── Email (stored separately, passed to hosted checkout via cart) ──
+const customerEmail = ref('')
+
 // ── Address form state ──
 const addressForm = ref<Partial<Address>>({
   firstName: '',
@@ -104,8 +107,10 @@ async function handleAddressSubmit() {
     await setShippingAddress(addressForm.value as Omit<Address, 'id' | 'isDefault'>)
     // Save billing address — either same as shipping or separate
     const billing = billingSameAsShipping.value
-      ? addressForm.value
-      : billingForm.value
+      ? { ...addressForm.value }
+      : { ...billingForm.value }
+    // Attach email to billing so hosted checkout can pre-fill it
+    ;(billing as any).email = customerEmail.value
     await setBillingAddress(billing as Omit<Address, 'id' | 'isDefault'>)
     await loadShippingMethods()
     currentStep.value = 1
@@ -175,8 +180,19 @@ const selectedPayment = computed(() =>
 )
 const cartItems = computed(() => cart.value?.items ?? [])
 const subtotal = computed(() => cart.value?.totals?.subtotal)
-const total = computed(() => cart.value?.totals?.total)
 const shippingCost = computed(() => selectedShipping.value?.price)
+// Compute total: cart total from server already includes shipping after setShippingMethod,
+// but also add a local fallback for the sidebar display before the response is back.
+const total = computed(() => {
+  const cartTotal = cart.value?.totals?.total
+  if (!cartTotal || !shippingCost.value) return cartTotal
+  // If the cart total already includes shipping, use it directly
+  // Otherwise add shipping cost to subtotal
+  const sub = subtotal.value?.amount ?? 0
+  const ship = shippingCost.value?.amount ?? 0
+  if (cartTotal.amount >= sub + ship) return cartTotal
+  return { ...cartTotal, amount: sub + ship }
+})
 
 useHead({
   title: 'Checkout — CommerceJS',
@@ -228,6 +244,20 @@ useHead({
 
         <!-- ─── Step 0: Addresses ─── -->
         <div v-if="currentStep === 0" class="space-y-4">
+          <!-- Email -->
+          <div class="rounded-2xl bg-elevated ring ring-default p-6">
+            <label class="block text-sm font-medium text-highlighted mb-2" for="checkout-email">Email</label>
+            <UInput
+              id="checkout-email"
+              v-model="customerEmail"
+              type="email"
+              placeholder="your@email.com"
+              size="lg"
+              autocomplete="email"
+              icon="i-heroicons-envelope"
+            />
+          </div>
+
           <!-- Shipping address form -->
           <h2 class="text-xl font-semibold text-highlighted">
             Shipping Address
@@ -450,15 +480,21 @@ useHead({
                   Edit
                 </UButton>
               </div>
-              <p v-if="billingSameAsShipping" class="text-sm text-muted leading-relaxed">
-                Same as shipping address
-              </p>
-              <p v-else class="text-sm text-muted leading-relaxed">
-                {{ billingForm.firstName }} {{ billingForm.lastName }}<br>
-                {{ billingForm.street }}<template v-if="billingForm.street2">, {{ billingForm.street2 }}</template><br>
-                {{ billingForm.city }}<template v-if="billingForm.state">, {{ billingForm.state }}</template>
-                {{ billingForm.postalCode }}<br>
-                {{ billingForm.country }}
+              <p class="text-sm text-muted leading-relaxed">
+                <template v-if="billingSameAsShipping">
+                  {{ addressForm.firstName }} {{ addressForm.lastName }}<br>
+                  {{ addressForm.street }}<template v-if="addressForm.street2">, {{ addressForm.street2 }}</template><br>
+                  {{ addressForm.city }}<template v-if="addressForm.state">, {{ addressForm.state }}</template>
+                  {{ addressForm.postalCode }}<br>
+                  {{ addressForm.country }}
+                </template>
+                <template v-else>
+                  {{ billingForm.firstName }} {{ billingForm.lastName }}<br>
+                  {{ billingForm.street }}<template v-if="billingForm.street2">, {{ billingForm.street2 }}</template><br>
+                  {{ billingForm.city }}<template v-if="billingForm.state">, {{ billingForm.state }}</template>
+                  {{ billingForm.postalCode }}<br>
+                  {{ billingForm.country }}
+                </template>
               </p>
             </div>
           </div>

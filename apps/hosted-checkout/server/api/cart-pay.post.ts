@@ -19,7 +19,13 @@ export default defineEventHandler(async (event) => {
   ensureDb()
   const config = useRuntimeConfig()
   const currency = config.commerceCurrency || 'BHD'
-  const appUrl = config.public.appUrl
+
+  // Derive app URL from the incoming request so 3DS callbacks go to the
+  // correct host (not localhost). Falls back to APP_URL config.
+  const requestUrl = getRequestURL(event)
+  const appUrl = config.public.appUrl && config.public.appUrl !== 'http://localhost:3100'
+    ? config.public.appUrl
+    : `${requestUrl.protocol}//${requestUrl.host}`
 
   // Get cart to calculate total
   const checkoutDomain = createCheckoutDomain(currency)
