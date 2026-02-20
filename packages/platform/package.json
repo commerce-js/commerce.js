@@ -26,13 +26,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && rm -rf dist/database/prisma",
+    "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:migrate:seed": "node scripts/migrate.mjs --seed"
   },
   "dependencies": {
     "@commercejs/types": "workspace:*",

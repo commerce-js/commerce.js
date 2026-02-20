@@ -38,12 +38,8 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
     console.log('[commerce] Database: PostgreSQL (Neon via Drizzle)')
 
-    // 1. Initialize Drizzle and run programmatic migrations
-    console.log('[commerce] Running migrations...')
+    // 1. Initialize Drizzle connection (migrations handled by CI/CLI — see scripts/migrate.mjs)
     initDrizzle(connectionString)
-    const { migrateDrizzle } = await import('@commercejs/platform')
-    await migrateDrizzle(connectionString)
-    console.log('[commerce] Migrations complete')
 
     // 2. Create adapter (seeds initial admin user)
     console.log('[commerce] Creating platform adapter...')

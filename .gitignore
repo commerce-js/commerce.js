@@ -34,10 +34,10 @@ pnpm-debug.log*
 # Agent skills/config
 .agent/
 .tmp/
-.debug
 
 # Design assets and reference templates (local only)
 .templates/
 .research/
+.memory/
 
 apps/dashboard/.data
