@@ -1,5 +1,14 @@
 # @commercejs/nuxt
 
+## 0.5.1
+
+### Patch Changes
+
+- [`75eed48`](https://github.com/commerce-js/commerce.js/commit/75eed480a947319e21bcfe5e3ce9b9cf876ccbe1) Thanks [@masterde](https://github.com/masterde)! - Extract database migrations from runtime cold start to Cloudflare build phase. Add `db:migrate` and `db:migrate:seed` npm scripts. Remove `migrateDrizzle()` from server plugin startup.
+
+- Updated dependencies [[`75eed48`](https://github.com/commerce-js/commerce.js/commit/75eed480a947319e21bcfe5e3ce9b9cf876ccbe1)]:
+  - @commercejs/platform@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
