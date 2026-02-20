@@ -73,7 +73,8 @@ export function defineCommerceHandler<T>(
       console.error('[commerce] Unhandled error:', err)
       throw createError({
         statusCode: 500,
-        message: 'Internal server error',
+        message: err instanceof Error ? err.message : String(err),
+        data: { stack: err instanceof Error ? err.stack : undefined },
       })
     }
   })
