@@ -12,9 +12,12 @@ let initialized = false
 export function ensureDb() {
   if (initialized) return
   const config = useRuntimeConfig()
-  if (!config.databaseUrl) {
+  // Nuxt maps runtimeConfig.databaseUrl → NUXT_DATABASE_URL at runtime.
+  // Fall back to DATABASE_URL for compatibility with standard naming.
+  const dbUrl = config.databaseUrl || process.env.DATABASE_URL || ''
+  if (!dbUrl) {
     throw new Error('DATABASE_URL is required for cart-based checkout')
   }
-  initDrizzle(config.databaseUrl)
+  initDrizzle(dbUrl)
   initialized = true
 }
