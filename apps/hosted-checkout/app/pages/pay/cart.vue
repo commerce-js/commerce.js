@@ -45,6 +45,14 @@ if (cartId && !orderComplete.value) {
   }
   else if (cartData.value) {
     cart.value = cartData.value as any
+
+    // Pre-fill form from billing address (or shipping as fallback)
+    const addr = (cartData.value as any).billingAddress || (cartData.value as any).shippingAddress
+    if (addr) {
+      firstName.value = addr.firstName || ''
+      phone.value = addr.phone || ''
+      email.value = addr.email || ''
+    }
   }
 }
 loading.value = false

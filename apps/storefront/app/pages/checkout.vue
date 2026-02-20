@@ -12,6 +12,7 @@ const {
   loadShippingMethods,
   loadPaymentMethods,
   setShippingAddress,
+  setBillingAddress,
   setShippingMethod,
   setPaymentMethod,
   placeOrder,
@@ -56,6 +57,22 @@ const addressForm = ref<Partial<Address>>({
   nationalAddress: '',
 })
 
+// ── Billing address ──
+const billingSameAsShipping = ref(true)
+const billingForm = ref<Partial<Address>>({
+  firstName: '',
+  lastName: '',
+  phone: '',
+  street: '',
+  street2: '',
+  city: '',
+  state: '',
+  country: '',
+  postalCode: '',
+  district: '',
+  nationalAddress: '',
+})
+
 // ── Selected IDs ──
 const selectedShippingId = ref('')
 const selectedPaymentId = ref('')
@@ -85,6 +102,11 @@ watch(selectedCountryCode, (code) => {
 async function handleAddressSubmit() {
   try {
     await setShippingAddress(addressForm.value as Omit<Address, 'id' | 'isDefault'>)
+    // Save billing address — either same as shipping or separate
+    const billing = billingSameAsShipping.value
+      ? addressForm.value
+      : billingForm.value
+    await setBillingAddress(billing as Omit<Address, 'id' | 'isDefault'>)
     await loadShippingMethods()
     currentStep.value = 1
   }
@@ -204,8 +226,9 @@ useHead({
           :title="error.message"
         />
 
-        <!-- ─── Step 0: Shipping Address ─── -->
+        <!-- ─── Step 0: Addresses ─── -->
         <div v-if="currentStep === 0" class="space-y-4">
+          <!-- Shipping address form -->
           <h2 class="text-xl font-semibold text-highlighted">
             Shipping Address
           </h2>
@@ -219,22 +242,47 @@ useHead({
               :loading="loading"
               :show-gcc-fields="true"
               @submit="handleAddressSubmit"
-            >
-              <template #actions>
-                <UButton
-                  type="submit"
-                  color="primary"
-                  size="lg"
-                  :loading="loading"
-                  block
-                  icon="i-heroicons-arrow-right-20-solid"
-                  trailing
-                >
-                  Continue to Shipping
-                </UButton>
-              </template>
-            </CAddressForm>
+            />
           </div>
+
+          <!-- Billing same as shipping toggle (after shipping form) -->
+          <div class="rounded-2xl bg-elevated ring ring-default p-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <UCheckbox v-model="billingSameAsShipping" />
+              <span class="text-sm font-medium text-highlighted">Billing address same as shipping</span>
+            </label>
+          </div>
+
+          <!-- Billing address form (only when different) -->
+          <template v-if="!billingSameAsShipping">
+            <h2 class="text-xl font-semibold text-highlighted">
+              Billing Address
+            </h2>
+            <div class="rounded-2xl bg-elevated ring ring-default p-6">
+              <CAddressForm
+                v-model="billingForm"
+                :countries="countryItems"
+                :cities="citiesData || []"
+                :countries-loading="countriesStatus === 'pending'"
+                :cities-loading="citiesStatus === 'pending'"
+                :loading="loading"
+                :show-gcc-fields="true"
+              />
+            </div>
+          </template>
+
+          <!-- Submit button -->
+          <UButton
+            color="primary"
+            size="lg"
+            :loading="loading"
+            block
+            icon="i-heroicons-arrow-right-20-solid"
+            trailing
+            @click="handleAddressSubmit"
+          >
+            Continue to Shipping
+          </UButton>
         </div>
 
         <!-- ─── Step 1: Shipping Method ─── -->
@@ -364,28 +412,55 @@ useHead({
             Review Your Order
           </h2>
 
-          <!-- Address summary -->
-          <div class="rounded-2xl bg-elevated ring ring-default p-5">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-medium text-highlighted">
-                Shipping Address
-              </h3>
-              <UButton
-                variant="link"
-                color="primary"
-                size="xs"
-                @click="currentStep = 0"
-              >
-                Edit
-              </UButton>
+          <!-- Address summaries -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="rounded-2xl bg-elevated ring ring-default p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-medium text-highlighted">
+                  Shipping Address
+                </h3>
+                <UButton
+                  variant="link"
+                  color="primary"
+                  size="xs"
+                  @click="currentStep = 0"
+                >
+                  Edit
+                </UButton>
+              </div>
+              <p class="text-sm text-muted leading-relaxed">
+                {{ addressForm.firstName }} {{ addressForm.lastName }}<br>
+                {{ addressForm.street }}<template v-if="addressForm.street2">, {{ addressForm.street2 }}</template><br>
+                {{ addressForm.city }}<template v-if="addressForm.state">, {{ addressForm.state }}</template>
+                {{ addressForm.postalCode }}<br>
+                {{ addressForm.country }}
+              </p>
             </div>
-            <p class="text-sm text-muted leading-relaxed">
-              {{ addressForm.firstName }} {{ addressForm.lastName }}<br>
-              {{ addressForm.street }}<template v-if="addressForm.street2">, {{ addressForm.street2 }}</template><br>
-              {{ addressForm.city }}<template v-if="addressForm.state">, {{ addressForm.state }}</template>
-              {{ addressForm.postalCode }}<br>
-              {{ addressForm.country }}
-            </p>
+            <div class="rounded-2xl bg-elevated ring ring-default p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-medium text-highlighted">
+                  Billing Address
+                </h3>
+                <UButton
+                  variant="link"
+                  color="primary"
+                  size="xs"
+                  @click="currentStep = 0"
+                >
+                  Edit
+                </UButton>
+              </div>
+              <p v-if="billingSameAsShipping" class="text-sm text-muted leading-relaxed">
+                Same as shipping address
+              </p>
+              <p v-else class="text-sm text-muted leading-relaxed">
+                {{ billingForm.firstName }} {{ billingForm.lastName }}<br>
+                {{ billingForm.street }}<template v-if="billingForm.street2">, {{ billingForm.street2 }}</template><br>
+                {{ billingForm.city }}<template v-if="billingForm.state">, {{ billingForm.state }}</template>
+                {{ billingForm.postalCode }}<br>
+                {{ billingForm.country }}
+              </p>
+            </div>
           </div>
 
           <!-- Shipping & Payment summary -->
