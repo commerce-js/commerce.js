@@ -57,15 +57,21 @@ export function createCartDomain(currency: string) {
 
     const subtotal = cartItems.reduce((sum, item) => sum + item.totalPrice.amount, 0)
 
+    // Look up stored shipping method price
+    // Shipping rates are defined here to keep cart domain self-contained
+    const shippingRates: Record<string, number> = { standard: 20, express: 35 }
+    const shippingMethodId = cartRow.shippingMethodId ?? null
+    const shippingAmount = shippingMethodId ? (shippingRates[shippingMethodId] ?? 0) : 0
+
     return {
       id: cartRow.id,
       items: cartItems,
       totals: {
         subtotal: priceRequired(subtotal, currency),
-        shipping: null,
+        shipping: shippingMethodId ? priceRequired(shippingAmount, currency) : null,
         tax: null,
         discount: null,
-        total: priceRequired(subtotal, currency),
+        total: priceRequired(subtotal + shippingAmount, currency),
       },
       shippingAddress: parseJsonField(cartRow.shippingAddress),
       billingAddress: parseJsonField(cartRow.billingAddress),

@@ -180,19 +180,8 @@ const selectedPayment = computed(() =>
 )
 const cartItems = computed(() => cart.value?.items ?? [])
 const subtotal = computed(() => cart.value?.totals?.subtotal)
-const shippingCost = computed(() => selectedShipping.value?.price)
-// Compute total: cart total from server already includes shipping after setShippingMethod,
-// but also add a local fallback for the sidebar display before the response is back.
-const total = computed(() => {
-  const cartTotal = cart.value?.totals?.total
-  if (!cartTotal || !shippingCost.value) return cartTotal
-  // If the cart total already includes shipping, use it directly
-  // Otherwise add shipping cost to subtotal
-  const sub = subtotal.value?.amount ?? 0
-  const ship = shippingCost.value?.amount ?? 0
-  if (cartTotal.amount >= sub + ship) return cartTotal
-  return { ...cartTotal, amount: sub + ship }
-})
+const shippingCost = computed(() => cart.value?.totals?.shipping ?? selectedShipping.value?.price)
+const total = computed(() => cart.value?.totals?.total)
 
 useHead({
   title: 'Checkout — CommerceJS',
