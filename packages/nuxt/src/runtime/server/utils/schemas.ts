@@ -46,13 +46,16 @@ export const updateCartItemSchema = z.object({
 const addressSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  line1: z.string().min(1, 'Address line 1 is required'),
-  line2: z.string().optional(),
+  street: z.string().min(1, 'Street address is required'),
+  street2: z.string().optional(),
   city: z.string().min(1, 'City is required'),
   state: z.string().optional(),
   postalCode: z.string().optional(),
   country: z.string().min(1, 'Country is required'),
   phone: z.string().optional(),
+  district: z.string().optional(),
+  nationalAddress: z.string().optional(),
+  additionalNumber: z.string().optional(),
 })
 
 export const setShippingAddressSchema = z.object({
