@@ -86,6 +86,11 @@ export default defineEventHandler(async (event) => {
     return { received: true, chargeId, status: chargeStatus, action: 'order_placed', orderId: order.id }
   }
   catch (err: any) {
+    // Race condition: redirect handler deleted the cart between our check and placeOrder
+    if (err.message?.includes('Cart not found')) {
+      console.log(`[tap-webhook] Cart ${cartId} disappeared (race with redirect) — order already placed`)
+      return { received: true, chargeId, status: chargeStatus, action: 'already_placed' }
+    }
     console.error(`[tap-webhook] Failed to place order for cart ${cartId}:`, err.message)
     // Still return 200 to Tap so it doesn't retry indefinitely
     return { received: true, chargeId, status: chargeStatus, action: 'error', error: err.message }
