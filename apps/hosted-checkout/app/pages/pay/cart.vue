@@ -417,7 +417,7 @@ onMounted(async () => {
                   class="compact-select"
                 >
                   <option
-                    v-for="addr in profile.profileData.value.addresses"
+                    v-for="addr in profile.profileData.value?.addresses"
                     :key="addr.id"
                     :value="addr.id"
                   >
