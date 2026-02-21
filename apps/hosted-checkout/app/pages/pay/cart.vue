@@ -7,7 +7,7 @@
  * Flow:
  *  1. Load cart from shared DB
  *  2. Email → profile lookup → OTP (returning buyers) → auto-fill
- *  3. Show cart summary + card form (goSell.js)
+ *  3. Show cart summary + card form (Tap Card SDK v2)
  *  4. Submit: tokenize → charge → 3DS redirect or direct capture
  *  5. On success: "Save to profile" opt-in
  */
@@ -27,7 +27,6 @@ const cart = ref<Record<string, any> | null>(null)
 const loading = ref(true)
 const submitting = ref(false)
 const error = ref<string | null>(errorParam || null)
-const cardReady = ref(false)
 const orderComplete = ref(!!successParam)
 const completedOrderId = ref(successOrderId || '')
 
@@ -206,61 +205,26 @@ const isCompactMode = computed(() => {
 })
 
 // ---------------------------------------------------------------------------
-// goSell.js card element
+// Tap Card SDK v2
 // ---------------------------------------------------------------------------
-function initGoSellElements() {
+const tapCard = useTapCard()
+
+function initCardElement() {
   if (!import.meta.client) return
   const publicKey = config.public.tapPublicKey
-  if (!publicKey) return
+  if (!publicKey || !cart.value) return
 
-  const goSell = (window as any).goSell
-  if (!goSell) return
-
-  goSell.goSellElements({
-    containerID: 'tap-card-element',
-    gateway: {
-      publicKey,
-      language: 'en',
-      supportedCurrencies: [cart.value?.totals?.total?.currency || 'BHD'],
-      supportedPaymentMethods: 'all',
-      notifications: 'tap-notifications',
-      callback: handleTokenCallback,
-      onError: handleTokenError,
-      labels: {
-        cardNumber: 'Card Number',
-        expirationDate: 'MM/YY',
-        cvv: 'CVV',
-        cardHolder: 'Name on Card',
-        actionButton: 'Pay',
-      },
-      style: {
-        base: {
-          color: '#171717',
-          lineHeight: '18px',
-          fontFamily: 'Inter, sans-serif',
-          fontSmoothing: 'antialiased',
-          fontSize: '15px',
-          '::placeholder': { color: '#a3a3a3', fontSize: '14px' },
-        },
-        invalid: { color: '#dc2626', iconColor: '#dc2626' },
-      },
-    },
+  tapCard.render({
+    containerId: 'tap-card-element',
+    publicKey,
+    amount: cart.value.totals.total.amount,
+    currency: cart.value.totals.total.currency || 'BHD',
+    email: email.value || undefined,
+    firstName: firstName.value || undefined,
+    lastName: lastName.value || undefined,
+    phone: phone.value || undefined,
+    saveCard: !!profile.profileId.value,
   })
-  cardReady.value = true
-}
-
-async function handleTokenCallback(response: any) {
-  if (!response?.id) {
-    error.value = 'Failed to tokenize card. Please try again.'
-    submitting.value = false
-    return
-  }
-  await submitPaymentWithToken(response.id)
-}
-
-function handleTokenError(err: any) {
-  error.value = err?.error?.message || 'Card input error. Please check your details.'
-  submitting.value = false
 }
 
 async function submitPayment() {
@@ -275,19 +239,19 @@ async function submitPayment() {
   // Save profile in background if opted in
   saveProfileIfOptedIn()
 
-  const goSell = (window as any).goSell
-  if (goSell && cardReady.value) {
-    goSell.submit()
-    setTimeout(() => {
-      if (submitting.value) {
-        error.value = 'Payment timed out. Please try again.'
-        submitting.value = false
-      }
-    }, 30000)
+  if (!tapCard.ready.value) {
+    await submitPaymentWithToken(undefined)
     return
   }
 
-  await submitPaymentWithToken(undefined)
+  try {
+    const token = await tapCard.tokenize()
+    await submitPaymentWithToken(token.id)
+  }
+  catch (err: any) {
+    error.value = err?.message || 'Failed to tokenize card. Please try again.'
+    submitting.value = false
+  }
 }
 
 async function submitPaymentWithToken(sourceToken: string | undefined) {
@@ -343,44 +307,17 @@ async function saveProfileIfOptedIn() {
 }
 
 // ---------------------------------------------------------------------------
-// SDK loading
+// Mount
 // ---------------------------------------------------------------------------
-function loadGoSellSDK(): Promise<void> {
-  if ((window as any).goSell) return Promise.resolve()
-
-  return new Promise((resolve, reject) => {
-    if (!document.querySelector('link[href*="gosell.css"]')) {
-      const cssLink = document.createElement('link')
-      cssLink.rel = 'stylesheet'
-      cssLink.href = 'https://goSellJSLib.b-cdn.net/v2.0.4/css/gosell.css'
-      document.head.appendChild(cssLink)
-    }
-
-    const existing = document.querySelector('script[src*="gosell.js"]')
-    if (existing) {
-      existing.addEventListener('load', () => resolve())
-      if ((window as any).goSell) resolve()
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://goSellJSLib.b-cdn.net/v2.0.4/js/gosell.js'
-    script.async = true
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Failed to load goSell.js'))
-    document.head.appendChild(script)
-  })
-}
-
 onMounted(async () => {
   if (!cart.value || orderComplete.value) return
 
   try {
-    await loadGoSellSDK()
-    setTimeout(initGoSellElements, 100)
+    await tapCard.loadSDK()
+    setTimeout(initCardElement, 100)
   }
   catch {
-    console.warn('[pay/cart] Failed to load goSell.js')
+    console.warn('[pay/cart] Failed to load Tap Card SDK v2')
   }
 })
 </script>

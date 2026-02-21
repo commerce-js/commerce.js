@@ -4,8 +4,8 @@
  *
  * Flow:
  *  1. Fetch session from API
- *  2. Show customer info form + goSell.js card element
- *  3. On submit: tokenize card via goSell.submit() → tok_xxx
+ *  2. Show customer info form + Tap Card SDK v2
+ *  3. On submit: tokenize card via CardSDK.tokenize() → tok_xxx
  *  4. POST /api/sessions/:id/pay with { sourceToken: tok_xxx }
  *  5. If redirectUrl → redirect to Tap 3DS
  *  6. If complete → show success
@@ -20,7 +20,6 @@ const session = ref<Record<string, any> | null>(null)
 const loading = ref(true)
 const submitting = ref(false)
 const error = ref<string | null>(null)
-const cardReady = ref(false)
 
 // Form state
 const email = ref('')
@@ -55,19 +54,16 @@ else if (sessionData.value) {
     lastName.value = sessionData.value.customerInfo.lastName || ''
     phone.value = sessionData.value.customerInfo.phone || ''
   }
-  // Detect if session already failed (e.g., 3DS declined, webhook updated)
   if (sessionData.value.state === 'failed') {
     error.value = toUserFriendlyError(sessionData.value.error)
   }
 }
 loading.value = false
 
-// Check if redirected back with cancelled param
 if (route.query.cancelled) {
   error.value = 'Payment was cancelled'
 }
 
-// Format amount for display
 const formattedAmount = computed(() => {
   if (!session.value) return ''
   return new Intl.NumberFormat('en-BH', {
@@ -77,106 +73,28 @@ const formattedAmount = computed(() => {
   }).format(session.value.amount)
 })
 
-/**
- * Load goSell.js SDK and initialize card elements.
- *
- * Uses goSellElements mode — embeds card fields (number, expiry, CVV, name)
- * directly into our page for the best UX. The SDK handles PCI-scoped input
- * and tokenization; we never touch raw card data.
- */
-function initGoSellElements() {
+// ---------------------------------------------------------------------------
+// Tap Card SDK v2
+// ---------------------------------------------------------------------------
+const tapCard = useTapCard()
+
+function initCardElement() {
   if (!import.meta.client) return
-
-  // Per-session public key from the merchant's config
   const publicKey = session.value?.tapPublicKey || config.public.tapPublicKey
-  if (!publicKey) {
-    console.warn('[checkout] No Tap public key available, card element will not mount')
-    return
-  }
+  if (!publicKey || !session.value) return
 
-  // goSell.js mounts its form fields into the containerID element
-  const goSell = (window as any).goSell
-  if (!goSell) {
-    console.error('[checkout] goSell.js not loaded')
-    return
-  }
-
-  goSell.goSellElements({
-    containerID: 'tap-card-element',
-    gateway: {
-      publicKey,
-      language: 'en',
-      supportedCurrencies: [session.value?.currency || 'BHD'],
-      supportedPaymentMethods: 'all',
-      notifications: 'tap-notifications',
-      // The callback receives the token after goSell.submit()
-      callback: handleTokenCallback,
-      // Called when there's an error in the card element
-      onError: handleTokenError,
-      labels: {
-        cardNumber: 'Card Number',
-        expirationDate: 'MM/YY',
-        cvv: 'CVV',
-        cardHolder: 'Name on Card',
-        actionButton: 'Pay',
-      },
-      style: {
-        base: {
-          color: '#171717',
-          lineHeight: '18px',
-          fontFamily: 'Inter, sans-serif',
-          fontSmoothing: 'antialiased',
-          fontSize: '15px',
-          '::placeholder': {
-            color: '#a3a3a3',
-            fontSize: '14px',
-          },
-        },
-        invalid: {
-          color: '#dc2626',
-          iconColor: '#dc2626',
-        },
-      },
-    },
+  tapCard.render({
+    containerId: 'tap-card-element',
+    publicKey,
+    amount: session.value.amount,
+    currency: session.value.currency || 'BHD',
+    email: email.value || undefined,
+    firstName: firstName.value || undefined,
+    lastName: lastName.value || undefined,
+    phone: phone.value || undefined,
   })
-
-  cardReady.value = true
 }
 
-/**
- * goSell.js callback — receives the tokenized card response.
- * Response shape: { id: 'tok_xxx', object: 'token', card: {...}, ... }
- */
-async function handleTokenCallback(response: any) {
-  console.log('[checkout] goSell token callback:', JSON.stringify(response))
-  if (!response || !response.id) {
-    error.value = 'Failed to tokenize card. Please try again.'
-    submitting.value = false
-    return
-  }
-
-  // We got the token! Now submit to our backend
-  await submitPaymentWithToken(response.id)
-}
-
-/**
- * goSell.js error handler.
- */
-function handleTokenError(err: any) {
-  console.error('[checkout] goSell error callback:', JSON.stringify(err))
-  error.value = err?.error?.message || 'Card input error. Please check your details.'
-  submitting.value = false
-}
-
-/**
- * Submit the form:
- *  1. Validate email
- *  2. Call goSell.submit() to tokenize → callback fires with tok_xxx
- *  3. Callback calls submitPaymentWithToken()
- *
- * If TAP_PUBLIC_KEY is not set (dev mode), skip tokenization and
- * proceed without a source token (Tap will use src_all).
- */
 async function submitPayment() {
   if (!email.value) {
     error.value = 'Email is required'
@@ -186,33 +104,22 @@ async function submitPayment() {
   submitting.value = true
   error.value = null
 
-  const goSell = (window as any).goSell
-
-  // If goSell is loaded and card element is ready, tokenize first
-  if (goSell && cardReady.value) {
-    // goSell.submit() triggers tokenization asynchronously.
-    // The result comes back via handleTokenCallback / handleTokenError.
-    goSell.submit()
-
-    // Safety timeout: if goSell never calls back, reset the UI
-    setTimeout(() => {
-      if (submitting.value) {
-        error.value = 'Payment timed out. Please check your card details and try again.'
-        submitting.value = false
-      }
-    }, 30000)
+  if (!tapCard.ready.value) {
+    await submitPaymentWithToken(undefined)
     return
   }
 
-  // Dev fallback: no goSell → submit without token
-  await submitPaymentWithToken(undefined)
+  try {
+    const token = await tapCard.tokenize()
+    await submitPaymentWithToken(token.id)
+  }
+  catch (err: any) {
+    error.value = err?.message || 'Failed to tokenize card. Please try again.'
+    submitting.value = false
+  }
 }
 
-/**
- * POST the payment to our backend with the card token.
- */
 async function submitPaymentWithToken(sourceToken: string | undefined) {
-  console.log('[checkout] submitPaymentWithToken called, token:', sourceToken)
   try {
     const result = await $fetch(`/api/sessions/${sessionId}/pay`, {
       method: 'POST',
@@ -238,21 +145,17 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
         },
       },
     })
-    console.log('[checkout] pay API response:', JSON.stringify(result))
 
-    // If there's a redirect URL, go to Tap for 3DS
     if (result.redirectUrl) {
       await navigateTo(result.redirectUrl, { external: true })
       return
     }
 
-    // If already complete, show success
     if (result.state === 'complete') {
       await navigateTo(`/${sessionId}/success`)
       return
     }
 
-    // If payment failed, show error to user
     if (result.state === 'failed') {
       error.value = toUserFriendlyError(result.error)
       session.value = result
@@ -260,7 +163,6 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
       return
     }
 
-    // Otherwise refresh the session state
     session.value = result
     submitting.value = false
   }
@@ -270,67 +172,30 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
   }
 }
 
-/** Load the goSell.js SDK (CSS + JS). Resolves when ready. No-ops if already loaded. */
-function loadGoSellSDK(): Promise<void> {
-  // Already loaded
-  if ((window as any).goSell) return Promise.resolve()
-
-  return new Promise((resolve, reject) => {
-    // CSS
-    if (!document.querySelector('link[href*="gosell.css"]')) {
-      const cssLink = document.createElement('link')
-      cssLink.rel = 'stylesheet'
-      cssLink.href = 'https://goSellJSLib.b-cdn.net/v2.0.4/css/gosell.css'
-      document.head.appendChild(cssLink)
-    }
-
-    // JS
-    const existing = document.querySelector('script[src*="gosell.js"]')
-    if (existing) {
-      // Script tag exists but may still be loading
-      existing.addEventListener('load', () => resolve())
-      if ((window as any).goSell) resolve()
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://goSellJSLib.b-cdn.net/v2.0.4/js/gosell.js'
-    script.async = true
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Failed to load goSell.js'))
-    document.head.appendChild(script)
-  })
-}
-
-/** Reset from failed state so the user can retry payment */
 async function retryPayment() {
   error.value = null
-  cardReady.value = false
+  tapCard.unmount()
   session.value!.state = 'idle'
-
-  // Wait for Vue to re-render the form (the #tap-card-element container)
   await nextTick()
 
-  // Ensure SDK is loaded (may not have been if session started in failed state)
   try {
-    await loadGoSellSDK()
-    setTimeout(initGoSellElements, 150)
+    await tapCard.loadSDK()
+    setTimeout(initCardElement, 150)
   }
   catch {
     error.value = 'Could not load payment form. Please reload the page.'
   }
 }
 
-// Load goSell.js SDK and init after mount
 onMounted(async () => {
   if (!session.value || session.value.state === 'complete' || session.value.state === 'failed') return
 
   try {
-    await loadGoSellSDK()
-    setTimeout(initGoSellElements, 100)
+    await tapCard.loadSDK()
+    setTimeout(initCardElement, 100)
   }
   catch {
-    console.warn('[checkout] Failed to load goSell.js — card element unavailable')
+    console.warn('[checkout] Failed to load Tap Card SDK v2')
   }
 })
 </script>
@@ -386,7 +251,6 @@ onMounted(async () => {
             Try again
           </button>
         </div>
-
         <div class="powered-by">
           Powered by <a href="#">CommerceJS</a>
         </div>
@@ -411,7 +275,6 @@ onMounted(async () => {
         </div>
 
         <form @submit.prevent="submitPayment">
-          <!-- Email -->
           <div class="form-group">
             <label class="form-label" for="email">Email</label>
             <input
@@ -425,7 +288,6 @@ onMounted(async () => {
             >
           </div>
 
-          <!-- Name -->
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="firstName">First name</label>
@@ -451,7 +313,6 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- Phone -->
           <div class="form-group">
             <label class="form-label" for="phone">Phone</label>
             <input
@@ -466,17 +327,13 @@ onMounted(async () => {
 
           <hr class="checkout-divider">
 
-          <!-- goSell.js card element -->
+          <!-- Card element (Tap Card SDK v2) -->
           <div class="form-group">
             <label class="form-label">Card details</label>
-            <div id="tap-card-element" class="tap-card-element">
-              <!-- goSell.js mounts card fields (number, expiry, CVV, name) here -->
-            </div>
-            <!-- goSell.js notification area -->
+            <div id="tap-card-element" class="tap-card-element" />
             <p id="tap-notifications" class="tap-notification" />
           </div>
 
-          <!-- Pay button -->
           <button
             type="submit"
             class="btn btn-primary"
@@ -487,7 +344,6 @@ onMounted(async () => {
           </button>
         </form>
 
-        <!-- Security badge -->
         <div class="security-badge">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
