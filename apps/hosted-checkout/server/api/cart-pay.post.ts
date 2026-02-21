@@ -51,11 +51,11 @@ export default defineEventHandler(async (event) => {
 
   // ── Step 1: Create order (awaiting_payment, keep cart) ──────────────
   const order = await checkoutDomain.placeOrder(body.cartId, {
-    status: 'awaiting_payment',
+    status: 'pending',
     keepCart: true,
   })
 
-  console.log(`[cart-pay] Order ${order.id} created (awaiting_payment) for cart ${body.cartId}`)
+  console.log(`[cart-pay] Order ${order.id} created (pending) for cart ${body.cartId}`)
 
   // Calculate total (from the created order)
   const total = order.totals.total.amount

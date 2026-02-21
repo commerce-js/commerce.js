@@ -143,13 +143,13 @@ export function createOrdersDomain(currency: string) {
     },
 
     async getOrderStatuses(): Promise<OrderStatusInfo[]> {
-      const statuses = ['pending', 'awaiting_payment', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'returned']
+      const statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'returned']
       const colors: Record<string, string> = {
-        pending: '#F59E0B', awaiting_payment: '#6366F1', processing: '#3B82F6', shipped: '#8B5CF6',
+        pending: '#F59E0B', processing: '#3B82F6', shipped: '#8B5CF6',
         delivered: '#10B981', cancelled: '#EF4444', refunded: '#6B7280', returned: '#F97316',
       }
       const icons: Record<string, string> = {
-        pending: 'clock', awaiting_payment: 'credit-card', processing: 'refresh', shipped: 'truck',
+        pending: 'clock', processing: 'refresh', shipped: 'truck',
         delivered: 'check', cancelled: 'x', refunded: 'arrow-left', returned: 'rotate-ccw',
       }
 

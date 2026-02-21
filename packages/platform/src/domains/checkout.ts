@@ -153,7 +153,7 @@ export function createCheckoutDomain(currency: string) {
         orderId,
         fromStatus: null,
         toStatus: orderStatus,
-        note: orderStatus === 'awaiting_payment' ? 'Order created — awaiting payment' : 'Order placed',
+        note: 'Order placed',
       })
 
       // Only delete cart if not keeping it (COD deletes immediately, card keeps for payment)
