@@ -10,6 +10,8 @@
 // ---------------------------------------------------------------------------
 
 import { createCheckoutDomain, createOrdersDomain, createCartDomain } from '@commercejs/platform'
+import { WebhookVerifier } from '@commercejs/webhook-verifier'
+import { tap as tapConfig } from '@commercejs/webhook-verifier/configs'
 import { ensureDb } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -24,6 +26,23 @@ export default defineEventHandler(async (event) => {
   const cartId = body.reference?.order as string | undefined
 
   console.log(`[tap-webhook] Received: charge=${chargeId} status=${chargeStatus} cartId=${cartId}`)
+
+  // Verify webhook signature
+  const secretKey = useRuntimeConfig().tapSecretKey
+  if (secretKey) {
+    const verifier = new WebhookVerifier({ ...tapConfig, secretKey })
+    const headers = getHeaders(event)
+    const result = verifier.verify(body, headers)
+
+    if (!result.isValid) {
+      console.error(`[tap-webhook] Verification failed: ${result.error}`)
+      throw createError({ statusCode: 401, message: 'Invalid webhook signature' })
+    }
+    console.log(`[tap-webhook] Signature verified for charge ${chargeId}`)
+  }
+  else {
+    console.warn(`[tap-webhook] No TAP_SECRET_KEY — skipping signature verification`)
+  }
 
   // Only act on CAPTURED charges
   if (chargeStatus !== 'CAPTURED') {
