@@ -47,3 +47,23 @@ export { createCartDomain } from './domains/cart.js'
 export { createCheckoutDomain } from './domains/checkout.js'
 export { createCatalogDomain } from './domains/catalog.js'
 export { createOrdersDomain } from './domains/orders.js'
+export { createProfileDomain } from './domains/profile.js'
+
+// Profile queries (direct access for Cloud Identity API routes)
+export {
+  findProfileById,
+  findProfileByEmail,
+  findProfileByPhone,
+  createProfile,
+  updateProfile,
+  deleteProfile,
+  findProfileAddresses,
+  findProfilePaymentMethods,
+  findProfileMerchantLinks,
+  upsertProfileMerchantLink,
+  createOtpCode,
+  findActiveOtpCode,
+  markOtpVerified,
+  incrementOtpAttempts,
+  deleteExpiredOtpCodes,
+} from './database/index.js'

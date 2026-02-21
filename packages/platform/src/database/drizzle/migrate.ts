@@ -423,4 +423,15 @@ export async function migrateDrizzle(connectionString?: string) {
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (profile_id, merchant_id)
   )`)
+
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS profile_otp_codes (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    code TEXT NOT NULL,
+    channel TEXT NOT NULL DEFAULT 'email',
+    expires_at TIMESTAMPTZ NOT NULL,
+    verified BOOLEAN NOT NULL DEFAULT false,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`)
 }

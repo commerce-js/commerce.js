@@ -59,3 +59,14 @@ export const profileMerchantLinks = pgTable('profile_merchant_links', {
 }, (table) => [
   primaryKey({ columns: [table.profileId, table.merchantId] }),
 ])
+
+export const profileOtpCodes = pgTable('profile_otp_codes', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  profileId: text('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  code: text('code').notNull(),
+  channel: text('channel').notNull().default('email'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  verified: boolean('verified').notNull().default(false),
+  attempts: integer('attempts').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})

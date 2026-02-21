@@ -145,3 +145,59 @@ export async function upsertProfileMerchantLink(data: {
       set: { adapterCustomerId: data.adapterCustomerId ?? null } as any,
     })
 }
+
+// ---------------------------------------------------------------------------
+// OTP Codes
+// ---------------------------------------------------------------------------
+
+export async function createOtpCode(data: {
+  profileId: string
+  code: string
+  channel?: string
+  expiresAt: Date
+}) {
+  const id = crypto.randomUUID()
+  await getDb().insert(schema.profileOtpCodes).values({ ...data, id } as any)
+  return id
+}
+
+export async function findActiveOtpCode(profileId: string) {
+  const rows = await getDb().select().from(schema.profileOtpCodes)
+    .where(
+      and(
+        eq(schema.profileOtpCodes.profileId, profileId),
+        eq(schema.profileOtpCodes.verified, false),
+      ),
+    )
+  // Return the most recent non-expired code
+  const now = new Date()
+  return rows.find(r => r.expiresAt > now) ?? null
+}
+
+export async function markOtpVerified(id: string) {
+  await getDb().update(schema.profileOtpCodes)
+    .set({ verified: true } as any)
+    .where(eq(schema.profileOtpCodes.id, id))
+}
+
+export async function incrementOtpAttempts(id: string) {
+  const row = await getDb().select().from(schema.profileOtpCodes)
+    .where(eq(schema.profileOtpCodes.id, id))
+  if (row[0]) {
+    await getDb().update(schema.profileOtpCodes)
+      .set({ attempts: row[0].attempts + 1 } as any)
+      .where(eq(schema.profileOtpCodes.id, id))
+  }
+}
+
+export async function deleteExpiredOtpCodes(profileId: string) {
+  const rows = await getDb().select().from(schema.profileOtpCodes)
+    .where(eq(schema.profileOtpCodes.profileId, profileId))
+  const now = new Date()
+  for (const row of rows) {
+    if (row.expiresAt <= now || row.verified) {
+      await getDb().delete(schema.profileOtpCodes)
+        .where(eq(schema.profileOtpCodes.id, row.id))
+    }
+  }
+}
