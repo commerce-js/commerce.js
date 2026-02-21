@@ -1,20 +1,18 @@
 // ---------------------------------------------------------------------------
 // POST /api/webhooks/tap-payment — Tap payment event webhook
 // ---------------------------------------------------------------------------
-// Safety net for the sync-on-return pattern. Handles async payment events
-// (CAPTURED, FAILED, REFUNDED, etc.) from Tap and updates sessions.
+// Safety net for the 3DS redirect pattern. If the user's browser redirect
+// fails after payment capture, this webhook ensures the order still gets
+// placed and its status updated.
 //
-// Uses @xyz/webhook-verifier with the built-in Tap formatter/config
-// for hashstring verification.
+// Tap sends the full charge object. We use `reference.order` (= cartId)
+// to identify the cart, then idempotently place the order.
 // ---------------------------------------------------------------------------
 
-import { WebhookVerifier } from '@commercejs/webhook-verifier'
-import { tap as tapConfig } from '@commercejs/webhook-verifier/configs'
-import { getMerchantConfig } from '../../utils/merchant-store'
-import { sessions, sessionMeta } from '../sessions/index.post'
+import { createCheckoutDomain, createOrdersDomain, createCartDomain } from '@commercejs/platform'
+import { ensureDb } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
-  // Read the raw body for signature verification
   const rawBody = await readRawBody(event)
   if (!rawBody) {
     throw createError({ statusCode: 400, message: 'Empty webhook body' })
@@ -22,105 +20,55 @@ export default defineEventHandler(async (event) => {
 
   const body = JSON.parse(rawBody)
   const chargeId = body.id as string
-  const chargeStatus = body.status as string
+  const chargeStatus = (body.status as string)?.toUpperCase()
+  const cartId = body.reference?.order as string | undefined
 
-  console.log(`[tap-webhook] Received event for charge ${chargeId}: ${chargeStatus}`)
+  console.log(`[tap-webhook] Received: charge=${chargeId} status=${chargeStatus} cartId=${cartId}`)
 
-  // Find the matching session by charge ID
-  let matchedSessionId: string | undefined
-  for (const [sessionId, session] of sessions.entries()) {
-    const snapshot = session.toSnapshot()
-    if (snapshot.paymentSession?.id === chargeId) {
-      matchedSessionId = sessionId
-      break
-    }
+  // Only act on CAPTURED charges
+  if (chargeStatus !== 'CAPTURED') {
+    console.log(`[tap-webhook] Ignoring non-captured status: ${chargeStatus}`)
+    return { received: true, chargeId, status: chargeStatus, action: 'ignored' }
   }
 
-  // Resolve the merchant's secret key for verification
-  const meta = matchedSessionId ? sessionMeta.get(matchedSessionId) : undefined
-  let secretKey: string
-
-  if (meta?.merchantId) {
-    try {
-      const config = await getMerchantConfig(meta.merchantId)
-      secretKey = config.tapSecretKey
-    }
-    catch {
-      // Fall back to env-level key
-      secretKey = useRuntimeConfig().tapSecretKey
-    }
-  }
-  else {
-    secretKey = useRuntimeConfig().tapSecretKey
+  if (!cartId) {
+    console.warn(`[tap-webhook] No cartId in reference.order — cannot place order`)
+    return { received: true, chargeId, status: chargeStatus, action: 'no_cart_id' }
   }
 
-  // Verify the webhook using @xyz/webhook-verifier
-  if (secretKey) {
-    const verifier = new WebhookVerifier({
-      ...tapConfig,
-      secretKey,
+  ensureDb()
+  const config = useRuntimeConfig()
+  const currency = config.commerceCurrency || 'BHD'
+
+  const cartDomain = createCartDomain(currency)
+  const checkoutDomain = createCheckoutDomain(currency)
+  const ordersDomain = createOrdersDomain(currency)
+
+  // Check if cart still exists — if not, the redirect already placed the order
+  try {
+    await cartDomain.getCart(cartId)
+  }
+  catch {
+    // Cart already deleted = order was already placed by the redirect handler
+    console.log(`[tap-webhook] Cart ${cartId} not found — order already placed via redirect`)
+    return { received: true, chargeId, status: chargeStatus, action: 'already_placed' }
+  }
+
+  // Cart still exists — the redirect handler didn't fire. Place the order now.
+  try {
+    const order = await checkoutDomain.placeOrder(cartId)
+
+    await ordersDomain.updateOrderStatus(order.id, {
+      status: 'processing',
+      note: `Card payment captured via webhook (Tap charge: ${chargeId})`,
     })
 
-    const headers = getHeaders(event)
-    const result = verifier.verify(body, headers)
-
-    if (!result.isValid) {
-      console.error(`[tap-webhook] Verification failed: ${result.error}`)
-      throw createError({ statusCode: 401, message: 'Invalid webhook signature' })
-    }
-
-    console.log(`[tap-webhook] Hashstring verified for charge ${chargeId}`)
+    console.log(`[tap-webhook] Order ${order.id} placed from webhook for cart ${cartId}`)
+    return { received: true, chargeId, status: chargeStatus, action: 'order_placed', orderId: order.id }
   }
-  else {
-    console.warn(`[tap-webhook] No secret key available — skipping verification`)
+  catch (err: any) {
+    console.error(`[tap-webhook] Failed to place order for cart ${cartId}:`, err.message)
+    // Still return 200 to Tap so it doesn't retry indefinitely
+    return { received: true, chargeId, status: chargeStatus, action: 'error', error: err.message }
   }
-
-  // Update the session if we found a match
-  if (matchedSessionId) {
-    const session = sessions.get(matchedSessionId)!
-    const snapshot = session.toSnapshot()
-
-    // Map Tap charge status to PaymentSessionStatus
-    const statusMap: Record<string, string> = {
-      CAPTURED: 'captured',
-      INITIATED: 'pending',
-      IN_PROGRESS: 'processing',
-      ABANDONED: 'cancelled',
-      CANCELLED: 'cancelled',
-      FAILED: 'failed',
-      DECLINED: 'failed',
-      RESTRICTED: 'failed',
-      TIMEDOUT: 'failed',
-      VOID: 'cancelled',
-    }
-
-    const mappedStatus = statusMap[chargeStatus] || 'pending'
-
-    // Build a PaymentSession from the webhook body
-    const paymentSession = {
-      id: chargeId,
-      providerId: 'tap',
-      status: mappedStatus as any,
-      amount: body.amount ?? snapshot.amount,
-      currency: body.currency ?? snapshot.currency,
-      providerData: {
-        tapChargeId: chargeId,
-        tapStatus: chargeStatus,
-        source: body.source,
-        reference: body.reference,
-        gateway: body.gateway,
-      },
-      redirectUrl: null,
-      createdAt: body.created ?? new Date().toISOString(),
-    }
-
-    session.handleWebhookUpdate(paymentSession)
-    console.log(`[tap-webhook] Session ${matchedSessionId} updated: ${snapshot.state} → ${session.toSnapshot().state}`)
-  }
-  else {
-    console.warn(`[tap-webhook] No session found for charge ${chargeId}`)
-  }
-
-  // Always return 200 to Tap
-  return { received: true, chargeId, status: chargeStatus }
 })
