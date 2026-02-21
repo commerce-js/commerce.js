@@ -85,6 +85,16 @@ const formattedTotal = computed(() => {
 // ---------------------------------------------------------------------------
 // Profile lookup on email blur
 // ---------------------------------------------------------------------------
+function switchIdentity() {
+  profile.reset()
+  email.value = ''
+  firstName.value = ''
+  lastName.value = ''
+  phone.value = ''
+  selectedAddressId.value = null
+  otpDigits.value = ['', '', '', '', '', '']
+}
+
 async function onEmailBlur() {
   if (!email.value || !email.value.includes('@')) return
   if (profile.otpVerified.value) return // Already verified
@@ -452,10 +462,25 @@ onMounted(async () => {
         </div>
 
         <form @submit.prevent="submitPayment">
-          <!-- Email -->
+          <!-- Email: locked display when verified, editable input otherwise -->
           <div class="form-group">
             <label class="form-label" for="pay-email">Email</label>
-            <div class="form-group-with-status">
+
+            <!-- Locked state (after OTP verified) -->
+            <div v-if="profile.otpVerified.value" class="email-locked">
+              <div class="email-locked-value">
+                <svg class="email-locked-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                  <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
+                </svg>
+                {{ email }}
+              </div>
+              <button type="button" class="email-change-btn" @click="switchIdentity">
+                Change
+              </button>
+            </div>
+
+            <!-- Editable state -->
+            <div v-else class="form-group-with-status">
               <input
                 id="pay-email"
                 v-model="email"
@@ -464,7 +489,6 @@ onMounted(async () => {
                 placeholder="ali@example.com"
                 required
                 autocomplete="email"
-                :disabled="profile.otpVerified.value"
                 @blur="onEmailBlur"
               >
               <span v-if="profile.lookingUp.value" class="field-status">
