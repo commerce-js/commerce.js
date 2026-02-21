@@ -27,29 +27,18 @@ export default defineEventHandler(async (event) => {
 
   console.log(`[tap-webhook] Received: charge=${chargeId} status=${chargeStatus} cartId=${cartId}`)
 
-  // Verify webhook signature (may not be available on Cloudflare Workers)
+  // Verify webhook signature
   const secretKey = useRuntimeConfig().tapSecretKey
   if (secretKey) {
-    try {
-      const verifier = new WebhookVerifier({ ...tapConfig, secretKey })
-      const headers = getHeaders(event)
-      const result = verifier.verify(body, headers)
+    const verifier = new WebhookVerifier({ ...tapConfig, secretKey })
+    const headers = getHeaders(event)
+    const result = await verifier.verify(body, headers)
 
-      if (!result.isValid) {
-        console.error(`[tap-webhook] Verification failed: ${result.error}`)
-        throw createError({ statusCode: 401, message: 'Invalid webhook signature' })
-      }
-      console.log(`[tap-webhook] Signature verified for charge ${chargeId}`)
+    if (!result.isValid) {
+      console.error(`[tap-webhook] Verification failed: ${result.error}`)
+      throw createError({ statusCode: 401, message: 'Invalid webhook signature' })
     }
-    catch (err: any) {
-      // crypto.createHmac not available in Cloudflare Workers
-      if (err.message?.includes('not implemented') || err.message?.includes('createHmac')) {
-        console.warn(`[tap-webhook] Skipping verification (crypto not available in Workers runtime)`)
-      }
-      else {
-        throw err
-      }
-    }
+    console.log(`[tap-webhook] Signature verified for charge ${chargeId}`)
   }
   else {
     console.warn(`[tap-webhook] No TAP_SECRET_KEY — skipping signature verification`)

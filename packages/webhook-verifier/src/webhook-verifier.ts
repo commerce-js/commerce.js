@@ -2,10 +2,9 @@
 // @commercejs/webhook-verifier
 // ---------------------------------------------------------------------------
 // Webhook signature verification with built-in provider formatters.
-// Ported from @xyz/webhook-verifier with extensible provider configs.
+// Uses Web Crypto API (crypto.subtle) for cross-runtime compatibility
+// (Node.js 18+, Cloudflare Workers, Deno, Bun).
 // ---------------------------------------------------------------------------
-
-import crypto from 'node:crypto'
 
 // ---- Types -----------------------------------------------------------------
 
@@ -39,6 +38,39 @@ export interface WebhookConfig {
   payloadFormatter?: (payload: WebhookPayload) => string
 }
 
+// ---- Helpers ---------------------------------------------------------------
+
+const encoder = new TextEncoder()
+
+/** Map config algorithm names to Web Crypto SubtleCrypto names */
+function getWebCryptoAlgorithm(algorithm: string): string {
+  const map: Record<string, string> = {
+    sha256: 'SHA-256',
+    sha384: 'SHA-384',
+    sha512: 'SHA-512',
+    sha1: 'SHA-1',
+  }
+  return map[algorithm.toLowerCase()] ?? `SHA-${algorithm.replace(/sha/i, '')}`
+}
+
+/** Convert ArrayBuffer to hex string */
+function bufferToHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/** Convert ArrayBuffer to base64 string */
+function bufferToBase64(buffer: ArrayBuffer): string {
+  // Use btoa which is available in both Node.js 18+ and Workers
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary)
+}
+
 // ---- WebhookVerifier class -------------------------------------------------
 
 export class WebhookVerifier {
@@ -60,10 +92,24 @@ export class WebhookVerifier {
     }
   }
 
-  private generateHash(payload: string): string {
-    const hmac = crypto.createHmac(this.config.hashAlgorithm!, this.config.secretKey)
-    hmac.update(payload)
-    return hmac.digest(this.config.encoding!)
+  private async generateHash(payload: string): Promise<string> {
+    const algorithm = getWebCryptoAlgorithm(this.config.hashAlgorithm!)
+    const keyData = encoder.encode(this.config.secretKey)
+    const messageData = encoder.encode(payload)
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: algorithm },
+      false,
+      ['sign'],
+    )
+
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData)
+
+    return this.config.encoding === 'base64'
+      ? bufferToBase64(signature)
+      : bufferToHex(signature)
   }
 
   private formatSignature(hash: string): string {
@@ -115,10 +161,10 @@ export class WebhookVerifier {
    * @param signatureOrHeaders - Either the signature string directly, or the
    *   full request headers object (signature will be auto-extracted)
    */
-  verify(
+  async verify(
     payload: WebhookPayload,
     signatureOrHeaders: string | Record<string, any>,
-  ): VerificationResult {
+  ): Promise<VerificationResult> {
     let signature: string | undefined
 
     if (typeof signatureOrHeaders === 'string') {
@@ -147,7 +193,7 @@ export class WebhookVerifier {
       }
 
       const formattedPayload = this.formatPayload(payload)
-      const hash = this.generateHash(formattedPayload)
+      const hash = await this.generateHash(formattedPayload)
       const generatedSignature = this.formatSignature(hash)
 
       if (this.config.debug) {
