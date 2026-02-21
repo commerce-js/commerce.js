@@ -111,6 +111,8 @@ function initCardElement() {
     email: email.value || undefined,
     firstName: firstName.value || undefined,
     phone: phone.value || undefined,
+    saveCard: true,
+    customerId: sessionId,
   })
 }
 

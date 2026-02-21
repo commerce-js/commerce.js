@@ -223,7 +223,8 @@ function initCardElement() {
     firstName: firstName.value || undefined,
     lastName: lastName.value || undefined,
     phone: phone.value || undefined,
-    saveCard: !!profile.profileId.value,
+    saveCard: true,
+    customerId: profile.profileId.value || cartId,
   })
 }
 

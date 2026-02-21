@@ -26,6 +26,8 @@ export interface TapCardOptions {
   phone?: string
   /** Show "Save card for later" checkbox */
   saveCard?: boolean
+  /** Tap customer ID — required for saveCard addon to render */
+  customerId?: string
   /** Merchant ID (optional, defaults to Tap account merchant) */
   merchantId?: string
 }
@@ -120,8 +122,10 @@ export function useTapCard() {
     }
 
     // Add customer info if available
-    if (options.email || options.firstName || options.phone) {
+    if (options.email || options.firstName || options.phone || options.customerId) {
       config.customer = {
+        // id is required for saveCard addon to show the checkbox
+        id: options.customerId || '',
         name: [
           {
             lang: Locale.EN,
