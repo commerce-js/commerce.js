@@ -195,3 +195,23 @@ export {
   countAdminUsers,
 } from './admin-users.js'
 
+// Profiles (cross-merchant buyer identity)
+export {
+  createProfile,
+  findProfileById,
+  findProfileByEmail,
+  findProfileByPhone,
+  updateProfile,
+  deleteProfile,
+  findProfileAddresses,
+  findProfileAddressById,
+  createProfileAddress,
+  updateProfileAddress,
+  deleteProfileAddress,
+  findProfilePaymentMethods,
+  createProfilePaymentMethod,
+  deleteProfilePaymentMethod,
+  findProfileMerchantLinks,
+  upsertProfileMerchantLink,
+} from './profiles.js'
+
