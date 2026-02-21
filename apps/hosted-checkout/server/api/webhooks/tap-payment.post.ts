@@ -1,15 +1,15 @@
 // ---------------------------------------------------------------------------
 // POST /api/webhooks/tap-payment — Tap payment event webhook
 // ---------------------------------------------------------------------------
-// Safety net for the 3DS redirect pattern. If the user's browser redirect
-// fails after payment capture, this webhook ensures the order still gets
-// placed and its status updated.
+// Order-First flow: order already exists with status 'awaiting_payment'.
+// This handler just verifies the signature, checks status, and updates
+// the order. Fully idempotent — same operation as the redirect handler.
 //
-// Tap sends the full charge object. We use `reference.order` (= cartId)
-// to identify the cart, then idempotently place the order.
+// Tap sends the full charge object. We use `reference.order` (= orderId)
+// and `metadata.cartId` (= cartId) to identify resources.
 // ---------------------------------------------------------------------------
 
-import { createCheckoutDomain, createOrdersDomain, createCartDomain } from '@commercejs/platform'
+import { createOrdersDomain, createCartDomain } from '@commercejs/platform'
 import { WebhookVerifier } from '@commercejs/webhook-verifier'
 import { tap as tapConfig } from '@commercejs/webhook-verifier/configs'
 import { ensureDb } from '../../utils/db'
@@ -23,9 +23,10 @@ export default defineEventHandler(async (event) => {
   const body = JSON.parse(rawBody)
   const chargeId = body.id as string
   const chargeStatus = (body.status as string)?.toUpperCase()
-  const cartId = body.reference?.order as string | undefined
+  const orderId = body.reference?.order as string | undefined
+  const cartId = body.metadata?.cartId as string | undefined
 
-  console.log(`[tap-webhook] Received: charge=${chargeId} status=${chargeStatus} cartId=${cartId}`)
+  console.log(`[tap-webhook] Received: charge=${chargeId} status=${chargeStatus} orderId=${orderId}`)
 
   // Verify webhook signature
   const secretKey = useRuntimeConfig().tapSecretKey
@@ -50,49 +51,43 @@ export default defineEventHandler(async (event) => {
     return { received: true, chargeId, status: chargeStatus, action: 'ignored' }
   }
 
-  if (!cartId) {
-    console.warn(`[tap-webhook] No cartId in reference.order — cannot place order`)
-    return { received: true, chargeId, status: chargeStatus, action: 'no_cart_id' }
+  if (!orderId) {
+    console.warn(`[tap-webhook] No orderId in reference.order — cannot update`)
+    return { received: true, chargeId, status: chargeStatus, action: 'no_order_id' }
   }
 
   ensureDb()
   const config = useRuntimeConfig()
   const currency = config.commerceCurrency || 'BHD'
 
-  const cartDomain = createCartDomain(currency)
-  const checkoutDomain = createCheckoutDomain(currency)
   const ordersDomain = createOrdersDomain(currency)
+  const cartDomain = createCartDomain(currency)
 
-  // Check if cart still exists — if not, the redirect already placed the order
   try {
-    await cartDomain.getCart(cartId)
-  }
-  catch {
-    // Cart already deleted = order was already placed by the redirect handler
-    console.log(`[tap-webhook] Cart ${cartId} not found — order already placed via redirect`)
-    return { received: true, chargeId, status: chargeStatus, action: 'already_placed' }
-  }
+    // Check current order status — if already 'processing', this is a no-op
+    const order = await ordersDomain.getOrder(orderId)
 
-  // Cart still exists — the redirect handler didn't fire. Place the order now.
-  try {
-    const order = await checkoutDomain.placeOrder(cartId)
+    if (order.status === 'processing' || order.status === 'shipped' || order.status === 'delivered') {
+      console.log(`[tap-webhook] Order ${orderId} already ${order.status} — no-op`)
+      return { received: true, chargeId, status: chargeStatus, action: 'already_processed', orderId }
+    }
 
-    await ordersDomain.updateOrderStatus(order.id, {
+    // Update order status: awaiting_payment → processing
+    await ordersDomain.updateOrderStatus(orderId, {
       status: 'processing',
       note: `Card payment captured via webhook (Tap charge: ${chargeId})`,
     })
 
-    console.log(`[tap-webhook] Order ${order.id} placed from webhook for cart ${cartId}`)
-    return { received: true, chargeId, status: chargeStatus, action: 'order_placed', orderId: order.id }
+    // Clean up the cart (may already be deleted by redirect — that's OK)
+    if (cartId) {
+      try { await cartDomain.deleteCart(cartId) } catch {}
+    }
+
+    console.log(`[tap-webhook] Order ${orderId} → processing (charge ${chargeId})`)
+    return { received: true, chargeId, status: chargeStatus, action: 'order_updated', orderId }
   }
   catch (err: any) {
-    // Race condition: redirect handler already processed the cart
-    if (err.message?.includes('Cart not found') || err.message?.includes('empty cart')) {
-      console.log(`[tap-webhook] Cart ${cartId} already processed (race with redirect) — order already placed`)
-      return { received: true, chargeId, status: chargeStatus, action: 'already_placed' }
-    }
-    console.error(`[tap-webhook] Failed to place order for cart ${cartId}:`, err.message)
-    // Still return 200 to Tap so it doesn't retry indefinitely
+    console.error(`[tap-webhook] Failed to update order ${orderId}:`, err.message)
     return { received: true, chargeId, status: chargeStatus, action: 'error', error: err.message }
   }
 })

@@ -91,12 +91,14 @@ export function createCheckoutDomain(currency: string) {
       return cartDomain.getCart(cartId)
     },
 
-    async placeOrder(cartId: string): Promise<Order> {
+    async placeOrder(cartId: string, options?: { status?: string; keepCart?: boolean }): Promise<Order> {
       const cart = await cartDomain.getCart(cartId)
 
       if (cart.items.length === 0) {
         throw new Error('Cannot place order with empty cart')
       }
+
+      const orderStatus = options?.status ?? 'pending'
 
       // Look up selected shipping/payment methods by ID from cart row
       const cartRow = await findCart(cartId)
@@ -119,7 +121,7 @@ export function createCheckoutDomain(currency: string) {
         id: orderId,
         orderNumber,
         customerId: cart.customerId ?? null,
-        status: 'pending',
+        status: orderStatus,
         subtotal,
         shippingCost,
         tax,
@@ -150,12 +152,14 @@ export function createCheckoutDomain(currency: string) {
       await createOrderHistory({
         orderId,
         fromStatus: null,
-        toStatus: 'pending',
-        note: 'Order placed',
+        toStatus: orderStatus,
+        note: orderStatus === 'awaiting_payment' ? 'Order created — awaiting payment' : 'Order placed',
       })
 
-      // Delete cart after order placement
-      await deleteCart(cartId)
+      // Only delete cart if not keeping it (COD deletes immediately, card keeps for payment)
+      if (!options?.keepCart) {
+        await deleteCart(cartId)
+      }
 
       // Build and return the order
       const order = await findOrderById(orderId)

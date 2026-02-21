@@ -1,11 +1,16 @@
 // ---------------------------------------------------------------------------
 // POST /api/cart-pay — Process Tap payment for a cart
 // ---------------------------------------------------------------------------
-// Body: { cartId, email, firstName?, phone?, sourceToken }
+// Order-First flow:
+//   1. Create order (status: awaiting_payment, keep cart)
+//   2. Create Tap charge with reference.order = orderId
+//   3. Return redirect URL for 3DS (or complete if direct capture)
+//
+// Body: { cartId, email, firstName?, phone?, sourceToken, returnUrl? }
 // Returns: { redirectUrl } for 3DS or { orderId, state: 'complete' }
 // ---------------------------------------------------------------------------
 
-import { createCheckoutDomain, createCartDomain } from '@commercejs/platform'
+import { createCheckoutDomain, createCartDomain, createOrdersDomain } from '@commercejs/platform'
 import { useTapProviderFromEnv } from '../utils/tap'
 import { ensureDb } from '../utils/db'
 
@@ -27,10 +32,11 @@ export default defineEventHandler(async (event) => {
     ? config.public.appUrl
     : `${requestUrl.protocol}//${requestUrl.host}`
 
-  // Get cart to calculate total
-  const checkoutDomain = createCheckoutDomain(currency)
   const cartDomain = createCartDomain(currency)
+  const checkoutDomain = createCheckoutDomain(currency)
+  const ordersDomain = createOrdersDomain(currency)
 
+  // Validate cart
   let cart
   try {
     cart = await cartDomain.getCart(body.cartId)
@@ -43,14 +49,18 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Cart is empty' })
   }
 
-  // Calculate total including shipping
-  const subtotal = cart.totals.subtotal.amount
-  const shipping = cart.totals.shipping?.amount ?? 0
-  const tax = cart.totals.tax?.amount ?? 0
-  const discount = cart.totals.discount?.amount ?? 0
-  const total = subtotal + shipping + tax - discount
+  // ── Step 1: Create order (awaiting_payment, keep cart) ──────────────
+  const order = await checkoutDomain.placeOrder(body.cartId, {
+    status: 'awaiting_payment',
+    keepCart: true,
+  })
 
-  // Create Tap charge
+  console.log(`[cart-pay] Order ${order.id} created (awaiting_payment) for cart ${body.cartId}`)
+
+  // Calculate total (from the created order)
+  const total = order.totals.total.amount
+
+  // ── Step 2: Create Tap charge with orderId ─────────────────────────
   const { provider } = useTapProviderFromEnv()
 
   try {
@@ -58,9 +68,10 @@ export default defineEventHandler(async (event) => {
       amount: total,
       currency,
       sourceToken: body.sourceToken,
-      returnUrl: `${appUrl}/api/cart-confirm?cartId=${body.cartId}&returnUrl=${encodeURIComponent(body.returnUrl || '')}`,
+      returnUrl: `${appUrl}/api/cart-confirm?orderId=${order.id}&cartId=${body.cartId}&returnUrl=${encodeURIComponent(body.returnUrl || '')}`,
       webhookUrl: `${appUrl}/api/webhooks/tap-payment`,
-      orderId: body.cartId,
+      orderId: order.id,
+      metadata: { cartId: body.cartId },
       customer: {
         email: body.email,
         firstName: body.firstName,
@@ -73,13 +84,21 @@ export default defineEventHandler(async (event) => {
       return { redirectUrl: session.redirectUrl, chargeId: session.id }
     }
 
-    // Direct capture (no 3DS) — place order immediately
+    // Direct capture (no 3DS) — update order status immediately
     if (session.status === 'captured') {
-      const order = await checkoutDomain.placeOrder(body.cartId)
+      await ordersDomain.updateOrderStatus(order.id, {
+        status: 'processing',
+        note: `Card payment captured directly (Tap charge: ${session.id})`,
+      })
+      await cartDomain.deleteCart(body.cartId)
       return { state: 'complete', orderId: order.id }
     }
 
-    // Payment was not captured
+    // Payment was not captured — cancel the order
+    await ordersDomain.updateOrderStatus(order.id, {
+      status: 'cancelled',
+      note: `Payment not captured: ${session.status}`,
+    })
     throw new Error(`Payment not captured: ${session.status}`)
   }
   catch (err: any) {

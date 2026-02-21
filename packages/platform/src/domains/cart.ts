@@ -139,5 +139,9 @@ export function createCartDomain(currency: string) {
       await updateCart(cartId, { couponCode: null })
       return buildCart(cartId)
     },
+
+    async deleteCart(cartId: string): Promise<void> {
+      await deleteCart(cartId)
+    },
   }
 }
