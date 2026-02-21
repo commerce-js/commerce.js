@@ -397,3 +397,249 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Profile / OTP UI
+ * --------------------------------------------------------------------------- */
+
+/* Profile lookup indicator (inline in email field) */
+.form-group-with-status {
+  position: relative;
+}
+
+.field-status {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  pointer-events: none;
+}
+
+.field-status .spinner {
+  width: 14px;
+  height: 14px;
+  border-width: 1.5px;
+  border-color: rgba(37, 99, 235, 0.3);
+  border-top-color: var(--color-primary);
+}
+
+/* Profile badge — "Welcome back, Fatima" */
+.profile-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  color: var(--color-primary);
+  margin-bottom: var(--space-md);
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.profile-badge-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* OTP verification step */
+.otp-step {
+  animation: fadeInUp 0.3s ease-out;
+  margin-bottom: var(--space-md);
+}
+
+.otp-step-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+.otp-step-description {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.otp-input-group {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: var(--space-sm);
+}
+
+.otp-digit {
+  width: 44px;
+  height: 52px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  background: var(--color-surface);
+}
+
+.otp-digit:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.otp-digit.filled {
+  border-color: var(--color-primary);
+  background: #f0f5ff;
+}
+
+.otp-resend {
+  text-align: center;
+  margin-top: var(--space-sm);
+}
+
+.otp-resend-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  padding: 0;
+}
+
+.otp-resend-btn:hover {
+  text-decoration: underline;
+}
+
+.otp-resend-btn:disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.otp-error {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--color-error);
+  margin-top: var(--space-sm);
+}
+
+/* Saved address / payment method selector */
+.saved-selector {
+  margin-bottom: var(--space-md);
+}
+
+.saved-selector-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.saved-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--space-xs);
+}
+
+.saved-option:hover {
+  border-color: var(--color-primary);
+  background: #fafbff;
+}
+
+.saved-option.selected {
+  border-color: var(--color-primary);
+  background: #eff6ff;
+}
+
+.saved-option input[type="radio"] {
+  accent-color: var(--color-primary);
+}
+
+.saved-option-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.saved-option-label {
+  font-weight: 500;
+}
+
+.saved-option-secondary {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Post-purchase save prompt */
+.save-prompt {
+  animation: fadeInUp 0.3s ease-out;
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background: #fafbff;
+  border: 1px solid #e0e7ff;
+  border-radius: var(--radius-md);
+}
+
+.save-prompt-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+
+.save-prompt-check input[type="checkbox"] {
+  margin-top: 0.15rem;
+  accent-color: var(--color-primary);
+}
+
+.save-prompt-text {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+}
+
+.save-prompt-sub {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 0.125rem;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #eff6ff;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.success-alert {
+  background: var(--color-success-bg);
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-success);
+  font-size: 0.8125rem;
+  margin-top: var(--space-sm);
+  animation: fadeInUp 0.2s ease-out;
+}

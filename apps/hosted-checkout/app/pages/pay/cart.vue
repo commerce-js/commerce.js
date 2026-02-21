@@ -6,13 +6,15 @@
  *
  * Flow:
  *  1. Load cart from shared DB
- *  2. Show cart summary + card form (goSell.js)
- *  3. Submit: tokenize → charge → 3DS redirect or direct capture
- *  4. On success: redirect to storefront order confirmation
+ *  2. Email → profile lookup → OTP (returning buyers) → auto-fill
+ *  3. Show cart summary + card form (goSell.js)
+ *  4. Submit: tokenize → charge → 3DS redirect or direct capture
+ *  5. On success: "Save to profile" opt-in
  */
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const profile = useProfile()
 
 const cartId = route.query.id as string
 const returnUrl = route.query.return as string || ''
@@ -32,7 +34,16 @@ const completedOrderId = ref(successOrderId || '')
 // Form state
 const email = ref('')
 const firstName = ref('')
+const lastName = ref('')
 const phone = ref('')
+
+// OTP digit refs
+const otpDigits = ref(['', '', '', '', '', ''])
+const otpInputRefs = ref<HTMLInputElement[]>([])
+
+// Saved selections
+const selectedAddressId = ref<string | null>(null)
+const saveToProfile = ref(false)
 
 // Load cart
 if (cartId && !orderComplete.value) {
@@ -71,7 +82,101 @@ const formattedTotal = computed(() => {
   return formatPrice(cart.value.totals.total.amount, cart.value.totals.total.currency)
 })
 
+// ---------------------------------------------------------------------------
+// Profile lookup on email blur
+// ---------------------------------------------------------------------------
+async function onEmailBlur() {
+  if (!email.value || !email.value.includes('@')) return
+  if (profile.otpVerified.value) return // Already verified
+
+  const result = await profile.lookupProfile(email.value)
+  if (result?.exists) {
+    // Returning buyer — send OTP automatically
+    await profile.sendOtp()
+  }
+}
+
+// ---------------------------------------------------------------------------
+// OTP digit input handling
+// ---------------------------------------------------------------------------
+function onOtpInput(index: number, event: Event) {
+  const input = event.target as HTMLInputElement
+  const value = input.value.replace(/\D/g, '')
+
+  if (value.length > 1) {
+    // Handle paste — distribute digits across inputs
+    const digits = value.slice(0, 6).split('')
+    digits.forEach((d, i) => {
+      if (i < 6) otpDigits.value[i] = d
+    })
+    const nextIndex = Math.min(digits.length, 5)
+    otpInputRefs.value[nextIndex]?.focus()
+
+    // Auto-submit if all 6 digits are filled
+    if (digits.length === 6) {
+      submitOtp()
+    }
+    return
+  }
+
+  otpDigits.value[index] = value
+
+  if (value && index < 5) {
+    otpInputRefs.value[index + 1]?.focus()
+  }
+
+  // Auto-submit when all 6 digits entered
+  if (otpDigits.value.every(d => d !== '')) {
+    submitOtp()
+  }
+}
+
+function onOtpKeydown(index: number, event: KeyboardEvent) {
+  if (event.key === 'Backspace' && !otpDigits.value[index] && index > 0) {
+    otpInputRefs.value[index - 1]?.focus()
+  }
+}
+
+async function submitOtp() {
+  const code = otpDigits.value.join('')
+  if (code.length !== 6) return
+
+  const verified = await profile.verifyOtp(code)
+  if (verified && profile.profileData.value) {
+    // Auto-fill from profile
+    const p = profile.profileData.value
+    if (p.firstName && !firstName.value) firstName.value = p.firstName
+    if (p.lastName && !lastName.value) lastName.value = p.lastName
+    if (p.phone && !phone.value) phone.value = p.phone
+
+    // Pre-select first saved address
+    if (p.addresses?.length) {
+      selectedAddressId.value = p.addresses[0].id
+    }
+  }
+  else {
+    // Clear digits on failure so they can retry
+    otpDigits.value = ['', '', '', '', '', '']
+    otpInputRefs.value[0]?.focus()
+  }
+}
+
+async function resendOtp() {
+  profile.otpError.value = null
+  otpDigits.value = ['', '', '', '', '', '']
+  await profile.sendOtp()
+  otpInputRefs.value[0]?.focus()
+}
+
+// Computed: selected address object
+const selectedAddress = computed(() => {
+  if (!selectedAddressId.value || !profile.profileData.value?.addresses) return null
+  return profile.profileData.value.addresses.find((a: any) => a.id === selectedAddressId.value)
+})
+
+// ---------------------------------------------------------------------------
 // goSell.js card element
+// ---------------------------------------------------------------------------
 function initGoSellElements() {
   if (!import.meta.client) return
   const publicKey = config.public.tapPublicKey
@@ -190,6 +295,25 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Post-purchase save
+// ---------------------------------------------------------------------------
+async function handleSaveToProfile() {
+  if (!profile.profileId.value) return
+
+  await profile.saveProfile({
+    firstName: firstName.value || undefined,
+    lastName: lastName.value || undefined,
+    phone: phone.value || undefined,
+    address: selectedAddress.value
+      ? undefined // Already saved from profile
+      : undefined, // TODO: collect address from checkout form
+  })
+}
+
+// ---------------------------------------------------------------------------
+// SDK loading
+// ---------------------------------------------------------------------------
 function loadGoSellSDK(): Promise<void> {
   if ((window as any).goSell) return Promise.resolve()
 
@@ -255,6 +379,29 @@ onMounted(async () => {
             View order
           </a>
         </div>
+
+        <!-- Post-purchase save prompt -->
+        <div v-if="profile.profileId.value && !profile.saveSuccess.value" class="save-prompt">
+          <label class="save-prompt-check">
+            <input v-model="saveToProfile" type="checkbox">
+            <div>
+              <div class="save-prompt-text">Save your details for faster checkout next time?</div>
+              <div class="save-prompt-sub">Your info will be securely stored and auto-filled on future purchases.</div>
+            </div>
+          </label>
+          <button
+            v-if="saveToProfile"
+            class="btn btn-secondary btn-sm"
+            style="margin-top: 0.75rem; width: auto;"
+            :disabled="profile.saving.value"
+            @click="handleSaveToProfile"
+          >
+            {{ profile.saving.value ? 'Saving...' : 'Save to profile' }}
+          </button>
+        </div>
+        <div v-if="profile.saveSuccess.value" class="success-alert">
+          ✓ Profile saved! Your details will auto-fill next time.
+        </div>
       </div>
 
       <!-- Cart not found -->
@@ -279,7 +426,7 @@ onMounted(async () => {
         <div class="cart-summary">
           <div v-for="item in cart.items" :key="item.id" class="cart-item">
             <div class="cart-item-image">
-              <img v-if="item.image" :src="item.image.url" :alt="item.image.alt || ''" />
+              <img v-if="item.image" :src="item.image.url" :alt="item.image.alt || ''">
               <div v-else class="cart-item-placeholder">📦</div>
             </div>
             <div class="cart-item-details">
@@ -298,19 +445,98 @@ onMounted(async () => {
           {{ error }}
         </div>
 
+        <!-- Profile badge for verified buyers -->
+        <div v-if="profile.otpVerified.value && profile.profileData.value" class="profile-badge">
+          <span class="profile-badge-icon">👋</span>
+          Welcome back{{ profile.profileData.value.firstName ? `, ${profile.profileData.value.firstName}` : '' }}!
+        </div>
+
         <form @submit.prevent="submitPayment">
           <!-- Email -->
           <div class="form-group">
             <label class="form-label" for="pay-email">Email</label>
-            <input
-              id="pay-email"
-              v-model="email"
-              class="form-input"
-              type="email"
-              placeholder="ali@example.com"
-              required
-              autocomplete="email"
+            <div class="form-group-with-status">
+              <input
+                id="pay-email"
+                v-model="email"
+                class="form-input"
+                type="email"
+                placeholder="ali@example.com"
+                required
+                autocomplete="email"
+                :disabled="profile.otpVerified.value"
+                @blur="onEmailBlur"
+              >
+              <span v-if="profile.lookingUp.value" class="field-status">
+                <span class="spinner" />
+              </span>
+            </div>
+          </div>
+
+          <!-- OTP verification step (for returning buyers) -->
+          <div v-if="profile.otpSent.value && !profile.otpVerified.value" class="otp-step">
+            <div class="otp-step-title">Verify your email</div>
+            <div class="otp-step-description">
+              We sent a 6-digit code to <strong>{{ email }}</strong>
+            </div>
+
+            <div class="otp-input-group">
+              <input
+                v-for="(_, i) in 6"
+                :key="i"
+                :ref="(el) => { if (el) otpInputRefs[i] = el as HTMLInputElement }"
+                v-model="otpDigits[i]"
+                class="otp-digit"
+                :class="{ filled: otpDigits[i] }"
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                autocomplete="one-time-code"
+                :disabled="profile.otpVerifying.value"
+                @input="onOtpInput(i, $event)"
+                @keydown="onOtpKeydown(i, $event)"
+              >
+            </div>
+
+            <div v-if="profile.otpVerifying.value" style="text-align: center; font-size: 0.8125rem; color: var(--color-text-muted);">
+              Verifying...
+            </div>
+            <div v-if="profile.otpError.value" class="otp-error">
+              {{ profile.otpError.value }}
+            </div>
+
+            <div class="otp-resend">
+              <button
+                type="button"
+                class="otp-resend-btn"
+                :disabled="profile.otpSending.value"
+                @click="resendOtp"
+              >
+                {{ profile.otpSending.value ? 'Sending...' : 'Resend code' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Saved addresses (shown after OTP verification) -->
+          <div v-if="profile.otpVerified.value && profile.profileData.value?.addresses?.length" class="saved-selector">
+            <div class="saved-selector-title">Saved addresses</div>
+            <label
+              v-for="addr in profile.profileData.value.addresses"
+              :key="addr.id"
+              class="saved-option"
+              :class="{ selected: selectedAddressId === addr.id }"
             >
+              <input
+                v-model="selectedAddressId"
+                type="radio"
+                name="saved-address"
+                :value="addr.id"
+              >
+              <div class="saved-option-details">
+                <div class="saved-option-label">{{ addr.label || `${addr.firstName} ${addr.lastName}` }}</div>
+                <div class="saved-option-secondary">{{ addr.street }}, {{ addr.city }}, {{ addr.country }}</div>
+              </div>
+            </label>
           </div>
 
           <!-- Name + Phone -->
@@ -341,6 +567,24 @@ onMounted(async () => {
 
           <hr class="checkout-divider">
 
+          <!-- Saved payment methods -->
+          <div v-if="profile.otpVerified.value && profile.profileData.value?.paymentMethods?.length" class="saved-selector">
+            <div class="saved-selector-title">Saved cards</div>
+            <label
+              v-for="pm in profile.profileData.value.paymentMethods"
+              :key="pm.id"
+              class="saved-option"
+            >
+              <div class="saved-option-details">
+                <div class="saved-option-label">{{ pm.brand?.toUpperCase() }} •••• {{ pm.last4 }}</div>
+                <div v-if="pm.expiryMonth && pm.expiryYear" class="saved-option-secondary">
+                  Expires {{ String(pm.expiryMonth).padStart(2, '0') }}/{{ pm.expiryYear }}
+                </div>
+              </div>
+            </label>
+            <hr class="checkout-divider">
+          </div>
+
           <!-- Card element -->
           <div class="form-group">
             <label class="form-label">Card details</label>
@@ -349,7 +593,7 @@ onMounted(async () => {
           </div>
 
           <!-- Pay button -->
-          <button type="submit" class="btn btn-primary" :disabled="submitting">
+          <button type="submit" class="btn btn-primary" :disabled="submitting || (profile.otpSent.value && !profile.otpVerified.value)">
             <span v-if="submitting" class="spinner" />
             {{ submitting ? 'Processing...' : `Pay ${formattedTotal}` }}
           </button>
