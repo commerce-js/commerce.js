@@ -43,7 +43,8 @@ const otpInputRefs = ref<HTMLInputElement[]>([])
 
 // Saved selections
 const selectedAddressId = ref<string | null>(null)
-const saveToProfile = ref(false)
+const selectedPaymentId = ref<string | null>(null)
+const saveToProfile = ref(true) // Default ON like Link
 
 // Load cart
 if (cartId && !orderComplete.value) {
@@ -92,6 +93,12 @@ function switchIdentity() {
   lastName.value = ''
   phone.value = ''
   selectedAddressId.value = null
+  selectedPaymentId.value = null
+  otpDigits.value = ['', '', '', '', '', '']
+}
+
+function skipProfile() {
+  profile.reset()
   otpDigits.value = ['', '', '', '', '', '']
 }
 
@@ -159,9 +166,12 @@ async function submitOtp() {
     if (p.lastName && !lastName.value) lastName.value = p.lastName
     if (p.phone && !phone.value) phone.value = p.phone
 
-    // Pre-select first saved address
+    // Pre-select first saved address and payment method
     if (p.addresses?.length) {
       selectedAddressId.value = p.addresses[0].id
+    }
+    if (p.paymentMethods?.length) {
+      selectedPaymentId.value = p.paymentMethods[0].id
     }
   }
   else {
@@ -182,6 +192,17 @@ async function resendOtp() {
 const selectedAddress = computed(() => {
   if (!selectedAddressId.value || !profile.profileData.value?.addresses) return null
   return profile.profileData.value.addresses.find((a: any) => a.id === selectedAddressId.value)
+})
+
+// Computed: selected payment method
+const selectedPayment = computed(() => {
+  if (!selectedPaymentId.value || !profile.profileData.value?.paymentMethods) return null
+  return profile.profileData.value.paymentMethods.find((pm: any) => pm.id === selectedPaymentId.value)
+})
+
+// Computed: has profile data to auto-fill
+const isCompactMode = computed(() => {
+  return profile.otpVerified.value && profile.profileData.value
 })
 
 // ---------------------------------------------------------------------------
@@ -251,6 +272,9 @@ async function submitPayment() {
   submitting.value = true
   error.value = null
 
+  // Save profile in background if opted in
+  saveProfileIfOptedIn()
+
   const goSell = (window as any).goSell
   if (goSell && cardReady.value) {
     goSell.submit()
@@ -306,19 +330,16 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
 }
 
 // ---------------------------------------------------------------------------
-// Post-purchase save
+// Pre-payment save (fires during payment if opted in)
 // ---------------------------------------------------------------------------
-async function handleSaveToProfile() {
-  if (!profile.profileId.value) return
-
-  await profile.saveProfile({
+async function saveProfileIfOptedIn() {
+  if (!saveToProfile.value || !profile.profileId.value) return
+  // Fire-and-forget save alongside payment
+  profile.saveProfile({
     firstName: firstName.value || undefined,
     lastName: lastName.value || undefined,
     phone: phone.value || undefined,
-    address: selectedAddress.value
-      ? undefined // Already saved from profile
-      : undefined, // TODO: collect address from checkout form
-  })
+  }).catch(() => {})
 }
 
 // ---------------------------------------------------------------------------
@@ -389,29 +410,6 @@ onMounted(async () => {
             View order
           </a>
         </div>
-
-        <!-- Post-purchase save prompt -->
-        <div v-if="profile.profileId.value && !profile.saveSuccess.value" class="save-prompt">
-          <label class="save-prompt-check">
-            <input v-model="saveToProfile" type="checkbox">
-            <div>
-              <div class="save-prompt-text">Save your details for faster checkout next time?</div>
-              <div class="save-prompt-sub">Your info will be securely stored and auto-filled on future purchases.</div>
-            </div>
-          </label>
-          <button
-            v-if="saveToProfile"
-            class="btn btn-secondary btn-sm"
-            style="margin-top: 0.75rem; width: auto;"
-            :disabled="profile.saving.value"
-            @click="handleSaveToProfile"
-          >
-            {{ profile.saving.value ? 'Saving...' : 'Save to profile' }}
-          </button>
-        </div>
-        <div v-if="profile.saveSuccess.value" class="success-alert">
-          ✓ Profile saved! Your details will auto-fill next time.
-        </div>
       </div>
 
       <!-- Cart not found -->
@@ -455,172 +453,208 @@ onMounted(async () => {
           {{ error }}
         </div>
 
-        <!-- Profile badge for verified buyers -->
-        <div v-if="profile.otpVerified.value && profile.profileData.value" class="profile-badge">
-          <span class="profile-badge-icon">👋</span>
-          Welcome back{{ profile.profileData.value.firstName ? `, ${profile.profileData.value.firstName}` : '' }}!
-        </div>
-
         <form @submit.prevent="submitPayment">
-          <!-- Email: locked display when verified, editable input otherwise -->
-          <div class="form-group">
-            <label class="form-label" for="pay-email">Email</label>
 
-            <!-- Locked state (after OTP verified) -->
-            <div v-if="profile.otpVerified.value" class="email-locked">
-              <div class="email-locked-value">
-                <svg class="email-locked-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                  <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
-                </svg>
-                {{ email }}
+          <!-- ============================================================ -->
+          <!-- COMPACT VERIFIED VIEW (Link-style) -->
+          <!-- ============================================================ -->
+          <template v-if="isCompactMode">
+            <!-- Locked email row -->
+            <div class="compact-row">
+              <span class="compact-label">Email</span>
+              <div class="compact-value-group">
+                <span class="compact-value">{{ email }}</span>
+                <button type="button" class="compact-action" @click="switchIdentity">⋯</button>
               </div>
-              <button type="button" class="email-change-btn" @click="switchIdentity">
-                Change
-              </button>
             </div>
 
-            <!-- Editable state -->
-            <div v-else class="form-group-with-status">
-              <input
-                id="pay-email"
-                v-model="email"
-                class="form-input"
-                type="email"
-                placeholder="ali@example.com"
-                required
-                autocomplete="email"
-                @blur="onEmailBlur"
-              >
-              <span v-if="profile.lookingUp.value" class="field-status">
-                <span class="spinner" />
-              </span>
-            </div>
-          </div>
-
-          <!-- OTP verification step (for returning buyers) -->
-          <div v-if="profile.otpSent.value && !profile.otpVerified.value" class="otp-step">
-            <div class="otp-step-title">Verify your email</div>
-            <div class="otp-step-description">
-              We sent a 6-digit code to <strong>{{ email }}</strong>
-            </div>
-
-            <div class="otp-input-group">
-              <input
-                v-for="(_, i) in 6"
-                :key="i"
-                :ref="(el) => { if (el) otpInputRefs[i] = el as HTMLInputElement }"
-                v-model="otpDigits[i]"
-                class="otp-digit"
-                :class="{ filled: otpDigits[i] }"
-                type="text"
-                inputmode="numeric"
-                maxlength="6"
-                autocomplete="one-time-code"
-                :disabled="profile.otpVerifying.value"
-                @input="onOtpInput(i, $event)"
-                @keydown="onOtpKeydown(i, $event)"
-              >
-            </div>
-
-            <div v-if="profile.otpVerifying.value" style="text-align: center; font-size: 0.8125rem; color: var(--color-text-muted);">
-              Verifying...
-            </div>
-            <div v-if="profile.otpError.value" class="otp-error">
-              {{ profile.otpError.value }}
-            </div>
-
-            <div class="otp-resend">
-              <button
-                type="button"
-                class="otp-resend-btn"
-                :disabled="profile.otpSending.value"
-                @click="resendOtp"
-              >
-                {{ profile.otpSending.value ? 'Sending...' : 'Resend code' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Saved addresses (shown after OTP verification) -->
-          <div v-if="profile.otpVerified.value && profile.profileData.value?.addresses?.length" class="saved-selector">
-            <div class="saved-selector-title">Saved addresses</div>
-            <label
-              v-for="addr in profile.profileData.value.addresses"
-              :key="addr.id"
-              class="saved-option"
-              :class="{ selected: selectedAddressId === addr.id }"
-            >
-              <input
-                v-model="selectedAddressId"
-                type="radio"
-                name="saved-address"
-                :value="addr.id"
-              >
-              <div class="saved-option-details">
-                <div class="saved-option-label">{{ addr.label || `${addr.firstName} ${addr.lastName}` }}</div>
-                <div class="saved-option-secondary">{{ addr.street }}, {{ addr.city }}, {{ addr.country }}</div>
+            <!-- Shipping to (if address selected) -->
+            <div v-if="selectedAddress" class="compact-row">
+              <span class="compact-label">Ship to</span>
+              <div class="compact-value-group">
+                <span class="compact-value">{{ selectedAddress.street }}, {{ selectedAddress.city }}</span>
+                <select
+                  v-if="profile.profileData.value?.addresses?.length > 1"
+                  v-model="selectedAddressId"
+                  class="compact-select"
+                >
+                  <option
+                    v-for="addr in profile.profileData.value.addresses"
+                    :key="addr.id"
+                    :value="addr.id"
+                  >
+                    {{ addr.label || addr.street }}
+                  </option>
+                </select>
               </div>
-            </label>
-          </div>
-
-          <!-- Name + Phone -->
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="pay-name">Name</label>
-              <input
-                id="pay-name"
-                v-model="firstName"
-                class="form-input"
-                type="text"
-                placeholder="Ali"
-                autocomplete="given-name"
-              >
             </div>
-            <div class="form-group">
-              <label class="form-label" for="pay-phone">Phone</label>
-              <input
-                id="pay-phone"
-                v-model="phone"
-                class="form-input"
-                type="tel"
-                placeholder="+973 3000 0000"
-                autocomplete="tel"
-              >
+
+            <!-- Pay with (saved card dropdown) -->
+            <div v-if="profile.profileData.value?.paymentMethods?.length" class="compact-row">
+              <span class="compact-label">Pay with</span>
+              <div class="compact-value-group">
+                <span class="compact-value pay-with-value">
+                  <span class="card-brand">{{ selectedPayment?.brand?.toUpperCase() || 'CARD' }}</span>
+                  •••• {{ selectedPayment?.last4 || '••••' }}
+                </span>
+                <select
+                  v-if="profile.profileData.value.paymentMethods.length > 1"
+                  v-model="selectedPaymentId"
+                  class="compact-select"
+                >
+                  <option
+                    v-for="pm in profile.profileData.value.paymentMethods"
+                    :key="pm.id"
+                    :value="pm.id"
+                  >
+                    {{ pm.brand?.toUpperCase() }} •••• {{ pm.last4 }}
+                  </option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          <hr class="checkout-divider">
+            <hr class="checkout-divider">
 
-          <!-- Saved payment methods -->
-          <div v-if="profile.otpVerified.value && profile.profileData.value?.paymentMethods?.length" class="saved-selector">
-            <div class="saved-selector-title">Saved cards</div>
-            <label
-              v-for="pm in profile.profileData.value.paymentMethods"
-              :key="pm.id"
-              class="saved-option"
-            >
-              <div class="saved-option-details">
-                <div class="saved-option-label">{{ pm.brand?.toUpperCase() }} •••• {{ pm.last4 }}</div>
-                <div v-if="pm.expiryMonth && pm.expiryYear" class="saved-option-secondary">
-                  Expires {{ String(pm.expiryMonth).padStart(2, '0') }}/{{ pm.expiryYear }}
+            <!-- Card element (for new card or if no saved cards) -->
+            <div class="form-group">
+              <label class="form-label">Card details</label>
+              <div id="tap-card-element" class="tap-card-element" />
+              <p id="tap-notifications" class="tap-notification" />
+            </div>
+
+            <!-- Pay button -->
+            <button type="submit" class="btn btn-primary" :disabled="submitting">
+              <span v-if="submitting" class="spinner" />
+              {{ submitting ? 'Processing...' : `Pay ${formattedTotal}` }}
+            </button>
+          </template>
+
+          <!-- ============================================================ -->
+          <!-- STANDARD VIEW (new buyer or pre-OTP) -->
+          <!-- ============================================================ -->
+          <template v-else>
+            <!-- Email (hidden during OTP step — shown in OTP description instead) -->
+            <div v-if="!profile.otpSent.value || profile.otpVerified.value" class="form-group">
+              <label class="form-label" for="pay-email">Email</label>
+              <div class="form-group-with-status">
+                <input
+                  id="pay-email"
+                  v-model="email"
+                  class="form-input"
+                  type="email"
+                  placeholder="ali@example.com"
+                  required
+                  autocomplete="email"
+                  @blur="onEmailBlur"
+                >
+                <span v-if="profile.lookingUp.value" class="field-status">
+                  <span class="spinner" />
+                </span>
+              </div>
+            </div>
+
+            <!-- OTP step: "Confirm it's you" -->
+            <div v-if="profile.otpSent.value && !profile.otpVerified.value" class="otp-step">
+              <div class="otp-step-title">Confirm it's you</div>
+              <div class="otp-step-description">
+                Enter the code sent to <strong>{{ email }}</strong> to use your saved information.
+              </div>
+
+              <div class="otp-input-group">
+                <input
+                  v-for="(_, i) in 6"
+                  :key="i"
+                  :ref="(el) => { if (el) otpInputRefs[i] = el as HTMLInputElement }"
+                  v-model="otpDigits[i]"
+                  class="otp-digit"
+                  :class="{ filled: otpDigits[i] }"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  autocomplete="one-time-code"
+                  :disabled="profile.otpVerifying.value"
+                  @input="onOtpInput(i, $event)"
+                  @keydown="onOtpKeydown(i, $event)"
+                >
+              </div>
+
+              <div v-if="profile.otpVerifying.value" style="text-align: center; font-size: 0.8125rem; color: var(--color-text-muted);">
+                Verifying...
+              </div>
+              <div v-if="profile.otpError.value" class="otp-error">
+                {{ profile.otpError.value }}
+              </div>
+
+              <div class="otp-actions">
+                <button
+                  type="button"
+                  class="otp-resend-btn"
+                  :disabled="profile.otpSending.value"
+                  @click="resendOtp"
+                >
+                  {{ profile.otpSending.value ? 'Sending...' : 'Resend code' }}
+                </button>
+                <button type="button" class="otp-skip-btn" @click="skipProfile">
+                  Continue without profile
+                </button>
+              </div>
+            </div>
+
+            <!-- Rest of form (hidden while OTP is pending) -->
+            <template v-if="!profile.otpSent.value || profile.otpVerified.value">
+              <!-- Name + Phone -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="pay-name">Name</label>
+                  <input
+                    id="pay-name"
+                    v-model="firstName"
+                    class="form-input"
+                    type="text"
+                    placeholder="Ali"
+                    autocomplete="given-name"
+                  >
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="pay-phone">Phone</label>
+                  <input
+                    id="pay-phone"
+                    v-model="phone"
+                    class="form-input"
+                    type="tel"
+                    placeholder="+973 3000 0000"
+                    autocomplete="tel"
+                  >
                 </div>
               </div>
-            </label>
-            <hr class="checkout-divider">
-          </div>
 
-          <!-- Card element -->
-          <div class="form-group">
-            <label class="form-label">Card details</label>
-            <div id="tap-card-element" class="tap-card-element" />
-            <p id="tap-notifications" class="tap-notification" />
-          </div>
+              <hr class="checkout-divider">
 
-          <!-- Pay button -->
-          <button type="submit" class="btn btn-primary" :disabled="submitting || (profile.otpSent.value && !profile.otpVerified.value)">
-            <span v-if="submitting" class="spinner" />
-            {{ submitting ? 'Processing...' : `Pay ${formattedTotal}` }}
-          </button>
+              <!-- Card element -->
+              <div class="form-group">
+                <label class="form-label">Card details</label>
+                <div id="tap-card-element" class="tap-card-element" />
+                <p id="tap-notifications" class="tap-notification" />
+              </div>
+
+              <!-- Save opt-in (shown for all buyers, like Link) -->
+              <div v-if="profile.profileId.value" class="save-opt-in">
+                <label class="save-opt-in-check">
+                  <input v-model="saveToProfile" type="checkbox">
+                  <div>
+                    <div class="save-opt-in-text">Save my info for secure 1-click checkout</div>
+                    <div class="save-opt-in-sub">Pay faster on this store and thousands of sites</div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Pay button -->
+              <button type="submit" class="btn btn-primary" :disabled="submitting">
+                <span v-if="submitting" class="spinner" />
+                {{ submitting ? 'Processing...' : `Pay ${formattedTotal}` }}
+              </button>
+            </template>
+          </template>
         </form>
 
         <div class="security-badge">

@@ -541,8 +541,11 @@ body {
   background: #f0f5ff;
 }
 
-.otp-resend {
-  text-align: center;
+.otp-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
   margin-top: var(--space-sm);
 }
 
@@ -566,6 +569,21 @@ body {
   text-decoration: none;
 }
 
+.otp-skip-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  padding: 0;
+}
+
+.otp-skip-btn:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
 .otp-error {
   text-align: center;
   font-size: 0.8125rem;
@@ -573,93 +591,127 @@ body {
   margin-top: var(--space-sm);
 }
 
-/* Saved address / payment method selector */
-.saved-selector {
-  margin-bottom: var(--space-md);
-}
-
-.saved-selector-title {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  margin-bottom: var(--space-sm);
-}
-
-.saved-option {
+/* ========================================
+   Compact verified view (Link-style rows)
+   ======================================== */
+.compact-row {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+  animation: fadeInUp 0.25s ease-out;
+}
+
+.compact-row:first-child {
+  padding-top: 0;
+}
+
+.compact-label {
   font-size: 0.8125rem;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  margin-bottom: var(--space-xs);
+  color: var(--color-text-muted);
+  font-weight: 400;
+  flex-shrink: 0;
+  width: 5rem;
 }
 
-.saved-option:hover {
-  border-color: var(--color-primary);
-  background: #fafbff;
-}
-
-.saved-option.selected {
-  border-color: var(--color-primary);
-  background: #eff6ff;
-}
-
-.saved-option input[type="radio"] {
-  accent-color: var(--color-primary);
-}
-
-.saved-option-details {
+.compact-value-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   flex: 1;
-  min-width: 0;
+  justify-content: flex-end;
 }
 
-.saved-option-label {
+.compact-value {
+  font-size: 0.875rem;
+  color: var(--color-text);
   font-weight: 500;
 }
 
-.saved-option-secondary {
-  font-size: 0.75rem;
+.compact-action {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
   color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
-/* Post-purchase save prompt */
-.save-prompt {
-  animation: fadeInUp 0.3s ease-out;
-  margin-top: var(--space-lg);
-  padding: var(--space-md);
+.compact-action:hover {
+  color: var(--color-text);
+  background: #f3f4f6;
+}
+
+.compact-select {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.compact-select:hover {
+  color: var(--color-primary);
+}
+
+.pay-with-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-brand {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+}
+
+/* Save opt-in (pre-payment, like Link) */
+.save-opt-in {
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   background: #fafbff;
   border: 1px solid #e0e7ff;
   border-radius: var(--radius-md);
 }
 
-.save-prompt-check {
+.save-opt-in-check {
   display: flex;
   align-items: flex-start;
   gap: var(--space-sm);
   cursor: pointer;
 }
 
-.save-prompt-check input[type="checkbox"] {
+.save-opt-in-check input[type="checkbox"] {
   margin-top: 0.15rem;
   accent-color: var(--color-primary);
 }
 
-.save-prompt-text {
+.save-opt-in-text {
   font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--color-text);
 }
 
-.save-prompt-sub {
+.save-opt-in-sub {
   font-size: 0.75rem;
   color: var(--color-text-muted);
   margin-top: 0.125rem;
 }
 
+/* Utility classes */
 .btn-secondary {
   background: var(--color-surface);
   color: var(--color-primary);
@@ -685,3 +737,4 @@ body {
   margin-top: var(--space-sm);
   animation: fadeInUp 0.2s ease-out;
 }
+
