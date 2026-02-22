@@ -358,7 +358,15 @@ onMounted(async () => {
   }
 })
 
-// Re-init card SDK when user switches from saved card to "Use a new card"
+// Re-init card SDK when the card form container becomes available
+watch(() => profile.otpVerified.value, (verified) => {
+  if (verified && !profile.selectedCard.value) {
+    nextTick(() => {
+      setTimeout(initCardElement, 300)
+    })
+  }
+})
+
 watch(() => profile.selectedCard.value, (newVal) => {
   if (newVal === null) {
     tapCard.unmount()
