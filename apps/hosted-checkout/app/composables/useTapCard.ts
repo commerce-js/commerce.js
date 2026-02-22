@@ -123,9 +123,7 @@ export function useTapCard() {
 
     // Add customer info if available
     if (options.email || options.firstName || options.phone || options.customerId) {
-      config.customer = {
-        // id is required for saveCard addon to show the checkbox
-        id: options.customerId || '',
+      const customerConfig: Record<string, any> = {
         name: [
           {
             lang: Locale.EN,
@@ -144,6 +142,13 @@ export function useTapCard() {
           },
         },
       }
+
+      // Only set customer.id if it's a real Tap customer ID (cus_xxx)
+      if (options.customerId?.startsWith('cus_')) {
+        customerConfig.id = options.customerId
+      }
+
+      config.customer = customerConfig
     }
 
     // Add merchant if provided
