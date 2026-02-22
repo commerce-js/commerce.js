@@ -19,7 +19,7 @@ export default defineNuxtConfig({
     },
   },
 
-  // Tap's goSell.js is loaded via useHead in the payment step
+  // Tap Card SDK v2 is loaded dynamically via useTapCard composable
   // No extra modules needed — this is a minimal, focused checkout app
 
   runtimeConfig: {
@@ -45,7 +45,6 @@ export default defineNuxtConfig({
     },
   },
 
-  // Nitro — Cloudflare Pages preset
   nitro: {
     preset: 'cloudflare-pages',
   },
