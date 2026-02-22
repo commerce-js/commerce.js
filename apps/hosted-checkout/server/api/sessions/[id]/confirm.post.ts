@@ -19,8 +19,13 @@ export default defineEventHandler(async (event) => {
   try {
     await session.confirmPayment(body?.chargeId)
 
+    // Get the payment session for saved card data
+    const paymentSession = session.paymentSession
+
     return {
       sessionId: id,
+      tapCustomerId: (paymentSession?.providerData as any)?.tapCustomerId ?? null,
+      savedCard: (paymentSession?.providerData as any)?.savedCard ?? null,
       ...session.toSnapshot(),
     }
   }

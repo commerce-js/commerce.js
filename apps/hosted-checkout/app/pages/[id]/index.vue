@@ -250,14 +250,19 @@ function getCardBrandIcon(brand: string) {
 // ---------------------------------------------------------------------------
 // Profile save (fires after successful payment)
 // ---------------------------------------------------------------------------
-function saveProfileAfterPayment(tapCustomerId?: string) {
+async function saveProfileAfterPayment(tapCustomerId?: string) {
   if (!profile.profileId.value) return
-  profile.saveProfile({
-    firstName: firstName.value || undefined,
-    lastName: lastName.value || undefined,
-    phone: phone.value || undefined,
-    tapCustomerId: tapCustomerId || undefined,
-  }).catch(() => {})
+  try {
+    await profile.saveProfile({
+      firstName: firstName.value || undefined,
+      lastName: lastName.value || undefined,
+      phone: phone.value || undefined,
+      tapCustomerId: tapCustomerId || undefined,
+    })
+  }
+  catch {
+    // Best-effort — don't fail the payment flow
+  }
 }
 
 async function submitPaymentWithToken(sourceToken: string | undefined) {
@@ -287,8 +292,8 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
       },
     })
 
-    // Save profile data + tapCustomerId in background
-    saveProfileAfterPayment(result.tapCustomerId)
+    // Save profile data + tapCustomerId BEFORE redirect (must complete before navigation)
+    await saveProfileAfterPayment(result.tapCustomerId)
 
     if (result.redirectUrl) {
       await navigateTo(result.redirectUrl, { external: true })
