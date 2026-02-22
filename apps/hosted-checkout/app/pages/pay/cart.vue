@@ -348,10 +348,22 @@ onMounted(async () => {
 
   try {
     await tapCard.loadSDK()
-    setTimeout(initCardElement, 100)
+    // Only init card element if no saved card is pre-selected
+    if (!profile.selectedCard.value) {
+      setTimeout(initCardElement, 100)
+    }
   }
   catch {
     console.warn('[pay/cart] Failed to load Tap Card SDK v2')
+  }
+})
+
+// Re-init card SDK when user switches from saved card to "Use a new card"
+watch(() => profile.selectedCard.value, (newVal) => {
+  if (newVal === null) {
+    nextTick(() => {
+      setTimeout(initCardElement, 150)
+    })
   }
 })
 </script>
