@@ -355,9 +355,9 @@ onMounted(async () => {
 // Re-init card SDK when user switches from saved card to "Use a new card"
 watch(() => profile.selectedCard.value, (newVal) => {
   if (newVal === null) {
-    // Small delay to let v-show reveal the container
+    tapCard.unmount()
     nextTick(() => {
-      setTimeout(initCardElement, 150)
+      setTimeout(initCardElement, 300)
     })
   }
 })
