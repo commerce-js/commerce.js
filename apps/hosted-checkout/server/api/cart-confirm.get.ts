@@ -7,7 +7,7 @@
 // Query: orderId, cartId, returnUrl, tap_id
 // ---------------------------------------------------------------------------
 
-import { createOrdersDomain, createCartDomain } from '@commercejs/platform'
+import { createOrdersDomain, createCartDomain, createProfileDomain } from '@commercejs/platform'
 import { useTapProviderFromEnv } from '../utils/tap'
 import { ensureDb } from '../utils/db'
 
@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
   const cartId = query.cartId as string
   const returnUrl = query.returnUrl as string
   const tapId = query.tap_id as string
+  const customerEmail = query.email as string | undefined
 
   if (!orderId) {
     throw createError({ statusCode: 400, message: 'orderId is required' })
@@ -43,6 +44,35 @@ export default defineEventHandler(async (event) => {
       // Clean up the cart (may already be deleted by webhook — that's OK)
       if (cartId) {
         try { await cartDomain.deleteCart(cartId) } catch {}
+      }
+
+      // Persist tapCustomerId to profile for saved card re-use
+      const tapCustomerId = (session.providerData as any)?.tapCustomerId ?? null
+
+      if (tapCustomerId && customerEmail) {
+        try {
+          const profileDomain = createProfileDomain()
+          const profile = await profileDomain.lookupByEmail(customerEmail)
+          if (profile) {
+            const currentPrefs = (profile as any).preferences || {}
+            await profileDomain.updateProfile(profile.id, {
+              preferences: {
+                ...currentPrefs,
+                paymentProviders: {
+                  ...(currentPrefs.paymentProviders || {}),
+                  tap: {
+                    ...(currentPrefs.paymentProviders?.tap || {}),
+                    customerId: tapCustomerId,
+                  },
+                },
+              },
+            })
+            console.log(`[cart-confirm] Saved tapCustomerId ${tapCustomerId} for ${customerEmail}`)
+          }
+        }
+        catch (err) {
+          console.warn('[cart-confirm] Failed to save tapCustomerId:', err)
+        }
       }
 
       console.log(`[cart-confirm] Order ${orderId} → processing (charge ${tapId})`)
