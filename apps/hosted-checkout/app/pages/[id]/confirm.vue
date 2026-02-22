@@ -16,7 +16,7 @@ const error = ref<string | null>(null)
 // Auto-confirm on mount
 onMounted(async () => {
   try {
-    const result = await $fetch(`/api/sessions/${sessionId}/confirm`, {
+    const result = await $fetch<any>(`/api/sessions/${sessionId}/confirm`, {
       method: 'POST',
       body: {
         chargeId: tapChargeId,
@@ -25,6 +25,7 @@ onMounted(async () => {
 
     if (result.state === 'complete') {
       state.value = 'success'
+      // tapCustomerId is saved server-side in confirm.post.ts
       // Redirect to success page after brief delay
       setTimeout(() => {
         navigateTo(`/${sessionId}/success`)
