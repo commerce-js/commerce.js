@@ -13,6 +13,7 @@
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const profile = useProfile()
 const sessionId = route.params.id as string
 
 // Session state
@@ -26,6 +27,13 @@ const email = ref('')
 const firstName = ref('')
 const lastName = ref('')
 const phone = ref('')
+
+// OTP digit refs
+const otpDigits = ref(['', '', '', '', '', ''])
+const otpInputRefs = ref<HTMLInputElement[]>([])
+
+// Save opt-in
+const saveToProfile = ref(true)
 
 /** Translate internal error strings into user-friendly messages */
 function toUserFriendlyError(raw: string | null | undefined): string {
@@ -74,6 +82,99 @@ const formattedAmount = computed(() => {
 })
 
 // ---------------------------------------------------------------------------
+// Profile lookup on email blur
+// ---------------------------------------------------------------------------
+async function onEmailBlur() {
+  if (!email.value || !email.value.includes('@')) return
+  if (profile.otpVerified.value) return // Already verified
+
+  const result = await profile.lookupProfile(email.value)
+  if (result?.exists) {
+    // Returning buyer — send OTP automatically
+    await profile.sendOtp()
+  }
+}
+
+function switchIdentity() {
+  profile.reset()
+  email.value = ''
+  firstName.value = ''
+  lastName.value = ''
+  phone.value = ''
+  otpDigits.value = ['', '', '', '', '', '']
+}
+
+function skipProfile() {
+  profile.reset()
+  otpDigits.value = ['', '', '', '', '', '']
+}
+
+// ---------------------------------------------------------------------------
+// OTP digit input handling
+// ---------------------------------------------------------------------------
+function onOtpInput(index: number, event: Event) {
+  const input = event.target as HTMLInputElement
+  const value = input.value.replace(/\D/g, '')
+
+  if (value.length > 1) {
+    // Handle paste — distribute digits across inputs
+    const digits = value.slice(0, 6).split('')
+    digits.forEach((d, i) => {
+      if (i < 6) otpDigits.value[i] = d
+    })
+    const nextIndex = Math.min(digits.length, 5)
+    otpInputRefs.value[nextIndex]?.focus()
+
+    if (digits.length === 6) {
+      submitOtp()
+    }
+    return
+  }
+
+  otpDigits.value[index] = value
+
+  if (value && index < 5) {
+    otpInputRefs.value[index + 1]?.focus()
+  }
+
+  // Auto-submit when all 6 digits entered
+  if (otpDigits.value.every(d => d !== '')) {
+    submitOtp()
+  }
+}
+
+function onOtpKeydown(index: number, event: KeyboardEvent) {
+  if (event.key === 'Backspace' && !otpDigits.value[index] && index > 0) {
+    otpInputRefs.value[index - 1]?.focus()
+  }
+}
+
+async function submitOtp() {
+  const code = otpDigits.value.join('')
+  if (code.length !== 6) return
+
+  const verified = await profile.verifyOtp(code)
+  if (verified && profile.profileData.value) {
+    // Auto-fill from profile
+    const p = profile.profileData.value
+    if (p.firstName && !firstName.value) firstName.value = p.firstName
+    if (p.lastName && !lastName.value) lastName.value = p.lastName
+    if (p.phone && !phone.value) phone.value = p.phone
+  }
+  else {
+    otpDigits.value = ['', '', '', '', '', '']
+    otpInputRefs.value[0]?.focus()
+  }
+}
+
+async function resendOtp() {
+  profile.otpError.value = null
+  otpDigits.value = ['', '', '', '', '', '']
+  await profile.sendOtp()
+  otpInputRefs.value[0]?.focus()
+}
+
+// ---------------------------------------------------------------------------
 // Tap Card SDK v2
 // ---------------------------------------------------------------------------
 const tapCard = useTapCard()
@@ -105,6 +206,9 @@ async function submitPayment() {
   submitting.value = true
   error.value = null
 
+  // Save profile in background if opted in
+  saveProfileIfOptedIn()
+
   if (!tapCard.ready.value) {
     await submitPaymentWithToken(undefined)
     return
@@ -118,6 +222,18 @@ async function submitPayment() {
     error.value = err?.message || 'Failed to tokenize card. Please try again.'
     submitting.value = false
   }
+}
+
+// ---------------------------------------------------------------------------
+// Pre-payment save (fires during payment if opted in)
+// ---------------------------------------------------------------------------
+async function saveProfileIfOptedIn() {
+  if (!saveToProfile.value || !profile.profileId.value) return
+  profile.saveProfile({
+    firstName: firstName.value || undefined,
+    lastName: lastName.value || undefined,
+    phone: phone.value || undefined,
+  }).catch(() => {})
 }
 
 async function submitPaymentWithToken(sourceToken: string | undefined) {
@@ -276,73 +392,149 @@ onMounted(async () => {
         </div>
 
         <form @submit.prevent="submitPayment">
+          <!-- Email with profile lookup -->
           <div class="form-group">
             <label class="form-label" for="email">Email</label>
-            <input
-              id="email"
-              v-model="email"
-              class="form-input"
-              type="email"
-              placeholder="ali@example.com"
-              required
-              autocomplete="email"
-            >
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="firstName">First name</label>
+            <div class="form-group-with-status">
               <input
-                id="firstName"
-                v-model="firstName"
+                id="email"
+                v-model="email"
                 class="form-input"
-                type="text"
-                placeholder="Ali"
-                autocomplete="given-name"
+                type="email"
+                placeholder="ali@example.com"
+                required
+                autocomplete="email"
+                @blur="onEmailBlur"
               >
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="lastName">Last name</label>
-              <input
-                id="lastName"
-                v-model="lastName"
-                class="form-input"
-                type="text"
-                placeholder="Ahmed"
-                autocomplete="family-name"
-              >
+              <span v-if="profile.lookingUp.value" class="field-status">
+                <span class="spinner" />
+              </span>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="phone">Phone</label>
-            <input
-              id="phone"
-              v-model="phone"
-              class="form-input"
-              type="tel"
-              placeholder="+966 50 000 0000"
-              autocomplete="tel"
+          <!-- OTP step: "Confirm it's you" -->
+          <div v-if="profile.otpSent.value && !profile.otpVerified.value" class="otp-step">
+            <div class="otp-step-title">Confirm it's you</div>
+            <div class="otp-step-description">
+              Enter the code sent to <strong>{{ email }}</strong> to use your saved information.
+            </div>
+
+            <div class="otp-input-group">
+              <input
+                v-for="(_, i) in 6"
+                :key="i"
+                :ref="(el) => { if (el) otpInputRefs[i] = el as HTMLInputElement }"
+                v-model="otpDigits[i]"
+                class="otp-digit"
+                :class="{ filled: otpDigits[i] }"
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                autocomplete="one-time-code"
+                :disabled="profile.otpVerifying.value"
+                @input="onOtpInput(i, $event)"
+                @keydown="onOtpKeydown(i, $event)"
+              >
+            </div>
+
+            <div v-if="profile.otpVerifying.value" style="text-align: center; font-size: 0.8125rem; color: var(--color-text-muted);">
+              Verifying...
+            </div>
+            <div v-if="profile.otpError.value" class="otp-error">
+              {{ profile.otpError.value }}
+            </div>
+
+            <div class="otp-actions">
+              <button
+                type="button"
+                class="otp-resend-btn"
+                :disabled="profile.otpSending.value"
+                @click="resendOtp"
+              >
+                {{ profile.otpSending.value ? 'Sending...' : 'Resend code' }}
+              </button>
+              <button type="button" class="otp-skip-btn" @click="skipProfile">
+                Continue without profile
+              </button>
+            </div>
+          </div>
+
+          <!-- Rest of form (hidden while OTP is pending) -->
+          <template v-if="!profile.otpSent.value || profile.otpVerified.value">
+            <!-- Verified identity badge -->
+            <div v-if="profile.otpVerified.value" class="verified-badge">
+              <span>✓ {{ email }}</span>
+              <button type="button" class="switch-identity-btn" @click="switchIdentity">
+                Not you?
+              </button>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="firstName">First name</label>
+                <input
+                  id="firstName"
+                  v-model="firstName"
+                  class="form-input"
+                  type="text"
+                  placeholder="Ali"
+                  autocomplete="given-name"
+                >
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="lastName">Last name</label>
+                <input
+                  id="lastName"
+                  v-model="lastName"
+                  class="form-input"
+                  type="text"
+                  placeholder="Ahmed"
+                  autocomplete="family-name"
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone</label>
+              <input
+                id="phone"
+                v-model="phone"
+                class="form-input"
+                type="tel"
+                placeholder="+966 50 000 0000"
+                autocomplete="tel"
+              >
+            </div>
+
+            <hr class="checkout-divider">
+
+            <!-- Card element (Tap Card SDK v2) -->
+            <div class="form-group">
+              <label class="form-label">Card details</label>
+              <div id="tap-card-element" class="tap-card-element" />
+              <p id="tap-notifications" class="tap-notification" />
+            </div>
+
+            <!-- Save opt-in -->
+            <div v-if="profile.profileId.value" class="save-opt-in">
+              <label class="save-opt-in-check">
+                <input v-model="saveToProfile" type="checkbox">
+                <div>
+                  <div class="save-opt-in-text">Save my info for secure 1-click checkout</div>
+                  <div class="save-opt-in-sub">Pay faster on this store and thousands of sites</div>
+                </div>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              :disabled="submitting"
             >
-          </div>
-
-          <hr class="checkout-divider">
-
-          <!-- Card element (Tap Card SDK v2) -->
-          <div class="form-group">
-            <label class="form-label">Card details</label>
-            <div id="tap-card-element" class="tap-card-element" />
-            <p id="tap-notifications" class="tap-notification" />
-          </div>
-
-          <button
-            type="submit"
-            class="btn btn-primary"
-            :disabled="submitting"
-          >
-            <span v-if="submitting" class="spinner" />
-            {{ submitting ? 'Processing...' : `Pay ${formattedAmount}` }}
-          </button>
+              <span v-if="submitting" class="spinner" />
+              {{ submitting ? 'Processing...' : `Pay ${formattedAmount}` }}
+            </button>
+          </template>
         </form>
 
         <div class="security-badge">
