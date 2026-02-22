@@ -188,6 +188,64 @@ body {
   gap: var(--space-md);
 }
 
+/* Saved Card Selector */
+.saved-cards {
+  margin-bottom: 1rem;
+}
+
+.saved-card-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  background: var(--color-surface);
+}
+
+.saved-card-option:hover {
+  border-color: var(--color-border-focus);
+}
+
+.saved-card-option.selected {
+  border-color: var(--color-primary, #2563eb);
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.saved-card-option input[type="radio"] {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--color-primary, #2563eb);
+  margin: 0;
+}
+
+.card-info {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.card-brand {
+  font-weight: 500;
+}
+
+.card-last4 {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.card-expiry {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  margin-left: auto;
+}
+
 /* Tap Card Element Container */
 .tap-card-element {
   min-height: 44px;

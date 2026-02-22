@@ -16,6 +16,7 @@ export function useProfile() {
   const saving = ref(false)
   const saveSuccess = ref(false)
   const savedCards = ref<any[]>([])
+  const selectedCard = ref<string | null>(null) // null = new card, string = saved card ID
   const tapCustomerId = computed(() => profileData.value?.preferences?.paymentProviders?.tap?.customerId || null)
 
   async function lookupProfile(email: string) {
@@ -77,7 +78,8 @@ export function useProfile() {
         profileData.value = result.profile
 
         // Auto-fetch saved cards if profile has a Tap customer ID
-        if (result.profile?.tapCustomerId) {
+        const hasTapCustomer = result.profile?.preferences?.paymentProviders?.tap?.customerId
+        if (hasTapCustomer) {
           fetchSavedCards().catch(() => {})
         }
 
@@ -131,10 +133,29 @@ export function useProfile() {
         query: { profileId: profileId.value },
       })
       savedCards.value = result.cards ?? []
+      // Auto-select the first saved card for one-click pay
+      if (savedCards.value.length > 0) {
+        selectedCard.value = savedCards.value[0].id
+      }
     }
     catch (err: any) {
       console.warn('[useProfile] fetch cards failed:', err?.data?.message || err)
       savedCards.value = []
+    }
+  }
+
+  async function tokenizeSavedCard(cardId: string): Promise<string | null> {
+    if (!profileId.value) return null
+    try {
+      const result = await $fetch<any>('/api/profile/cards/tokenize', {
+        method: 'POST',
+        body: { profileId: profileId.value, cardId },
+      })
+      return result.token ?? null
+    }
+    catch (err: any) {
+      console.warn('[useProfile] tokenize saved card failed:', err?.data?.message || err)
+      return null
     }
   }
 
@@ -147,6 +168,7 @@ export function useProfile() {
     otpError.value = null
     saveSuccess.value = false
     savedCards.value = []
+    selectedCard.value = null
   }
 
   return {
@@ -163,6 +185,7 @@ export function useProfile() {
     saving,
     saveSuccess,
     savedCards,
+    selectedCard,
     tapCustomerId,
     // Actions
     lookupProfile,
@@ -170,6 +193,7 @@ export function useProfile() {
     verifyOtp,
     saveProfile,
     fetchSavedCards,
+    tokenizeSavedCard,
     reset,
   }
 }

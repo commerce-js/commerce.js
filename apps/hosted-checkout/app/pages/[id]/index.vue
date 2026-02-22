@@ -204,6 +204,25 @@ async function submitPayment() {
   submitting.value = true
   error.value = null
 
+  // If a saved card is selected, tokenize it on the server
+  if (profile.selectedCard.value) {
+    try {
+      const token = await profile.tokenizeSavedCard(profile.selectedCard.value)
+      if (!token) {
+        error.value = 'Failed to process saved card. Please try a new card.'
+        submitting.value = false
+        return
+      }
+      await submitPaymentWithToken(token)
+    }
+    catch (err: any) {
+      error.value = err?.message || 'Failed to process saved card'
+      submitting.value = false
+    }
+    return
+  }
+
+  // New card via Tap Card SDK
   if (!tapCard.ready.value) {
     await submitPaymentWithToken(undefined)
     return
@@ -217,6 +236,15 @@ async function submitPayment() {
     error.value = err?.message || 'Failed to tokenize card. Please try again.'
     submitting.value = false
   }
+}
+
+function getCardBrandIcon(brand: string) {
+  const b = (brand || '').toLowerCase()
+  if (b.includes('visa')) return '💳 Visa'
+  if (b.includes('master')) return '💳 Mastercard'
+  if (b.includes('amex') || b.includes('american')) return '💳 Amex'
+  if (b.includes('mada')) return '💳 mada'
+  return '💳 ' + (brand || 'Card')
 }
 
 // ---------------------------------------------------------------------------
@@ -507,9 +535,51 @@ onMounted(async () => {
 
             <hr class="checkout-divider">
 
-            <!-- Card element (Tap Card SDK v2) -->
-            <div class="form-group">
-              <label class="form-label">Card details</label>
+            <!-- Saved cards selector (when returning customer has saved cards) -->
+            <div v-if="profile.savedCards.value.length > 0" class="saved-cards">
+              <label class="form-label">Payment method</label>
+
+              <label
+                v-for="card in profile.savedCards.value"
+                :key="card.id"
+                class="saved-card-option"
+                :class="{ selected: profile.selectedCard.value === card.id }"
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  :value="card.id"
+                  :checked="profile.selectedCard.value === card.id"
+                  @change="profile.selectedCard.value = card.id"
+                >
+                <span class="card-info">
+                  <span class="card-brand">{{ getCardBrandIcon(card.brand) }}</span>
+                  <span class="card-last4">•••• {{ card.last_four }}</span>
+                  <span class="card-expiry">{{ String(card.exp_month).padStart(2, '0') }}/{{ String(card.exp_year).slice(-2) }}</span>
+                </span>
+              </label>
+
+              <label
+                class="saved-card-option"
+                :class="{ selected: profile.selectedCard.value === null }"
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  :value="null"
+                  :checked="profile.selectedCard.value === null"
+                  @change="profile.selectedCard.value = null"
+                >
+                <span class="card-info">
+                  <span class="card-brand">➕</span>
+                  <span class="card-last4">Use a new card</span>
+                </span>
+              </label>
+            </div>
+
+            <!-- Card element (Tap Card SDK v2) — hidden when saved card selected -->
+            <div v-if="!profile.selectedCard.value" class="form-group">
+              <label v-if="profile.savedCards.value.length === 0" class="form-label">Card details</label>
               <div id="tap-card-element" class="tap-card-element" />
               <p id="tap-notifications" class="tap-notification" />
             </div>
