@@ -7,7 +7,7 @@ import { pgTable, text, integer, boolean, timestamp, jsonb, primaryKey } from 'd
 export const profiles = pgTable('profiles', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text('email').unique(),
-  phone: text('phone').unique(),
+  phone: text('phone'),
   firstName: text('first_name'),
   lastName: text('last_name'),
   preferences: jsonb('preferences'),

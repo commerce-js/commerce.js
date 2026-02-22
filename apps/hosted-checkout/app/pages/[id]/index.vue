@@ -337,39 +337,33 @@ async function retryPayment() {
   }
 }
 
+// Load SDK once on mount
+const sdkReady = ref(false)
 onMounted(async () => {
   if (!session.value || session.value.state === 'complete' || session.value.state === 'failed') return
-
   try {
     await tapCard.loadSDK()
-    // Only init card element if no saved card is pre-selected
-    if (!profile.selectedCard.value) {
-      setTimeout(initCardElement, 100)
-    }
+    sdkReady.value = true
   }
   catch {
     console.warn('[checkout] Failed to load Tap Card SDK v2')
   }
 })
 
-// Re-init card SDK when the card form container becomes available
-// This handles: OTP verification, "Use a new card" toggle, and skip profile
-watch(() => profile.otpVerified.value, (verified) => {
-  if (verified && !profile.selectedCard.value) {
-    nextTick(() => {
-      setTimeout(initCardElement, 300)
-    })
-  }
-})
+// The card form should show when: SDK loaded, no saved card selected,
+// and the form container is in the DOM (OTP done or not needed)
+const shouldShowCardForm = computed(() =>
+  sdkReady.value
+  && !profile.selectedCard.value
+  && (!profile.otpSent.value || profile.otpVerified.value),
+)
 
-watch(() => profile.selectedCard.value, (newVal) => {
-  if (newVal === null) {
+watch(shouldShowCardForm, (show, wasShowing) => {
+  if (show) {
     tapCard.unmount()
-    nextTick(() => {
-      setTimeout(initCardElement, 300)
-    })
+    nextTick(() => setTimeout(initCardElement, 200))
   }
-})
+}, { immediate: true })
 </script>
 
 <template>

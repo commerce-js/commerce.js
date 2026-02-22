@@ -343,38 +343,30 @@ async function saveProfileAfterPayment(tapCustomerId?: string) {
 // ---------------------------------------------------------------------------
 // Mount
 // ---------------------------------------------------------------------------
+const sdkReady = ref(false)
 onMounted(async () => {
   if (!cart.value || orderComplete.value) return
-
   try {
     await tapCard.loadSDK()
-    // Only init card element if no saved card is pre-selected
-    if (!profile.selectedCard.value) {
-      setTimeout(initCardElement, 100)
-    }
+    sdkReady.value = true
   }
   catch {
     console.warn('[pay/cart] Failed to load Tap Card SDK v2')
   }
 })
 
-// Re-init card SDK when the card form container becomes available
-watch(() => profile.otpVerified.value, (verified) => {
-  if (verified && !profile.selectedCard.value) {
-    nextTick(() => {
-      setTimeout(initCardElement, 300)
-    })
-  }
-})
+const shouldShowCardForm = computed(() =>
+  sdkReady.value
+  && !profile.selectedCard.value
+  && (!profile.otpSent.value || profile.otpVerified.value),
+)
 
-watch(() => profile.selectedCard.value, (newVal) => {
-  if (newVal === null) {
+watch(shouldShowCardForm, (show) => {
+  if (show) {
     tapCard.unmount()
-    nextTick(() => {
-      setTimeout(initCardElement, 300)
-    })
+    nextTick(() => setTimeout(initCardElement, 200))
   }
-})
+}, { immediate: true })
 </script>
 
 <template>
