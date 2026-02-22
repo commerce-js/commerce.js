@@ -29,8 +29,8 @@ export default defineEventHandler(async (event) => {
     // Return the snapshot even on error so the UI can show state
     return {
       sessionId: id,
-      error: message,
       ...session.toSnapshot(),
+      error: message,
     }
   }
 })

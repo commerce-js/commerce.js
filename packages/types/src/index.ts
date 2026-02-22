@@ -22,6 +22,9 @@ export type { Cart, CartItem, CartTotals } from './cart.js'
 // Customer
 export type { Customer, Address, RegisterInput, UpdateCustomerInput } from './customer.js'
 
+// Profile (cross-merchant buyer identity)
+export type { Profile, SavedAddress, SavedPaymentMethod, ProfileMerchantLink } from './profile.js'
+
 // Order
 export type { Order, OrderItem, OrderStatus, FulfillmentStatus } from './order.js'
 

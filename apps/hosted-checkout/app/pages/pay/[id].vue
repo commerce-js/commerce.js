@@ -21,7 +21,6 @@ const session = ref<Record<string, any> | null>(null)
 const loading = ref(true)
 const submitting = ref(false)
 const error = ref<string | null>(null)
-const cardReady = ref(false)
 
 // Form state — minimal for payment links
 const email = ref('')
@@ -94,60 +93,27 @@ const formattedAmount = computed(() => {
   }).format(session.value.amount)
 })
 
-// goSell.js card element init
-function initGoSellElements() {
+// ---------------------------------------------------------------------------
+// Tap Card SDK v2
+// ---------------------------------------------------------------------------
+const tapCard = useTapCard()
+
+function initCardElement() {
   if (!import.meta.client) return
   const publicKey = session.value?.tapPublicKey || config.public.tapPublicKey
-  if (!publicKey) return
+  if (!publicKey || !session.value) return
 
-  const goSell = (window as any).goSell
-  if (!goSell) return
-
-  goSell.goSellElements({
-    containerID: 'tap-card-element',
-    gateway: {
-      publicKey,
-      language: 'en',
-      supportedCurrencies: [session.value?.currency || 'SAR'],
-      supportedPaymentMethods: 'all',
-      notifications: 'tap-notifications',
-      callback: handleTokenCallback,
-      onError: handleTokenError,
-      labels: {
-        cardNumber: 'Card Number',
-        expirationDate: 'MM/YY',
-        cvv: 'CVV',
-        cardHolder: 'Name on Card',
-        actionButton: 'Pay',
-      },
-      style: {
-        base: {
-          color: '#171717',
-          lineHeight: '18px',
-          fontFamily: 'Inter, sans-serif',
-          fontSmoothing: 'antialiased',
-          fontSize: '15px',
-          '::placeholder': { color: '#a3a3a3', fontSize: '14px' },
-        },
-        invalid: { color: '#dc2626', iconColor: '#dc2626' },
-      },
-    },
+  tapCard.render({
+    containerId: 'tap-card-element',
+    publicKey,
+    amount: session.value.amount,
+    currency: session.value.currency || 'SAR',
+    email: email.value || undefined,
+    firstName: firstName.value || undefined,
+    phone: phone.value || undefined,
+    saveCard: true,
+    customerId: sessionId,
   })
-  cardReady.value = true
-}
-
-async function handleTokenCallback(response: any) {
-  if (!response?.id) {
-    error.value = 'Failed to tokenize card. Please try again.'
-    submitting.value = false
-    return
-  }
-  await submitPaymentWithToken(response.id)
-}
-
-function handleTokenError(err: any) {
-  error.value = err?.error?.message || 'Card input error. Please check your details.'
-  submitting.value = false
 }
 
 async function submitPayment() {
@@ -163,19 +129,19 @@ async function submitPayment() {
   submitting.value = true
   error.value = null
 
-  const goSell = (window as any).goSell
-  if (goSell && cardReady.value) {
-    goSell.submit()
-    setTimeout(() => {
-      if (submitting.value) {
-        error.value = 'Payment timed out. Please check your card details and try again.'
-        submitting.value = false
-      }
-    }, 30000)
+  if (!tapCard.ready.value) {
+    await submitPaymentWithToken(undefined)
     return
   }
 
-  await submitPaymentWithToken(undefined)
+  try {
+    const token = await tapCard.tokenize()
+    await submitPaymentWithToken(token.id)
+  }
+  catch (err: any) {
+    error.value = err?.message || 'Failed to tokenize card. Please try again.'
+    submitting.value = false
+  }
 }
 
 async function submitPaymentWithToken(sourceToken: string | undefined) {
@@ -216,42 +182,15 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
   }
 }
 
-function loadGoSellSDK(): Promise<void> {
-  if ((window as any).goSell) return Promise.resolve()
-
-  return new Promise((resolve, reject) => {
-    if (!document.querySelector('link[href*="gosell.css"]')) {
-      const cssLink = document.createElement('link')
-      cssLink.rel = 'stylesheet'
-      cssLink.href = 'https://goSellJSLib.b-cdn.net/v2.0.4/css/gosell.css'
-      document.head.appendChild(cssLink)
-    }
-
-    const existing = document.querySelector('script[src*="gosell.js"]')
-    if (existing) {
-      existing.addEventListener('load', () => resolve())
-      if ((window as any).goSell) resolve()
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://goSellJSLib.b-cdn.net/v2.0.4/js/gosell.js'
-    script.async = true
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Failed to load goSell.js'))
-    document.head.appendChild(script)
-  })
-}
-
 async function retryPayment() {
   error.value = null
-  cardReady.value = false
+  tapCard.unmount()
   session.value!.state = 'idle'
   await nextTick()
 
   try {
-    await loadGoSellSDK()
-    setTimeout(initGoSellElements, 150)
+    await tapCard.loadSDK()
+    setTimeout(initCardElement, 150)
   }
   catch {
     error.value = 'Could not load payment form. Please reload the page.'
@@ -268,16 +207,17 @@ onMounted(async () => {
   if (!session.value || session.value.state === 'complete' || session.value.state === 'failed') return
 
   try {
-    await loadGoSellSDK()
-    setTimeout(initGoSellElements, 100)
+    await tapCard.loadSDK()
+    setTimeout(initCardElement, 100)
   }
   catch {
-    console.warn('[pay] Failed to load goSell.js')
+    console.warn('[pay] Failed to load Tap Card SDK v2')
   }
 })
 
 onUnmounted(() => {
   if (countdownInterval) clearInterval(countdownInterval)
+  tapCard.unmount()
 })
 </script>
 

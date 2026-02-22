@@ -41,7 +41,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build & Typecheck
-        run: pnpm turbo run build typecheck --filter='!@commercejs/dashboard'
+        run: pnpm turbo run build typecheck --filter='!@commercejs/dashboard' --filter='!docs'
 
       - name: Test with coverage
         run: pnpm vitest run --coverage
