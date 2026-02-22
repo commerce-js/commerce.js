@@ -169,9 +169,12 @@ export async function findActiveOtpCode(profileId: string) {
         eq(schema.profileOtpCodes.verified, false),
       ),
     )
-  // Return the most recent non-expired code
+  // Return the most recent non-expired code (sort newest first)
   const now = new Date()
-  return rows.find(r => r.expiresAt > now) ?? null
+  const active = rows
+    .filter(r => r.expiresAt > now)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  return active[0] ?? null
 }
 
 export async function markOtpVerified(id: string) {
@@ -191,11 +194,12 @@ export async function incrementOtpAttempts(id: string) {
 }
 
 export async function deleteExpiredOtpCodes(profileId: string) {
+  // Delete expired, verified, and all but the latest non-expired code
   const rows = await getDb().select().from(schema.profileOtpCodes)
     .where(eq(schema.profileOtpCodes.profileId, profileId))
-  const now = new Date()
   for (const row of rows) {
-    if (row.expiresAt <= now || row.verified) {
+    // Delete expired or verified codes
+    if (row.expiresAt <= new Date() || row.verified) {
       await getDb().delete(schema.profileOtpCodes)
         .where(eq(schema.profileOtpCodes.id, row.id))
     }

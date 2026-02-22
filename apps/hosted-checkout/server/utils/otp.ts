@@ -30,6 +30,8 @@ export async function generateOtp(profileId: string, channel: 'email' | 'sms' = 
     if (secondsAgo < 60) {
       return { id: existing.id, code: existing.code, rateLimited: true }
     }
+    // Rate limit passed — delete the old code before creating new one
+    await markOtpVerified(existing.id)
   }
 
   // Generate a random 6-digit code
