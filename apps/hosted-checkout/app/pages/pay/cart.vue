@@ -289,6 +289,7 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
         firstName: firstName.value,
         phone: phone.value,
         sourceToken,
+        tapCustomerId: profile.tapCustomerId.value || undefined,
         returnUrl: returnUrl ? `${returnUrl}/order-confirmation` : '',
       },
     })
@@ -508,7 +509,7 @@ onMounted(async () => {
             </div>
 
             <!-- Card element — hidden when saved card selected -->
-            <div v-if="!profile.selectedCard.value" class="form-group">
+            <div v-show="!profile.selectedCard.value" class="form-group">
               <label v-if="profile.savedCards.value.length === 0" class="form-label">Card details</label>
               <div id="tap-card-element" class="tap-card-element" />
               <p id="tap-notifications" class="tap-notification" />
@@ -645,7 +646,7 @@ onMounted(async () => {
               </div>
 
               <!-- Card element -->
-              <div v-if="!profile.selectedCard.value" class="form-group">
+              <div v-show="!profile.selectedCard.value" class="form-group">
                 <label v-if="profile.savedCards.value.length === 0" class="form-label">Card details</label>
                 <div id="tap-card-element" class="tap-card-element" />
                 <p id="tap-notifications" class="tap-notification" />

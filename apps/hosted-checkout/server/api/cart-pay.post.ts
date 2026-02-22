@@ -69,6 +69,7 @@ export default defineEventHandler(async (event) => {
       currency,
       sourceToken: body.sourceToken,
       saveCard: true,
+      customerId: body.tapCustomerId || undefined,
       returnUrl: `${appUrl}/api/cart-confirm?orderId=${order.id}&cartId=${body.cartId}&email=${encodeURIComponent(body.email || '')}&returnUrl=${encodeURIComponent(body.returnUrl || '')}`,
       webhookUrl: `${appUrl}/api/webhooks/tap-payment`,
       orderId: order.id,

@@ -275,6 +275,7 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
         lastName: lastName.value,
         phone: phone.value,
         sourceToken,
+        tapCustomerId: profile.tapCustomerId.value || undefined,
         shippingAddress: {
           firstName: firstName.value,
           lastName: lastName.value,
@@ -583,7 +584,7 @@ onMounted(async () => {
             </div>
 
             <!-- Card element (Tap Card SDK v2) — hidden when saved card selected -->
-            <div v-if="!profile.selectedCard.value" class="form-group">
+            <div v-show="!profile.selectedCard.value" class="form-group">
               <label v-if="profile.savedCards.value.length === 0" class="form-label">Card details</label>
               <div id="tap-card-element" class="tap-card-element" />
               <p id="tap-notifications" class="tap-notification" />

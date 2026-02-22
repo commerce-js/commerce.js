@@ -47,6 +47,7 @@ export default defineEventHandler(async (event) => {
       sourceToken: body.sourceToken,
       idempotencyKey: body.idempotencyKey,
       saveCard: true,
+      customerId: body.tapCustomerId || undefined,
     })
 
     return {

@@ -225,6 +225,7 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
     sourceToken?: string
     idempotencyKey?: string
     saveCard?: boolean
+    customerId?: string
     metadata?: Record<string, unknown>
   } = {}): Promise<PaymentSession> {
     this.assertNotExpired()
@@ -248,7 +249,7 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
         sourceToken: options.sourceToken,
         idempotencyKey: options.idempotencyKey,
         orderId: this._config.orderId ?? undefined,
-        customerId: undefined, // future: from customerInfo lookup
+        customerId: options.customerId ?? undefined,
         customer: this._customerInfo
           ? {
               email: this._customerInfo.email,
