@@ -46,11 +46,15 @@ export default defineEventHandler(async (event) => {
     const paymentSession = await session.submitPayment({
       sourceToken: body.sourceToken,
       idempotencyKey: body.idempotencyKey,
+      saveCard: true,
     })
 
     return {
       sessionId: id,
       redirectUrl: paymentSession.redirectUrl,
+      // Tap customer + card info for saving to profile
+      tapCustomerId: (paymentSession.providerData as any)?.tapCustomerId ?? null,
+      savedCard: (paymentSession.providerData as any)?.savedCard ?? null,
       ...session.toSnapshot(),
     }
   }

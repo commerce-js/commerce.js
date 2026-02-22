@@ -43,7 +43,6 @@ const otpInputRefs = ref<HTMLInputElement[]>([])
 // Saved selections
 const selectedAddressId = ref<string | null>(null)
 const selectedPaymentId = ref<string | null>(null)
-const saveToProfile = ref(true) // Default ON like Link
 
 // Load cart
 if (cartId && !orderComplete.value) {
@@ -130,7 +129,7 @@ function onOtpInput(index: number, event: Event) {
 
     // Auto-submit if all 6 digits are filled
     if (digits.length === 6) {
-      submitOtp()
+      nextTick(() => submitOtp())
     }
     return
   }
@@ -143,7 +142,7 @@ function onOtpInput(index: number, event: Event) {
 
   // Auto-submit when all 6 digits entered
   if (otpDigits.value.every(d => d !== '')) {
-    submitOtp()
+    nextTick(() => submitOtp())
   }
 }
 
@@ -224,6 +223,7 @@ function initCardElement() {
     lastName: lastName.value || undefined,
     phone: phone.value || undefined,
     saveCard: true,
+    customerId: profile.tapCustomerId.value || undefined,
   })
 }
 
@@ -235,9 +235,6 @@ async function submitPayment() {
 
   submitting.value = true
   error.value = null
-
-  // Save profile in background if opted in
-  saveProfileIfOptedIn()
 
   if (!tapCard.ready.value) {
     await submitPaymentWithToken(undefined)
@@ -268,6 +265,9 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
       },
     })
 
+    // Save profile data + tapCustomerId in background
+    saveProfileAfterPayment(result.tapCustomerId)
+
     if (result.redirectUrl) {
       await navigateTo(result.redirectUrl, { external: true })
       return
@@ -294,15 +294,15 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
 }
 
 // ---------------------------------------------------------------------------
-// Pre-payment save (fires during payment if opted in)
+// Profile save (fires after successful payment)
 // ---------------------------------------------------------------------------
-async function saveProfileIfOptedIn() {
-  if (!saveToProfile.value || !profile.profileId.value) return
-  // Fire-and-forget save alongside payment
+function saveProfileAfterPayment(tapCustomerId?: string) {
+  if (!profile.profileId.value) return
   profile.saveProfile({
     firstName: firstName.value || undefined,
     lastName: lastName.value || undefined,
     phone: phone.value || undefined,
+    tapCustomerId: tapCustomerId || undefined,
   }).catch(() => {})
 }
 
@@ -574,16 +574,6 @@ onMounted(async () => {
                 <p id="tap-notifications" class="tap-notification" />
               </div>
 
-              <!-- Save opt-in (shown for all buyers, like Link) -->
-              <div v-if="profile.profileId.value" class="save-opt-in">
-                <label class="save-opt-in-check">
-                  <input v-model="saveToProfile" type="checkbox">
-                  <div>
-                    <div class="save-opt-in-text">Save my info for secure 1-click checkout</div>
-                    <div class="save-opt-in-sub">Pay faster on this store and thousands of sites</div>
-                  </div>
-                </label>
-              </div>
 
               <!-- Pay button -->
               <button type="submit" class="btn btn-primary" :disabled="submitting">

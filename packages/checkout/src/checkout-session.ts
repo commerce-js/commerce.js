@@ -224,6 +224,7 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
   async submitPayment(options: {
     sourceToken?: string
     idempotencyKey?: string
+    saveCard?: boolean
     metadata?: Record<string, unknown>
   } = {}): Promise<PaymentSession> {
     this.assertNotExpired()
@@ -259,6 +260,7 @@ export class CheckoutSession extends EventEmitter<CheckoutEvents> {
         returnUrl: this._config.returnUrl ?? undefined,
         cancelUrl: this._config.cancelUrl ?? undefined,
         webhookUrl: this._config.webhookUrl ?? undefined,
+        saveCard: options.saveCard,
         metadata: options.metadata,
       })
 

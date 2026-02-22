@@ -79,6 +79,8 @@ export interface CreatePaymentSessionInput {
   webhookUrl?: string
   /** Idempotency key to prevent duplicate charges on retries */
   idempotencyKey?: string
+  /** Whether to save the card for future use (returns customer ID + card ID) */
+  saveCard?: boolean
   /** Arbitrary metadata passed to the gateway */
   metadata?: Record<string, unknown>
 }

@@ -23,6 +23,7 @@ export interface TapRawCharge {
   amount: number
   currency: string
   threeDSecure: boolean
+  save_card?: boolean
   description?: string
   reference?: {
     transaction?: string
@@ -49,6 +50,15 @@ export interface TapRawCharge {
     last_name?: string
     email?: string
   }
+  card?: {
+    id?: string
+    object?: string
+    first_six?: string
+    last_four?: string
+    brand?: string
+    exp_month?: number
+    exp_year?: number
+  }
   metadata?: Record<string, unknown>
   created: string
 }
@@ -66,6 +76,19 @@ export type TapChargeStatus =
   | 'RESTRICTED'
   | 'REFUNDED'
   | 'TIMEDOUT'
+
+/** A saved card from Tap's card API */
+export interface TapSavedCard {
+  id: string
+  object: string
+  first_six: string
+  last_four: string
+  brand: string
+  exp_month: number
+  exp_year: number
+  name?: string
+  funding?: string
+}
 
 /** Tap refund response */
 export interface TapRawRefund {

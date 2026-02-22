@@ -32,9 +32,6 @@ const phone = ref('')
 const otpDigits = ref(['', '', '', '', '', ''])
 const otpInputRefs = ref<HTMLInputElement[]>([])
 
-// Save opt-in
-const saveToProfile = ref(true)
-
 /** Translate internal error strings into user-friendly messages */
 function toUserFriendlyError(raw: string | null | undefined): string {
   if (!raw) return 'Your payment was declined. Please try again with a different card.'
@@ -126,7 +123,7 @@ function onOtpInput(index: number, event: Event) {
     otpInputRefs.value[nextIndex]?.focus()
 
     if (digits.length === 6) {
-      submitOtp()
+      nextTick(() => submitOtp())
     }
     return
   }
@@ -137,9 +134,9 @@ function onOtpInput(index: number, event: Event) {
     otpInputRefs.value[index + 1]?.focus()
   }
 
-  // Auto-submit when all 6 digits entered
+  // Auto-submit when all 6 digits entered (nextTick ensures reactivity flush)
   if (otpDigits.value.every(d => d !== '')) {
-    submitOtp()
+    nextTick(() => submitOtp())
   }
 }
 
@@ -194,6 +191,7 @@ function initCardElement() {
     lastName: lastName.value || undefined,
     phone: phone.value || undefined,
     saveCard: true,
+    customerId: profile.tapCustomerId.value || undefined,
   })
 }
 
@@ -205,9 +203,6 @@ async function submitPayment() {
 
   submitting.value = true
   error.value = null
-
-  // Save profile in background if opted in
-  saveProfileIfOptedIn()
 
   if (!tapCard.ready.value) {
     await submitPaymentWithToken(undefined)
@@ -225,20 +220,21 @@ async function submitPayment() {
 }
 
 // ---------------------------------------------------------------------------
-// Pre-payment save (fires during payment if opted in)
+// Profile save (fires after successful payment)
 // ---------------------------------------------------------------------------
-async function saveProfileIfOptedIn() {
-  if (!saveToProfile.value || !profile.profileId.value) return
+function saveProfileAfterPayment(tapCustomerId?: string) {
+  if (!profile.profileId.value) return
   profile.saveProfile({
     firstName: firstName.value || undefined,
     lastName: lastName.value || undefined,
     phone: phone.value || undefined,
+    tapCustomerId: tapCustomerId || undefined,
   }).catch(() => {})
 }
 
 async function submitPaymentWithToken(sourceToken: string | undefined) {
   try {
-    const result = await $fetch(`/api/sessions/${sessionId}/pay`, {
+    const result = await $fetch<any>(`/api/sessions/${sessionId}/pay`, {
       method: 'POST',
       body: {
         email: email.value,
@@ -262,6 +258,9 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
         },
       },
     })
+
+    // Save profile data + tapCustomerId in background
+    saveProfileAfterPayment(result.tapCustomerId)
 
     if (result.redirectUrl) {
       await navigateTo(result.redirectUrl, { external: true })
@@ -513,17 +512,6 @@ onMounted(async () => {
               <label class="form-label">Card details</label>
               <div id="tap-card-element" class="tap-card-element" />
               <p id="tap-notifications" class="tap-notification" />
-            </div>
-
-            <!-- Save opt-in -->
-            <div v-if="profile.profileId.value" class="save-opt-in">
-              <label class="save-opt-in-check">
-                <input v-model="saveToProfile" type="checkbox">
-                <div>
-                  <div class="save-opt-in-text">Save my info for secure 1-click checkout</div>
-                  <div class="save-opt-in-sub">Pay faster on this store and thousands of sites</div>
-                </div>
-              </label>
             </div>
 
             <button

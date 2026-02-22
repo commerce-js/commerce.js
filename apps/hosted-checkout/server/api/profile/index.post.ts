@@ -31,6 +31,21 @@ export default defineEventHandler(async (event) => {
   if (body.lastName !== undefined) updates.lastName = body.lastName
   if (body.phone !== undefined) updates.phone = body.phone
 
+  // Store payment provider customer IDs in preferences (JSONB)
+  if (body.tapCustomerId) {
+    const currentPrefs = (existing as any).preferences || {}
+    updates.preferences = {
+      ...currentPrefs,
+      paymentProviders: {
+        ...(currentPrefs.paymentProviders || {}),
+        tap: {
+          ...(currentPrefs.paymentProviders?.tap || {}),
+          customerId: body.tapCustomerId,
+        },
+      },
+    }
+  }
+
   if (Object.keys(updates).length > 0) {
     await profileDomain.updateProfile(body.profileId, updates)
   }

@@ -17,7 +17,7 @@ import type {
   PaymentWebhookEvent,
 } from '@commercejs/types'
 
-import type { TapConfig, TapRawCharge, TapChargeStatus } from './types.js'
+import type { TapConfig, TapRawCharge, TapChargeStatus, TapSavedCard } from './types.js'
 
 const TAP_API_BASE = 'https://api.tap.company/v2'
 
@@ -59,6 +59,9 @@ function chargeToSession(charge: TapRawCharge, providerId: string): PaymentSessi
       tapStatus: charge.status,
       source: charge.source,
       reference: charge.reference,
+      // Saved card info — available when save_card was true
+      tapCustomerId: charge.customer?.id ?? null,
+      savedCard: charge.card ?? null,
     },
     redirectUrl: charge.transaction?.url ?? null,
     createdAt: charge.created ?? new Date().toISOString(),
@@ -110,6 +113,7 @@ export class TapPaymentProvider implements PaymentProvider {
       amount: input.amount,
       currency: input.currency,
       threeDSecure: true,
+      save_card: input.saveCard ?? false,
       source: { id: input.sourceToken ?? 'src_all' },
       redirect: { url: input.returnUrl ?? '' },
       ...(input.orderId ? { reference: { order: input.orderId } } : {}),
@@ -159,6 +163,24 @@ export class TapPaymentProvider implements PaymentProvider {
 
     // Re-fetch to get updated status
     return this.getSession(input.sessionId)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Saved card methods
+  // ---------------------------------------------------------------------------
+
+  /** List all saved cards for a Tap customer */
+  async listSavedCards(customerId: string): Promise<TapSavedCard[]> {
+    const result = await this.request<{ data: TapSavedCard[] }>('GET', `/card/${customerId}`)
+    return result.data ?? []
+  }
+
+  /** Create a token from a saved card for charging */
+  async createTokenFromSavedCard(customerId: string, cardId: string): Promise<string> {
+    const result = await this.request<{ id: string }>('POST', '/tokens', {
+      saved_card: { card_id: cardId, customer_id: customerId },
+    })
+    return result.id
   }
 
   // ---------------------------------------------------------------------------

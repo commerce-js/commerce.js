@@ -15,6 +15,8 @@ export function useProfile() {
   const otpVerifying = ref(false)
   const saving = ref(false)
   const saveSuccess = ref(false)
+  const savedCards = ref<any[]>([])
+  const tapCustomerId = computed(() => profileData.value?.preferences?.paymentProviders?.tap?.customerId || null)
 
   async function lookupProfile(email: string) {
     if (!email || lookingUp.value) return
@@ -73,6 +75,12 @@ export function useProfile() {
       if (result.verified) {
         otpVerified.value = true
         profileData.value = result.profile
+
+        // Auto-fetch saved cards if profile has a Tap customer ID
+        if (result.profile?.tapCustomerId) {
+          fetchSavedCards().catch(() => {})
+        }
+
         return true
       }
       else {
@@ -93,6 +101,7 @@ export function useProfile() {
     firstName?: string
     lastName?: string
     phone?: string
+    tapCustomerId?: string
     address?: Record<string, any>
     paymentMethod?: Record<string, any>
   }) {
@@ -115,6 +124,20 @@ export function useProfile() {
     }
   }
 
+  async function fetchSavedCards() {
+    if (!profileId.value) return
+    try {
+      const result = await $fetch<any>('/api/profile/cards', {
+        query: { profileId: profileId.value },
+      })
+      savedCards.value = result.cards ?? []
+    }
+    catch (err: any) {
+      console.warn('[useProfile] fetch cards failed:', err?.data?.message || err)
+      savedCards.value = []
+    }
+  }
+
   function reset() {
     profileId.value = null
     profileData.value = null
@@ -123,6 +146,7 @@ export function useProfile() {
     otpVerified.value = false
     otpError.value = null
     saveSuccess.value = false
+    savedCards.value = []
   }
 
   return {
@@ -138,11 +162,14 @@ export function useProfile() {
     otpVerifying,
     saving,
     saveSuccess,
+    savedCards,
+    tapCustomerId,
     // Actions
     lookupProfile,
     sendOtp,
     verifyOtp,
     saveProfile,
+    fetchSavedCards,
     reset,
   }
 }
