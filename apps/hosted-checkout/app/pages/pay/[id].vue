@@ -112,7 +112,6 @@ function initCardElement() {
     firstName: firstName.value || undefined,
     phone: phone.value || undefined,
     saveCard: true,
-    customerId: sessionId,
   })
 }
 
