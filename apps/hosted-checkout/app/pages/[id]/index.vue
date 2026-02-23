@@ -602,6 +602,11 @@ watch(shouldShowCardForm, (show, wasShowing) => {
             <!-- Card element (Tap Card SDK v2) — hidden when saved card selected -->
             <div v-show="!profile.selectedCard.value" class="form-group">
               <label v-if="profile.savedCards.value.length === 0" class="form-label">Card details</label>
+              <!-- SDK loading spinner -->
+              <div v-if="!sdkReady && !profile.selectedCard.value" class="sdk-loading">
+                <span class="spinner" />
+                <span class="sdk-loading-text">Loading card form...</span>
+              </div>
               <div id="tap-card-element" class="tap-card-element" />
               <p id="tap-notifications" class="tap-notification" />
             </div>
