@@ -9,6 +9,12 @@
 import type {
   CommerceAdapter,
   PaymentProvider,
+  DeliveryProvider,
+  Delivery,
+  DeliveryEstimate,
+  EstimateDeliveryInput,
+  CreateDeliveryInput,
+  DeliveryWebhookEvent,
   AdapterDomain,
   Product,
   Cart,
@@ -93,6 +99,15 @@ export interface CommerceConfig {
 
   /** Storage provider for file uploads (required for native platform) */
   storage?: StorageProvider
+
+  /** Delivery providers keyed by ID (e.g., { armada: new ArmadaDeliveryProvider(...) }) */
+  delivery?: Record<string, DeliveryProvider>
+
+  /** Default delivery provider ID */
+  defaultDelivery?: string
+
+  /** Auto-dispatch delivery when an order is created (for local_delivery fulfillment) */
+  autoDispatch?: boolean
 }
 
 // ---- Commerce Instance ----
@@ -190,6 +205,13 @@ export interface CommerceInstance {
   getPresignedUploadUrl(key: string, options?: PresignedUrlOptions): Promise<PresignedUrlResult>
   getPresignedDownloadUrl(key: string, options?: PresignedUrlOptions): Promise<PresignedUrlResult>
 
+  // ---- Delivery (multi-provider) ----
+  estimateDelivery(input: EstimateDeliveryInput, providerId?: string): Promise<DeliveryEstimate>
+  createDelivery(input: CreateDeliveryInput, providerId?: string): Promise<Delivery>
+  getDelivery(deliveryId: string, providerId: string): Promise<Delivery>
+  cancelDelivery(deliveryId: string, providerId: string): Promise<Delivery>
+  verifyDeliveryWebhook(payload: string | Uint8Array, signature: string, providerId: string): Promise<DeliveryWebhookEvent>
+
   /** Cleanup — removes event listeners and webhook subscriptions */
   destroy(): void
 }
@@ -221,7 +243,7 @@ export interface CommerceInstance {
  * ```
  */
 export function createCommerce(config: CommerceConfig): CommerceInstance {
-  const { adapter, payments = {}, defaultPayment, webhooks } = config
+  const { adapter, payments = {}, defaultPayment, webhooks, delivery = {}, defaultDelivery } = config
   const events = new CommerceEventBus<CommerceEvents>()
 
   // Wire up webhook dispatcher if endpoints are configured
@@ -298,6 +320,26 @@ export function createCommerce(config: CommerceConfig): CommerceInstance {
     if (!provider) {
       throw new CommerceError(
         `Payment provider "${id}" is not registered.`,
+        'NOT_FOUND',
+        404,
+      )
+    }
+    return provider
+  }
+
+  function getDeliveryProvider(providerId?: string): DeliveryProvider {
+    const id = providerId ?? defaultDelivery
+    if (!id) {
+      throw new CommerceError(
+        'No delivery provider specified and no default configured.',
+        'CONFIGURATION_ERROR',
+        500,
+      )
+    }
+    const provider = delivery[id]
+    if (!provider) {
+      throw new CommerceError(
+        `Delivery provider "${id}" is not registered.`,
         'NOT_FOUND',
         404,
       )
@@ -668,6 +710,49 @@ export function createCommerce(config: CommerceConfig): CommerceInstance {
         throw new CommerceError('No storage provider configured.', 'CONFIGURATION_ERROR', 500)
       }
       return config.storage.getPresignedDownloadUrl(key, options)
+    },
+
+    // ---- Delivery ----
+
+    async estimateDelivery(input, providerId) {
+      const provider = getDeliveryProvider(providerId)
+      const estimate = await provider.estimate(input)
+      await events.emit('delivery.estimated', { estimate })
+      return estimate
+    },
+
+    async createDelivery(input, providerId) {
+      const provider = getDeliveryProvider(providerId)
+      const deliv = await provider.createDelivery(input)
+      await events.emit('delivery.created', { delivery: deliv })
+      return deliv
+    },
+
+    async getDelivery(deliveryId, providerId) {
+      const provider = getDeliveryProvider(providerId)
+      return provider.getDelivery(deliveryId)
+    },
+
+    async cancelDelivery(deliveryId, providerId) {
+      const provider = getDeliveryProvider(providerId)
+      const deliv = await provider.cancelDelivery(deliveryId)
+      await events.emit('delivery.cancelled', { delivery: deliv })
+      return deliv
+    },
+
+    async verifyDeliveryWebhook(payload, signature, providerId) {
+      const provider = getDeliveryProvider(providerId)
+      if (!provider.verifyWebhook) {
+        throw new CommerceError(
+          `Delivery provider "${provider.id}" does not support webhook verification.`,
+          'NOT_SUPPORTED',
+          501,
+        )
+      }
+      const webhookEvent = await provider.verifyWebhook(payload, signature)
+      const deliv = await provider.getDelivery(webhookEvent.deliveryId)
+      await events.emit('delivery.updated', { delivery: deliv, event: webhookEvent })
+      return webhookEvent
     },
 
     // ---- Cleanup ----

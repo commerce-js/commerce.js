@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@commercejs/checkout": "workspace:*",
+    "@commercejs/delivery-armada": "workspace:*",
+    "@commercejs/delivery-parcel": "workspace:*",
     "@commercejs/payment-tap": "workspace:*",
     "@commercejs/platform": "workspace:*",
     "@commercejs/types": "workspace:*",

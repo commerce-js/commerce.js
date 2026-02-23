@@ -129,3 +129,43 @@ export const addToWishlistSchema = z.object({
   productId: z.string().min(1, 'Product ID is required'),
   variantId: z.string().optional(),
 })
+
+// ---- Delivery ----
+
+const deliveryAddressSchema = z.object({
+  contactName: z.string().min(1, 'Contact name is required'),
+  contactPhone: z.string().min(1, 'Contact phone is required'),
+  firstLine: z.string().min(1, 'Address is required'),
+  secondLine: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+  country: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  notes: z.string().optional(),
+})
+
+export const estimateDeliverySchema = z.object({
+  origin: deliveryAddressSchema,
+  destination: deliveryAddressSchema,
+  providerId: z.string().optional(),
+})
+
+export const createDeliverySchema = z.object({
+  origin: deliveryAddressSchema,
+  destination: deliveryAddressSchema,
+  orderId: z.string().optional(),
+  description: z.string().optional(),
+  cashOnDelivery: z.number().optional(),
+  providerId: z.string().optional(),
+})
+
+export const cancelDeliverySchema = z.object({
+  providerId: z.string().min(1, 'Provider ID is required'),
+})
+
+export const deliveryWebhookSchema = z.object({
+  providerId: z.string().min(1, 'Provider ID is required'),
+})
+

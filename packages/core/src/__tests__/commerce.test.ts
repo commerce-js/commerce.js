@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createCommerce } from '../commerce.js'
 import { CommerceError } from '@commercejs/types'
-import type { CommerceAdapter, PaymentProvider, PaymentSession, CreatePaymentSessionInput, RefundInput } from '@commercejs/types'
+import type { CommerceAdapter, PaymentProvider, PaymentSession, CreatePaymentSessionInput, RefundInput, DeliveryProvider, Delivery, DeliveryEstimate } from '@commercejs/types'
 
 // ---- Mock Adapter ----
 
@@ -315,6 +315,138 @@ describe('createCommerce', () => {
       await commerce.refundPayment({ sessionId: 'sess_1', amount: 50 }, 'mock-pay')
 
       expect(handler).toHaveBeenCalledWith(expect.objectContaining({ amount: 50 }))
+    })
+  })
+
+  // ---- Delivery provider routing ----
+
+  describe('delivery', () => {
+    let deliveryProvider: DeliveryProvider
+
+    const mockDelivery: Delivery = {
+      id: 'del_1',
+      providerId: 'mock-delivery',
+      status: 'pending',
+      origin: { contactName: 'Store', contactPhone: '+96500000000', firstLine: 'Kuwait City' },
+      destination: { contactName: 'Ahmed', contactPhone: '+96512345678', firstLine: 'Salmiya' },
+      fee: 3.5,
+      currency: 'KWD',
+      createdAt: new Date().toISOString(),
+    }
+
+    const mockEstimate: DeliveryEstimate = {
+      fee: 2.0,
+      currency: 'KWD',
+      estimatedDuration: 30,
+    }
+
+    function createMockDeliveryProvider(overrides: Partial<DeliveryProvider> = {}): DeliveryProvider {
+      return {
+        id: 'mock-delivery',
+        name: 'Mock Delivery',
+        estimate: vi.fn().mockResolvedValue(mockEstimate),
+        createDelivery: vi.fn().mockResolvedValue(mockDelivery),
+        getDelivery: vi.fn().mockResolvedValue(mockDelivery),
+        cancelDelivery: vi.fn().mockResolvedValue({ ...mockDelivery, status: 'cancelled' }),
+        ...overrides,
+      }
+    }
+
+    beforeEach(() => {
+      deliveryProvider = createMockDeliveryProvider()
+      commerce = createCommerce({
+        adapter,
+        delivery: { 'mock-delivery': deliveryProvider },
+        defaultDelivery: 'mock-delivery',
+      })
+    })
+
+    it('should estimate delivery via default provider', async () => {
+      const handler = vi.fn()
+      commerce.events.on('delivery.estimated', handler)
+
+      const estimate = await commerce.estimateDelivery({
+        origin: { contactName: 'Store', contactPhone: '+96500000000', firstLine: 'HQ', latitude: 29.37, longitude: 47.97 },
+        destination: { contactName: 'Ahmed', contactPhone: '+96512345678', firstLine: 'Salmiya', latitude: 29.33, longitude: 48.06 },
+      })
+
+      expect(estimate.fee).toBe(2.0)
+      expect(deliveryProvider.estimate).toHaveBeenCalled()
+      expect(handler).toHaveBeenCalledWith({ estimate: mockEstimate })
+    })
+
+    it('should create delivery via specific provider ID', async () => {
+      const secondProvider = createMockDeliveryProvider({ id: 'parcel', name: 'Parcel' })
+      commerce = createCommerce({
+        adapter,
+        delivery: { 'mock-delivery': deliveryProvider, parcel: secondProvider },
+      })
+
+      await commerce.createDelivery({
+        origin: { contactName: 'Store', contactPhone: '+96500000000', firstLine: 'HQ', latitude: 29.37, longitude: 47.97 },
+        destination: { contactName: 'Ahmed', contactPhone: '+96512345678', firstLine: 'Salmiya', latitude: 29.33, longitude: 48.06 },
+      }, 'parcel')
+
+      expect(secondProvider.createDelivery).toHaveBeenCalled()
+      expect(deliveryProvider.createDelivery).not.toHaveBeenCalled()
+    })
+
+    it('should emit delivery.created on createDelivery', async () => {
+      const handler = vi.fn()
+      commerce.events.on('delivery.created', handler)
+
+      await commerce.createDelivery({
+        origin: { contactName: 'Store', contactPhone: '+96500000000', firstLine: 'HQ', latitude: 29.37, longitude: 47.97 },
+        destination: { contactName: 'Ahmed', contactPhone: '+96512345678', firstLine: 'Salmiya', latitude: 29.33, longitude: 48.06 },
+        orderId: 'ord_1',
+      })
+
+      expect(handler).toHaveBeenCalledWith({ delivery: mockDelivery })
+    })
+
+    it('should emit delivery.cancelled on cancelDelivery', async () => {
+      const handler = vi.fn()
+      commerce.events.on('delivery.cancelled', handler)
+
+      await commerce.cancelDelivery('del_1', 'mock-delivery')
+
+      expect(handler).toHaveBeenCalledOnce()
+    })
+
+    it('should delegate getDelivery to provider', async () => {
+      const result = await commerce.getDelivery('del_1', 'mock-delivery')
+
+      expect(result.id).toBe('del_1')
+      expect(deliveryProvider.getDelivery).toHaveBeenCalledWith('del_1')
+    })
+
+    it('should throw when no provider specified and no default', async () => {
+      commerce = createCommerce({ adapter, delivery: { 'mock-delivery': deliveryProvider } })
+
+      await expect(commerce.estimateDelivery({
+        origin: { contactName: 'Store', contactPhone: '+965', firstLine: 'HQ', latitude: 29, longitude: 47 },
+        destination: { contactName: 'A', contactPhone: '+965', firstLine: 'S', latitude: 29, longitude: 48 },
+      })).rejects.toThrow('No delivery provider specified')
+    })
+
+    it('should throw for unknown provider ID', async () => {
+      await expect(commerce.createDelivery({
+        origin: { contactName: 'Store', contactPhone: '+965', firstLine: 'HQ', latitude: 29, longitude: 47 },
+        destination: { contactName: 'A', contactPhone: '+965', firstLine: 'S', latitude: 29, longitude: 48 },
+      }, 'unknown')).rejects.toThrow('Delivery provider "unknown" is not registered')
+    })
+
+    it('should throw when verifyWebhook is not implemented', async () => {
+      const noWebhookProvider = createMockDeliveryProvider()
+      delete (noWebhookProvider as any).verifyWebhook
+      commerce = createCommerce({
+        adapter,
+        delivery: { test: noWebhookProvider },
+        defaultDelivery: 'test',
+      })
+
+      await expect(commerce.verifyDeliveryWebhook('{}', 'sig', 'test'))
+        .rejects.toThrow('does not support webhook verification')
     })
   })
 

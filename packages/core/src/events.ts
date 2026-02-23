@@ -13,6 +13,9 @@ import type {
   Customer,
   PaymentSession,
   ReturnRequest,
+  Delivery,
+  DeliveryEstimate,
+  DeliveryWebhookEvent,
 } from '@commercejs/types'
 
 // ---- Event Map (union of all events) ----
@@ -40,6 +43,12 @@ export interface CommerceEvents {
   'payment.failed': { session: PaymentSession; error?: string }
   'payment.refunded': { session: PaymentSession; amount: number }
   'payment.webhook.received': { session: PaymentSession; rawEvent: unknown }
+
+  // Delivery events
+  'delivery.estimated': { estimate: DeliveryEstimate }
+  'delivery.created': { delivery: Delivery }
+  'delivery.updated': { delivery: Delivery; event: DeliveryWebhookEvent }
+  'delivery.cancelled': { delivery: Delivery }
 
   // Customer events
   'customer.logged_in': { customer: Customer }
