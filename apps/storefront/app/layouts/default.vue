@@ -3,9 +3,16 @@ const { t } = useLocalizedString()
 const { data: categories } = await useCategories()
 
 const { cart, itemCount, updateItem, removeItem, onItemAdded } = useCart()
+const { store } = useStoreInfo()
+
+// Store name with fallback
+const storeName = computed(() => store.value?.name || 'CommerceJS')
 
 // Cart drawer state
 const cartDrawerOpen = ref(false)
+
+// Mobile menu state
+const mobileMenuOpen = ref(false)
 
 // Open drawer whenever an item is added to cart
 onItemAdded(() => {
@@ -51,11 +58,22 @@ const cartBadge = computed(() =>
     <header class="sticky top-0 z-50 border-b border-(--ui-border) bg-(--ui-bg)/80 backdrop-blur-xl">
       <UContainer>
         <nav class="flex items-center justify-between h-16 gap-4">
+          <!-- Mobile hamburger (visible on small screens) -->
+          <UButton
+            class="md:hidden"
+            icon="i-heroicons-bars-3-20-solid"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            aria-label="Open navigation menu"
+            @click="mobileMenuOpen = true"
+          />
+
           <!-- Logo -->
           <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
             <UIcon name="i-heroicons-shopping-bag-20-solid" class="text-2xl text-(--ui-primary)" />
             <span class="text-lg font-bold text-(--ui-text-highlighted)">
-              CommerceJS
+              {{ storeName }}
             </span>
           </NuxtLink>
 
@@ -101,6 +119,27 @@ const cartBadge = computed(() =>
       </UContainer>
     </header>
 
+    <!-- Mobile Menu Slideover -->
+    <USlideover v-model:open="mobileMenuOpen" side="left" title="Menu">
+      <template #body>
+        <nav class="flex flex-col gap-1 py-2">
+          <UButton
+            v-for="link in navLinks"
+            :key="link.to"
+            :to="link.to"
+            variant="ghost"
+            color="neutral"
+            size="lg"
+            block
+            class="justify-start"
+            @click="mobileMenuOpen = false"
+          >
+            {{ link.label }}
+          </UButton>
+        </nav>
+      </template>
+    </USlideover>
+
     <!-- Main content -->
     <main class="flex-1">
       <slot />
@@ -114,10 +153,10 @@ const cartBadge = computed(() =>
           <div class="md:col-span-1">
             <div class="flex items-center gap-2 mb-4">
               <UIcon name="i-heroicons-shopping-bag-20-solid" class="text-xl text-(--ui-primary)" />
-              <span class="font-bold text-(--ui-text-highlighted)">CommerceJS</span>
+              <span class="font-bold text-(--ui-text-highlighted)">{{ storeName }}</span>
             </div>
             <p class="text-sm text-(--ui-text-muted)">
-              A premium storefront experience powered by the CommerceJS SDK.
+              A premium storefront experience powered by CommerceJS.
             </p>
           </div>
 
@@ -157,7 +196,7 @@ const cartBadge = computed(() =>
         <!-- Bottom bar -->
         <div class="border-t border-(--ui-border) py-4 flex flex-col md:flex-row items-center justify-between gap-2">
           <p class="text-xs text-(--ui-text-muted)">
-            &copy; {{ new Date().getFullYear() }} CommerceJS. All rights reserved.
+            &copy; {{ new Date().getFullYear() }} {{ storeName }}. All rights reserved.
           </p>
           <p class="text-xs text-(--ui-text-dimmed)">
             Built with Nuxt + CommerceJS SDK

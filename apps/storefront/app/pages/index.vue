@@ -13,13 +13,14 @@ const topCategories = computed(() => categories.value?.slice(0, 6) ?? [])
 // Store info
 const { store, refresh: refreshStore } = useStoreInfo()
 refreshStore()
+const storeName = computed(() => store.value?.name || 'CommerceJS')
 
 // SEO
-useHead({
-  title: 'CommerceJS — Premium Storefront',
-  meta: [
-    { name: 'description', content: 'Discover premium products with the best prices. Powered by CommerceJS SDK.' },
-  ],
+useSeoMeta({
+  title: () => `${storeName.value} — Premium Storefront`,
+  ogTitle: () => `${storeName.value} — Premium Storefront`,
+  description: 'Discover premium products with the best prices. Fast delivery, secure payments, easy returns.',
+  ogDescription: 'Discover premium products with the best prices. Fast delivery, secure payments, easy returns.',
 })
 </script>
 

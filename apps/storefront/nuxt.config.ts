@@ -13,10 +13,16 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      htmlAttrs: { lang: 'en' },
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap' },
+      ],
+      meta: [
+        { property: 'og:site_name', content: 'CommerceJS Store' },
+        { property: 'og:type', content: 'website' },
+        { name: 'twitter:card', content: 'summary_large_image' },
       ],
     },
   },
@@ -26,6 +32,14 @@ export default defineNuxtConfig({
     adapter: 'platform',
     apiBase: '/api/_commerce',
     apiRoutes: true,
+  },
+
+  // Route caching — CDN performance
+  routeRules: {
+    '/': { swr: 3600 },
+    '/products/**': { swr: 600 },
+    '/categories/**': { swr: 600 },
+    '/_nuxt/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },
   },
 
   // Runtime config is handled by @commercejs/nuxt module
