@@ -1,5 +1,4 @@
 import { readBody, readRawBody, getHeader } from 'h3'
-import { useServerDeliveryProvider } from '../../utils/delivery'
 
 defineRouteMeta({
   openAPI: {
