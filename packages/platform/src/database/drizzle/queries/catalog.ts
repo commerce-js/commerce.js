@@ -2,7 +2,7 @@
 // Drizzle: Catalog queries
 // ---------------------------------------------------------------------------
 
-import { eq, like, sql, and, asc, desc, gte, lte } from 'drizzle-orm'
+import { eq, ilike, sql, and, or, asc, desc, gte, lte } from 'drizzle-orm'
 import { getDb } from '../client.js'
 import * as schema from '../schema/index.js'
 
@@ -17,7 +17,7 @@ export async function findProductBySlug(slug: string) {
 }
 
 export async function findProducts(opts: {
-  conditions: { field: string; op: 'eq' | 'like' | 'gte' | 'lte' | 'in'; value: any }[]
+  conditions: { field: string; op: 'eq' | 'like' | 'ilike' | 'search' | 'gte' | 'lte' | 'in'; value: any }[]
   orderBy?: { field: string; direction: 'asc' | 'desc' }
   limit: number
   offset: number
@@ -27,7 +27,9 @@ export async function findProducts(opts: {
     const col = (schema.products as any)[c.field] ?? schema.products.createdAt
     switch (c.op) {
       case 'eq': return eq(col, c.value)
-      case 'like': return like(col, c.value)
+      case 'like': return ilike(col, c.value)
+      case 'ilike': return ilike(col, c.value)
+      case 'search': return or(ilike(schema.products.name, c.value), ilike(schema.products.description, c.value))!
       case 'gte': return sql`${col} >= ${c.value}`
       case 'lte': return sql`${col} <= ${c.value}`
       case 'in': return sql`${col} IN (${c.value})`

@@ -78,7 +78,7 @@ useHead({
         <div class="sticky top-20 space-y-6">
           <!-- Search -->
           <div>
-            <h3 class="text-sm font-semibold text-(--ui-text-highlighted) mb-3 uppercase tracking-wider">Search</h3>
+            <h3 class="text-sm font-semibold text-highlighted mb-3 uppercase tracking-wider">Search</h3>
             <form @submit.prevent="onSearch">
               <UInput
                 v-model="searchQuery"
@@ -91,12 +91,12 @@ useHead({
 
           <!-- Categories -->
           <div>
-            <h3 class="text-sm font-semibold text-(--ui-text-highlighted) mb-3 uppercase tracking-wider">Categories</h3>
+            <h3 class="text-sm font-semibold text-highlighted mb-3 uppercase tracking-wider">Categories</h3>
             <div class="space-y-1">
               <NuxtLink
                 to="/products"
                 class="block px-3 py-2 rounded-lg text-sm transition-colors"
-                :class="!route.query.category ? 'bg-(--ui-primary)/10 text-(--ui-primary) font-medium' : 'text-(--ui-text-muted) hover:bg-(--ui-bg-elevated)'"
+                :class="!route.query.category ? 'bg-primary/10 text-primary font-medium' : 'text-muted hover:bg-elevated'"
               >
                 All Products
               </NuxtLink>
@@ -105,10 +105,10 @@ useHead({
                 :key="cat.id"
                 :to="{ path: '/products', query: { category: cat.id } }"
                 class="block px-3 py-2 rounded-lg text-sm transition-colors"
-                :class="route.query.category === cat.id ? 'bg-(--ui-primary)/10 text-(--ui-primary) font-medium' : 'text-(--ui-text-muted) hover:bg-(--ui-bg-elevated)'"
+                :class="route.query.category === cat.id ? 'bg-primary/10 text-primary font-medium' : 'text-muted hover:bg-elevated'"
               >
                 {{ t(cat.name) }}
-                <span v-if="cat.productCount" class="text-xs text-(--ui-text-dimmed) ml-1">({{ cat.productCount }})</span>
+                <span v-if="cat.productCount" class="text-xs text-dimmed ml-1">({{ cat.productCount }})</span>
               </NuxtLink>
             </div>
           </div>
@@ -119,8 +119,8 @@ useHead({
       <div class="flex-1 min-w-0">
         <!-- Top bar -->
         <div class="flex items-center justify-between mb-6 gap-4">
-          <p class="text-sm text-(--ui-text-muted)">
-            <span class="font-medium text-(--ui-text-highlighted)">{{ pagination.total }}</span> products found
+          <p class="text-sm text-muted">
+            <span class="font-medium text-highlighted">{{ pagination.total }}</span> products found
           </p>
 
           <USelect
@@ -134,14 +134,14 @@ useHead({
 
         <!-- Loading state -->
         <div v-if="status === 'pending'" class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-          <div v-for="i in 6" :key="i" class="rounded-xl bg-(--ui-bg-elevated) border border-(--ui-border) animate-pulse aspect-[3/4]" />
+          <div v-for="i in 6" :key="i" class="rounded-xl bg-elevated border border-default animate-pulse aspect-3/4" />
         </div>
 
         <!-- Empty state -->
         <div v-else-if="products.length === 0" class="text-center py-24">
-          <UIcon name="i-heroicons-magnifying-glass" class="text-5xl text-(--ui-text-dimmed) mb-4" />
-          <h3 class="text-lg font-semibold text-(--ui-text-highlighted) mb-2">No products found</h3>
-          <p class="text-(--ui-text-muted) mb-6">Try adjusting your search or filters</p>
+          <UIcon name="i-heroicons-magnifying-glass" class="text-5xl text-dimmed mb-4" />
+          <h3 class="text-lg font-semibold text-highlighted mb-2">No products found</h3>
+          <p class="text-muted mb-6">Try adjusting your search or filters</p>
           <UButton to="/products" variant="outline" color="primary">Clear Filters</UButton>
         </div>
 

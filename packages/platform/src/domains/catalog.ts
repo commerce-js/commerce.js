@@ -129,12 +129,12 @@ export function createCatalogDomain(currency: string) {
     },
 
     async getProducts(params: SearchParams): Promise<SearchResult> {
-      const conditions: { field: string; op: 'eq' | 'like' | 'gte' | 'lte' | 'in'; value: any }[] = [
+      const conditions: { field: string; op: 'eq' | 'like' | 'ilike' | 'search' | 'gte' | 'lte' | 'in'; value: any }[] = [
         { field: 'status', op: 'eq', value: 'active' },
       ]
 
       if (params.query) {
-        conditions.push({ field: 'name', op: 'like', value: `%${params.query}%` })
+        conditions.push({ field: 'name', op: 'search', value: `%${params.query}%` })
       }
       if (params.categoryId) {
         const productIds = await findProductIdsByCategory(params.categoryId)

@@ -80,7 +80,7 @@ function handleClose() {
     :ui="{
       content: 'max-w-sm overflow-hidden',
       body: 'flex flex-col p-0 overflow-hidden',
-      footer: 'p-4',
+      footer: 'flex-col items-stretch gap-3',
     }"
   >
     <!-- Hidden default slot (controlled externally via v-model:open) -->
@@ -182,42 +182,33 @@ function handleClose() {
       </div>
     </template>
 
-    <!-- Footer: subtotal + action buttons -->
-    <template #footer>
-      <div v-if="cartItems.length > 0" class="space-y-3">
-        <!-- Subtotal -->
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-muted">Subtotal ({{ count }} items)</span>
-          <span class="text-base font-bold text-highlighted">{{ subtotalFormatted }}</span>
-        </div>
-
-        <!-- Shipping note -->
-        <p class="text-xs text-dimmed">Shipping & taxes calculated at checkout</p>
-
-        <!-- Action buttons -->
-        <div class="flex flex-col gap-2 pt-1">
-          <UButton
-            :to="checkoutTo"
-            color="primary"
-            size="lg"
-            block
-            @click="handleClose"
-          >
-            {{ checkoutLabel }}
-          </UButton>
-
-          <UButton
-            :to="viewCartTo"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            block
-            @click="handleClose"
-          >
-            {{ viewCartLabel }}
-          </UButton>
-        </div>
+    <template v-if="cartItems.length > 0" #footer>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-muted">Subtotal ({{ count }} items)</span>
+        <span class="text-base font-bold text-highlighted">{{ subtotalFormatted }}</span>
       </div>
+      <p class="text-xs text-dimmed">Shipping & taxes calculated at checkout</p>
+
+      <UButton
+        :to="checkoutTo"
+        color="primary"
+        size="xl"
+        block
+        @click="handleClose"
+      >
+        {{ checkoutLabel }}
+      </UButton>
+
+      <UButton
+        :to="viewCartTo"
+        variant="ghost"
+        color="neutral"
+        size="sm"
+        block
+        @click="handleClose"
+      >
+        {{ viewCartLabel }}
+      </UButton>
     </template>
   </USlideover>
 </template>

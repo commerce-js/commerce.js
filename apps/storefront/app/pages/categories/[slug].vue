@@ -52,23 +52,23 @@ useHead({ title: computed(() => category.value ? `${t(category.value.name)} — 
 
     <!-- Category header -->
     <div class="mb-8">
-      <h1 class="text-2xl md:text-3xl font-bold text-(--ui-text-highlighted)">
+      <h1 class="text-2xl md:text-3xl font-bold text-highlighted">
         {{ category ? t(category.name) : 'Category' }}
       </h1>
-      <p v-if="category?.description" class="text-(--ui-text-muted) mt-2">
+      <p v-if="category?.description" class="text-muted mt-2">
         {{ t(category.description) }}
       </p>
     </div>
 
     <!-- Loading -->
     <div v-if="status === 'pending'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-      <div v-for="i in 8" :key="i" class="rounded-xl bg-(--ui-bg-elevated) border border-(--ui-border) animate-pulse aspect-[3/4]" />
+      <div v-for="i in 8" :key="i" class="rounded-xl bg-elevated border border-default animate-pulse aspect-3/4" />
     </div>
 
     <!-- Empty -->
     <div v-else-if="products.length === 0" class="text-center py-24">
-      <UIcon name="i-heroicons-cube-transparent" class="text-5xl text-(--ui-text-dimmed) mb-4" />
-      <h3 class="text-lg font-semibold text-(--ui-text-highlighted) mb-2">No products in this category</h3>
+      <UIcon name="i-heroicons-cube-transparent" class="text-5xl text-dimmed mb-4" />
+      <h3 class="text-lg font-semibold text-highlighted mb-2">No products in this category</h3>
       <UButton to="/products" variant="outline" color="primary" class="mt-4">Browse All Products</UButton>
     </div>
 

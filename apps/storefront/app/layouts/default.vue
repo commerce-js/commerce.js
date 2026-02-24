@@ -6,7 +6,7 @@ const { cart, itemCount, updateItem, removeItem, onItemAdded } = useCart()
 const { store } = useStoreInfo()
 
 // Store name with fallback
-const storeName = computed(() => store.value?.name || 'CommerceJS')
+const storeName = computed(() => t(store.value?.name) || 'CommerceJS')
 
 // Cart drawer state
 const cartDrawerOpen = ref(false)
@@ -53,9 +53,9 @@ const cartBadge = computed(() =>
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-(--ui-bg)">
+  <div class="min-h-screen flex flex-col bg-default">
     <!-- Header -->
-    <header class="sticky top-0 z-50 border-b border-(--ui-border) bg-(--ui-bg)/80 backdrop-blur-xl">
+    <header class="sticky top-0 z-50 border-b border-default bg-default/80 backdrop-blur-xl">
       <UContainer>
         <nav class="flex items-center justify-between h-16 gap-4">
           <!-- Mobile hamburger (visible on small screens) -->
@@ -71,8 +71,8 @@ const cartBadge = computed(() =>
 
           <!-- Logo -->
           <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
-            <UIcon name="i-heroicons-shopping-bag-20-solid" class="text-2xl text-(--ui-primary)" />
-            <span class="text-lg font-bold text-(--ui-text-highlighted)">
+            <UIcon name="i-heroicons-shopping-bag-20-solid" class="text-2xl text-primary" />
+            <span class="text-lg font-bold text-highlighted">
               {{ storeName }}
             </span>
           </NuxtLink>
@@ -93,14 +93,27 @@ const cartBadge = computed(() =>
 
           <!-- Right side: search + cart -->
           <div class="flex items-center gap-2">
-            <UButton
-              to="/products"
-              icon="i-heroicons-magnifying-glass-20-solid"
-              variant="ghost"
-              color="neutral"
-              size="sm"
-              aria-label="Search products"
-            />
+            <ClientOnly>
+              <SearchPalette>
+                <UButton
+                  icon="i-heroicons-magnifying-glass-20-solid"
+                  variant="ghost"
+                  color="neutral"
+                  size="sm"
+                  aria-label="Search products"
+                />
+              </SearchPalette>
+              <template #fallback>
+                <UButton
+                  to="/products"
+                  icon="i-heroicons-magnifying-glass-20-solid"
+                  variant="ghost"
+                  color="neutral"
+                  size="sm"
+                  aria-label="Search products"
+                />
+              </template>
+            </ClientOnly>
 
             <UButton
               to="/cart"
@@ -118,6 +131,7 @@ const cartBadge = computed(() =>
         </nav>
       </UContainer>
     </header>
+
 
     <!-- Mobile Menu Slideover -->
     <USlideover v-model:open="mobileMenuOpen" side="left" title="Menu">
@@ -146,27 +160,27 @@ const cartBadge = computed(() =>
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-(--ui-border) bg-(--ui-bg-elevated) mt-auto">
+    <footer class="border-t border-default bg-elevated mt-auto">
       <UContainer>
         <div class="py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
           <!-- Brand column -->
           <div class="md:col-span-1">
             <div class="flex items-center gap-2 mb-4">
-              <UIcon name="i-heroicons-shopping-bag-20-solid" class="text-xl text-(--ui-primary)" />
-              <span class="font-bold text-(--ui-text-highlighted)">{{ storeName }}</span>
+              <UIcon name="i-heroicons-shopping-bag-20-solid" class="text-xl text-primary" />
+              <span class="font-bold text-highlighted">{{ storeName }}</span>
             </div>
-            <p class="text-sm text-(--ui-text-muted)">
+            <p class="text-sm text-muted">
               A premium storefront experience powered by CommerceJS.
             </p>
           </div>
 
           <!-- Shop column -->
           <div>
-            <h4 class="font-semibold text-sm text-(--ui-text-highlighted) mb-3 uppercase tracking-wider">Shop</h4>
+            <h4 class="font-semibold text-sm text-highlighted mb-3 uppercase tracking-wider">Shop</h4>
             <ul class="space-y-2">
-              <li><NuxtLink to="/products" class="text-sm text-(--ui-text-muted) hover:text-(--ui-primary) transition-colors">All Products</NuxtLink></li>
+              <li><NuxtLink to="/products" class="text-sm text-muted hover:text-primary transition-colors">All Products</NuxtLink></li>
               <li v-for="cat in (categories || []).slice(0, 3)" :key="cat.id">
-                <NuxtLink :to="`/categories/${cat.slug}`" class="text-sm text-(--ui-text-muted) hover:text-(--ui-primary) transition-colors">
+                <NuxtLink :to="`/categories/${cat.slug}`" class="text-sm text-muted hover:text-primary transition-colors">
                   {{ t(cat.name) }}
                 </NuxtLink>
               </li>
@@ -175,17 +189,17 @@ const cartBadge = computed(() =>
 
           <!-- Support column -->
           <div>
-            <h4 class="font-semibold text-sm text-(--ui-text-highlighted) mb-3 uppercase tracking-wider">Support</h4>
+            <h4 class="font-semibold text-sm text-highlighted mb-3 uppercase tracking-wider">Support</h4>
             <ul class="space-y-2">
-              <li><NuxtLink to="/cart" class="text-sm text-(--ui-text-muted) hover:text-(--ui-primary) transition-colors">Shopping Cart</NuxtLink></li>
-              <li><NuxtLink to="/checkout" class="text-sm text-(--ui-text-muted) hover:text-(--ui-primary) transition-colors">Checkout</NuxtLink></li>
+              <li><NuxtLink to="/cart" class="text-sm text-muted hover:text-primary transition-colors">Shopping Cart</NuxtLink></li>
+              <li><NuxtLink to="/checkout" class="text-sm text-muted hover:text-primary transition-colors">Checkout</NuxtLink></li>
             </ul>
           </div>
 
           <!-- Newsletter column -->
           <div>
-            <h4 class="font-semibold text-sm text-(--ui-text-highlighted) mb-3 uppercase tracking-wider">Stay Updated</h4>
-            <p class="text-sm text-(--ui-text-muted) mb-3">Get notified about new arrivals and offers.</p>
+            <h4 class="font-semibold text-sm text-highlighted mb-3 uppercase tracking-wider">Stay Updated</h4>
+            <p class="text-sm text-muted mb-3">Get notified about new arrivals and offers.</p>
             <div class="flex gap-2">
               <UInput placeholder="Your email" size="sm" class="flex-1" />
               <UButton size="sm" color="primary">Subscribe</UButton>
@@ -194,11 +208,11 @@ const cartBadge = computed(() =>
         </div>
 
         <!-- Bottom bar -->
-        <div class="border-t border-(--ui-border) py-4 flex flex-col md:flex-row items-center justify-between gap-2">
-          <p class="text-xs text-(--ui-text-muted)">
+        <div class="border-t border-default py-4 flex flex-col md:flex-row items-center justify-between gap-2">
+          <p class="text-xs text-muted">
             &copy; {{ new Date().getFullYear() }} {{ storeName }}. All rights reserved.
           </p>
-          <p class="text-xs text-(--ui-text-dimmed)">
+          <p class="text-xs text-dimmed">
             Built with Nuxt + CommerceJS SDK
           </p>
         </div>

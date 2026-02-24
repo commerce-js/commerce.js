@@ -18,11 +18,7 @@ async function handleAddToCart(product: Product) {
       productId: product.id,
       quantity: 1,
     })
-    toast.add({
-      title: 'Added to cart',
-      icon: 'i-heroicons-check-circle',
-      color: 'success',
-    })
+    // No success toast — the cart drawer slides open automatically as confirmation
   } catch (e) {
     toast.add({
       title: 'Failed to add to cart',

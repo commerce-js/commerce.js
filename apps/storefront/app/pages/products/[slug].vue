@@ -50,12 +50,7 @@ async function handleAddToCart() {
       options: Object.keys(selectedOptions).length > 0 ? selectedOptions : undefined,
     })
 
-    toast.add({
-      title: 'Added to cart',
-      description: `${t(product.value.name)} has been added to your cart.`,
-      icon: 'i-heroicons-check-circle',
-      color: 'success',
-    })
+    // No success toast — the cart drawer slides open automatically as confirmation
   } catch (e) {
     toast.add({
       title: 'Error',

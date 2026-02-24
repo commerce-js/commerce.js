@@ -13,7 +13,7 @@ export async function findProductBySlug(slug: string) {
 }
 
 export async function findProducts(opts: {
-  conditions: { field: string; op: 'eq' | 'like' | 'gte' | 'lte' | 'in'; value: any }[]
+  conditions: { field: string; op: 'eq' | 'like' | 'ilike' | 'search' | 'gte' | 'lte' | 'in'; value: any }[]
   orderBy?: { field: string; direction: 'asc' | 'desc' }
   limit: number
   offset: number
@@ -22,12 +22,20 @@ export async function findProducts(opts: {
   const where: any = {}
 
   for (const c of opts.conditions) {
+    const searchVal = c.value?.replace?.(/%/g, '') ?? c.value
     switch (c.op) {
       case 'eq':
         where[c.field] = c.value
         break
       case 'like':
-        where[c.field] = { contains: c.value.replace(/%/g, '') }
+      case 'ilike':
+        where[c.field] = { contains: searchVal, mode: 'insensitive' }
+        break
+      case 'search':
+        where.OR = [
+          { name: { contains: searchVal, mode: 'insensitive' } },
+          { description: { contains: searchVal, mode: 'insensitive' } },
+        ]
         break
       case 'gte':
         where[c.field] = { ...where[c.field], gte: c.value }
