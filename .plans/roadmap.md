@@ -68,6 +68,8 @@
 - [x] Homepage, product listing, category pages
 - [x] Product detail page
 - [x] Cart & checkout flow (country/city selectors, shipping, payments)
+- [x] Product search modal (`UCommandPalette` + `⌘K` shortcut)
+- [x] Tailwind lint cleanup (semantic shorthands, aspect/gradient syntax)
 - [ ] T07: Build & E2E validation (deferred — functional, needs polish)
 
 ---
@@ -254,7 +256,7 @@
 - [x] `@commercejs/delivery-armada` — Armada last-mile delivery provider (19 tests)
 - [x] `@commercejs/delivery-parcel` — Parcel delivery provider with OAuth2 (23 tests)
 - [x] `@commercejs/webhook-verifier` — cryptographic webhook verification
-- [x] `@commercejs/platform` — built-in commerce engine (SQLite/Drizzle + Neon Postgres), Admin API (22 endpoints), DB-backed admin auth
+- [x] `@commercejs/platform` — built-in commerce engine (SQLite/Drizzle + Neon Postgres), Admin API (22 endpoints), DB-backed admin auth, case-insensitive search (`ILIKE` name + description)
 - [x] `@commercejs/cloud` — cloud infrastructure orchestration (Cloudflare, Neon, GitHub, Billing providers)
 - [x] `@commercejs/cli` — CLI tool (`deploy`, `init`, `env` commands)
 - [x] `@commercejs/notification-resend` — Resend email notification provider (9 tests)
@@ -298,3 +300,4 @@
 - **2026-02-17**: Phase 5 OpenAPI — enabled Nitro `experimental.openAPI` in `@commercejs/nuxt` module, added `defineRouteMeta` to all 46 server routes across 13 tags (Store, Catalog, Geography, Auth, Cart, Checkout, Customer, Addresses, Orders, Reviews, Wishlist, Returns, Promotions). Scalar UI at `/_scalar`, raw spec at `/_openapi.json`. Build verified, browser tested.
 - **2026-02-18**: Built `@commercejs/storage-s3` — S3-compatible storage provider for the native platform (Commerce.js Cloud). `StorageProvider` interface in `@commercejs/types` (5 methods: upload, delete, getUrl, getPresignedUploadUrl, getPresignedDownloadUrl). Uses `aws4fetch` (2.5KB). Wired into `@commercejs/core` CommerceConfig. 20 tests, all passing.
 - **2026-02-23**: Integrated delivery providers into core + nuxt + hosted-checkout. Added `delivery`/`defaultDelivery`/`autoDispatch` to `CommerceConfig`, 5 delivery methods to `CommerceInstance`, 4 delivery events to `CommerceEvents` (8 new tests, 59 total passing). Created `useServerDeliveryProvider()` utility and 5 API routes in `@commercejs/nuxt` (`_commerce/delivery/`). Added `delivery-estimate.post.ts` and `delivery-dispatch.post.ts` to hosted-checkout. Separate admin action with optional auto-dispatch.
+- **2026-02-24**: Storefront search & polish — built `SearchPalette.vue` component (UModal + UCommandPalette, ⌘K shortcut, ClientOnly SSR fix). Added case-insensitive `search` operator to platform (Drizzle ILIKE + Prisma insensitive mode) searching both name and description. Fixed currency display (`price.formatted`). Cleaned ~65 verbose Tailwind classes across 5 storefront files (semantic shorthands, aspect-ratio syntax, gradient syntax).

@@ -19,6 +19,8 @@
 * [x] [**T05**: Product Detail Page](tasks/T05.md) - Status: ✅ Completed
 * [x] [**T06**: Cart & Checkout](tasks/T06.md) - Status: ✅ Completed
 * [ ] [**T07**: Build & E2E Validation](tasks/T07.md) - Status: 🟡 Planned
+* [x] **T08**: Product Search Modal — `SearchPalette.vue` (UCommandPalette + ⌘K) ✅ Completed
+* [x] **T09**: Tailwind Lint Cleanup — ~65 verbose classes replaced with semantic shorthands ✅ Completed
 
 <!-- END PROGRESS SECTION -->
 
@@ -44,6 +46,7 @@ Build a premium, Salla-powered storefront that demonstrates the full CommerceJS 
 | `/categories/[slug]` | Category products | ✅ Done | 3,055 bytes |
 | `/cart` | Shopping cart | ✅ Done | 5,321 bytes |
 | `/checkout` | Checkout flow | ⚠️ Placeholder | 672 bytes |
+| (modal) | Product search | ✅ Done | `SearchPalette.vue` |
 
 **Design System**:
 - Primary color: `indigo` (premium feel)
@@ -88,4 +91,5 @@ The checkout page at `packages/storefront/app/pages/checkout.vue` is a 672-byte 
 - **2026-02-08 14:36**: Initial plan setup, skills reviewed
 - **2026-02-08 14:36**: Strategy selected — monorepo package with Nuxt UI v4
 - **2026-02-15**: Plan synced with codebase — T01–T05 marked complete, T06 marked partial
+- **2026-02-24**: T08 (search modal) and T09 (Tailwind cleanup) completed. Case-insensitive search across name+description.
 <!-- META_INFORMATION -->
