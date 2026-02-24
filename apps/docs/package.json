@@ -11,6 +11,8 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@commercejs/types": "workspace:*",
+    "@commercejs/ui": "workspace:*",
     "@iconify-json/lucide": "^1.2.89",
     "@iconify-json/simple-icons": "^1.2.70",
     "@iconify-json/vscode-icons": "^1.2.40",
@@ -26,11 +28,9 @@
     "nuxt": "^4.3.1",
     "nuxt-llms": "0.2.0",
     "nuxt-og-image": "^5.1.13",
-    "tailwindcss": "^4.1.18",
+    "tailwindcss": "^4.2.1",
     "ufo": "^1.6.3",
     "unist-util-visit": "^5.1.0",
-    "@commercejs/types": "workspace:*",
-    "@commercejs/ui": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -38,7 +38,7 @@
     "@types/mdast": "^4.0.4",
     "eslint": "^10.0.0",
     "typescript": "^5.9.3",
-    "vue-tsc": "^3.2.4"
+    "vue-tsc": "^3.2.5"
   },
   "packageManager": "pnpm@10.29.2"
 }
