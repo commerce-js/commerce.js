@@ -30,3 +30,9 @@ export function getDb(): DrizzleDatabase {
   if (!_db) throw new Error('Drizzle database not initialized. Call initDrizzle(connectionString) first.')
   return _db
 }
+
+/** Reset the database singleton (for tests). */
+export function resetDb(): void {
+  _db = null
+}
+

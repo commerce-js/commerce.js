@@ -33,7 +33,7 @@ export interface SuiteOptions {
   setupEmpty: () => void | Promise<void>
 }
 
-export function platformTestSuite(opts: SuiteOptions) {
+export function platformTestSuite(opts: SuiteOptions, timeout = 30_000) {
   let adapter: any
 
   beforeEach(async () => {
@@ -46,7 +46,7 @@ export function platformTestSuite(opts: SuiteOptions) {
   it('should list seeded products', async () => {
     const result = await adapter.getProducts({ page: 1, perPage: 10 })
     expect(result.products.items.length).toBe(3)
-    expect(result.products.total).toBe(3)
+    expect(Number(result.products.total)).toBe(3)
   })
 
   it('should get a product by id', async () => {

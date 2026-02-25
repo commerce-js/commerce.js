@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@commercejs/types": "workspace:*",
-    "resend": "^4.0.0"
+    "resend": "^4.8.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
