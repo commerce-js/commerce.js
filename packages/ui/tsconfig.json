@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "declarationMap": false
   },
   "include": ["src"]
 }

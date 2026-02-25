@@ -10,10 +10,9 @@
   "license": "MIT",
   "type": "module",
   "main": "./dist/module.mjs",
-  "types": "./dist/types.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/types.d.ts",
+      "types": "./dist/types.d.mts",
       "import": "./dist/module.mjs"
     }
   },
@@ -35,11 +34,12 @@
   },
   "devDependencies": {
     "@nuxt/kit": "^4.3.1",
-    "@nuxt/module-builder": "^0.8.0",
+    "@nuxt/module-builder": "^1.0.2",
     "@nuxt/schema": "^4.3.1",
     "@nuxt/ui": "^4.0.0",
     "nuxt": "^4.3.1",
     "typescript": "^5.7.0",
-    "vue": "^3.5.0"
+    "vue": "^3.5.0",
+    "vue-tsc": "^3.2.5"
   }
 }
