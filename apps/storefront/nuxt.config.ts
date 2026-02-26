@@ -34,6 +34,13 @@ export default defineNuxtConfig({
     apiRoutes: true,
   },
 
+  // Runtime config — Google Maps for delivery location
+  runtimeConfig: {
+    public: {
+      googleMapsKey: process.env.GOOGLE_MAPS_KEY || '',
+    },
+  },
+
   // Route caching — CDN performance
   routeRules: {
     '/': { swr: 3600 },

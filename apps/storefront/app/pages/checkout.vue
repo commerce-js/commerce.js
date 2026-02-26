@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Address, Order } from '@commercejs/types'
 
+const config = useRuntimeConfig()
 const { t } = useLocalizedString()
 const { formatPrice } = usePrice()
 const { cart, cartId, itemCount } = useCart()
@@ -60,6 +61,111 @@ const addressForm = ref<Partial<Address>>({
   nationalAddress: '',
 })
 
+// ── Fulfillment type (Pickup / Delivery) ──
+const fulfillmentType = ref<'pickup' | 'delivery'>('pickup')
+const deliveryLat = ref(0)
+const deliveryLng = ref(0)
+const locationObtained = ref(false)
+const locatingUser = ref(false)
+const locationError = ref<string | null>(null)
+
+// ── Google Maps ──
+const mapContainer = ref<HTMLElement | null>(null)
+let map: any = null
+let marker: any = null
+let mapsLoaded = false
+
+function loadGoogleMaps(): Promise<void> {
+  if (mapsLoaded || (window as any).google?.maps) {
+    mapsLoaded = true
+    return Promise.resolve()
+  }
+  return new Promise((resolve, reject) => {
+    const key = config.public.googleMapsKey
+    if (!key) { reject(new Error('No Google Maps key')); return }
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}`
+    script.async = true
+    script.onload = () => { mapsLoaded = true; resolve() }
+    script.onerror = () => reject(new Error('Failed to load Google Maps'))
+    document.head.appendChild(script)
+  })
+}
+
+async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const google = (window as any).google
+    if (!google?.maps?.Geocoder) return
+    const geocoder = new google.maps.Geocoder()
+    const { results } = await geocoder.geocode({ location: { lat, lng } })
+    if (!results?.[0]) return
+    const components = results[0].address_components as any[]
+    const get = (type: string) => components.find((c: any) => c.types.includes(type))?.long_name || ''
+    // Auto-fill city (Area) from geocode
+    const area = get('sublocality_level_1') || get('neighborhood') || get('locality') || get('administrative_area_level_2')
+    if (area) addressForm.value.city = area
+  } catch {}
+}
+
+async function onMarkerPositionChanged(lat: number, lng: number) {
+  deliveryLat.value = lat
+  deliveryLng.value = lng
+  locationObtained.value = true
+  await reverseGeocode(lat, lng)
+}
+
+async function initOrUpdateMap(lat: number, lng: number) {
+  try { await loadGoogleMaps() } catch { return }
+  const google = (window as any).google
+  const position = { lat, lng }
+  reverseGeocode(lat, lng)
+  if (!map && mapContainer.value) {
+    map = new google.maps.Map(mapContainer.value, {
+      center: position, zoom: 16,
+      disableDefaultUI: true, zoomControl: true,
+      gestureHandling: 'greedy',
+      styles: [
+        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+      ],
+    })
+    marker = new google.maps.Marker({ position, map, draggable: true, title: 'Drag to adjust', animation: google.maps.Animation.DROP })
+    marker.addListener('dragend', async () => {
+      const pos = marker.getPosition()
+      await onMarkerPositionChanged(pos.lat(), pos.lng())
+    })
+    map.addListener('click', async (e: any) => {
+      marker.setPosition(e.latLng)
+      await onMarkerPositionChanged(e.latLng.lat(), e.latLng.lng())
+    })
+  } else if (map && marker) {
+    map.panTo(position)
+    marker.setPosition(position)
+  }
+}
+
+async function useMyLocation() {
+  if (!navigator.geolocation) { locationError.value = 'Geolocation not supported'; return }
+  locatingUser.value = true
+  locationError.value = null
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      deliveryLat.value = position.coords.latitude
+      deliveryLng.value = position.coords.longitude
+      locationObtained.value = true
+      locatingUser.value = false
+      await initOrUpdateMap(position.coords.latitude, position.coords.longitude)
+    },
+    (err) => {
+      locatingUser.value = false
+      locationError.value = err.code === err.PERMISSION_DENIED
+        ? 'Location access denied. Please enable it in your browser settings.'
+        : 'Could not determine your location.'
+    },
+    { enableHighAccuracy: true, timeout: 10000 },
+  )
+}
+
 // ── Billing address ──
 const billingSameAsShipping = ref(true)
 const billingForm = ref<Partial<Address>>({
@@ -104,7 +210,17 @@ watch(selectedCountryCode, (code) => {
 // ── Step handlers ──
 async function handleAddressSubmit() {
   try {
-    await setShippingAddress(addressForm.value as Omit<Address, 'id' | 'isDefault'>)
+    // Attach delivery coordinates and fulfillment type as metadata
+    const addressWithMeta = {
+      ...addressForm.value,
+      metadata: {
+        fulfillmentType: fulfillmentType.value,
+        ...(fulfillmentType.value === 'delivery' && locationObtained.value
+          ? { lat: deliveryLat.value, lng: deliveryLng.value }
+          : {}),
+      },
+    }
+    await setShippingAddress(addressWithMeta as Omit<Address, 'id' | 'isDefault'>)
     // Save billing address — either same as shipping or separate
     const billing = billingSameAsShipping.value
       ? { ...addressForm.value }
@@ -247,9 +363,54 @@ useHead({
             />
           </div>
 
+          <!-- Fulfillment type toggle -->
+          <div class="rounded-2xl bg-elevated ring ring-default p-4">
+            <label class="block text-sm font-medium text-highlighted mb-3">Fulfillment method</label>
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200"
+                :class="fulfillmentType === 'pickup'
+                  ? 'ring-2 ring-primary bg-primary/5 text-primary'
+                  : 'ring ring-default bg-elevated hover:ring-primary/50 text-muted'"
+                @click="fulfillmentType = 'pickup'"
+              >
+                🏪 Pickup
+              </button>
+              <button
+                class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200"
+                :class="fulfillmentType === 'delivery'
+                  ? 'ring-2 ring-primary bg-primary/5 text-primary'
+                  : 'ring ring-default bg-elevated hover:ring-primary/50 text-muted'"
+                @click="fulfillmentType = 'delivery'"
+              >
+                🚗 Delivery
+              </button>
+            </div>
+          </div>
+
+          <!-- Delivery location (map + geolocation) -->
+          <div v-show="fulfillmentType === 'delivery'" class="rounded-2xl bg-elevated ring ring-default p-4 space-y-3">
+            <label class="block text-sm font-medium text-highlighted">Delivery location</label>
+            <UButton
+              :loading="locatingUser"
+              :color="locationObtained ? 'success' : 'primary'"
+              variant="outline"
+              block
+              @click="useMyLocation"
+            >
+              {{ locationObtained ? '✅ Location set · Update location' : '📍 Use my location' }}
+            </UButton>
+            <p v-if="locationError" class="text-xs text-red-500">{{ locationError }}</p>
+            <div
+              ref="mapContainer"
+              class="w-full rounded-xl overflow-hidden ring ring-default transition-all duration-300"
+              :class="locationObtained ? 'h-[220px]' : 'h-0'"
+            />
+          </div>
+
           <!-- Shipping address form -->
           <h2 class="text-xl font-semibold text-highlighted">
-            Shipping Address
+            {{ fulfillmentType === 'delivery' ? 'Delivery Address' : 'Shipping Address' }}
           </h2>
           <div class="rounded-2xl bg-elevated ring ring-default p-6">
             <CAddressForm
