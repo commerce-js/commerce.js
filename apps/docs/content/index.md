@@ -236,7 +236,7 @@ The package ecosystem
   @commercejs/hosted-checkout
 
   #description
-  A ready-to-deploy Nuxt application for hosted checkout. Drop-in payment page with goSell.js integration.
+  A ready-to-deploy Nuxt application for hosted checkout. Tap Card SDK integration with payment links, saved cards, and delivery dispatch.
   :::
 
   :::u-page-feature
@@ -247,7 +247,7 @@ The package ecosystem
   @commercejs/platform
 
   #description
-  Built-in commerce engine — zero-config, SQLite-backed. Own your data with 12 implemented domains and dual database drivers.
+  Built-in commerce engine — Neon Postgres backed, Admin API, Profile system, and 12 implemented domains.
   :::
 
   :::u-page-feature

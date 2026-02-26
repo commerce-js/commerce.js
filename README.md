@@ -50,12 +50,13 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 | [`@commercejs/webhook-verifier`](packages/webhook-verifier) | [![npm](https://img.shields.io/npm/v/@commercejs/webhook-verifier?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/webhook-verifier) | Cryptographic webhook signature verification |
 | [`@commercejs/adapter-salla`](packages/adapter-salla) | [![npm](https://img.shields.io/npm/v/@commercejs/adapter-salla?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/adapter-salla) | Salla platform adapter |
 | [`@commercejs/adapter-medusa`](packages/adapter-medusa) | [![npm](https://img.shields.io/npm/v/@commercejs/adapter-medusa?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/adapter-medusa) | Medusa V2 platform adapter |
-| [`@commercejs/platform`](packages/platform) | [![npm](https://img.shields.io/npm/v/@commercejs/platform?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/platform) | Built-in commerce engine — SQLite-powered, zero-config |
+| [`@commercejs/platform`](packages/platform) | [![npm](https://img.shields.io/npm/v/@commercejs/platform?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/platform) | Built-in commerce engine — Neon Postgres, Admin API, Profile system |
 | [`@commercejs/nuxt`](packages/nuxt) | [![npm](https://img.shields.io/npm/v/@commercejs/nuxt?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/nuxt) | Nuxt module — composables, plugin, and auto-generated REST API |
-| [`@commercejs/ui`](packages/ui) | [![npm](https://img.shields.io/npm/v/@commercejs/ui?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/ui) | 30+ eCommerce UI components built on Nuxt UI |
+| [`@commercejs/ui`](packages/ui) | [![npm](https://img.shields.io/npm/v/@commercejs/ui?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/ui) | eCommerce UI components built on Nuxt UI |
 | [`@commercejs/notification-resend`](packages/notification-resend) | [![npm](https://img.shields.io/npm/v/@commercejs/notification-resend?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/notification-resend) | Resend email notification provider |
 | [`@commercejs/notification-smtp`](packages/notification-smtp) | [![npm](https://img.shields.io/npm/v/@commercejs/notification-smtp?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/notification-smtp) | SMTP email notification provider |
 | [`@commercejs/analytics-ga`](packages/analytics-ga) | [![npm](https://img.shields.io/npm/v/@commercejs/analytics-ga?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/analytics-ga) | Google Analytics 4 provider |
+| [`@commercejs/storage-s3`](packages/storage-s3) | [![npm](https://img.shields.io/npm/v/@commercejs/storage-s3?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/storage-s3) | S3-compatible storage provider (AWS, R2, Spaces, MinIO) |
 | [`@commercejs/cloud`](packages/cloud) | [![npm](https://img.shields.io/npm/v/@commercejs/cloud?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/cloud) | Cloud infrastructure orchestration |
 | [`@commercejs/cli`](packages/cli) | [![npm](https://img.shields.io/npm/v/@commercejs/cli?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/cli) | CLI tool — deploy, init, env |
 
@@ -230,18 +231,16 @@ await adapter.addToCart(cart.id, { productId: 'prod_01', variantId: 'var_01', qu
 ### Using the built-in platform engine
 
 ```typescript
-import { initDatabase, createPlatformAdapter } from '@commercejs/platform'
+import { createPlatformAdapter } from '@commercejs/platform'
 
-// Initialize SQLite database (auto-creates tables)
-initDatabase({ driver: 'drizzle' })
-
-const adapter = createPlatformAdapter({ currency: 'SAR' })
+// Connects to Neon Postgres via DATABASE_URL
+const { adapter, admin } = await createPlatformAdapter({ currency: 'SAR' })
 
 // Full commerce operations, zero external APIs
 const products = await adapter.getProducts({ limit: 10 })
 const cart = await adapter.createCart()
 const brands = await adapter.getBrands()
-const summary = await adapter.getReviewSummary('prod-1')
+const stats = await admin.getDashboardStats()
 ```
 
 ### Verifying webhooks
@@ -271,13 +270,19 @@ commerce.js/
 │   ├── webhook-verifier/    # Webhook signature verification
 │   ├── adapter-salla/       # Salla platform adapter
 │   ├── adapter-medusa/      # Medusa V2 platform adapter
-│   ├── platform/            # Built-in commerce engine (SQLite)
+│   ├── platform/            # Built-in commerce engine (Neon Postgres)
 │   ├── nuxt/                # Nuxt module
 │   ├── ui/                  # eCommerce UI components
 │   ├── notification-resend/ # Resend email provider
+│   ├── notification-smtp/   # SMTP email provider
 │   ├── analytics-ga/        # Google Analytics 4 provider
+│   ├── storage-s3/          # S3-compatible storage provider
+│   ├── cloud/               # Cloud infrastructure orchestration
+│   └── cli/                 # CLI tool
+├── apps/
 │   ├── hosted-checkout/     # Deployable checkout app
 │   ├── storefront/          # Reference storefront
+│   ├── dashboard/           # Commerce.js Cloud dashboard
 │   └── docs/                # Documentation site
 ├── .github/workflows/       # CI/CD pipelines
 ├── .changeset/              # Version management
