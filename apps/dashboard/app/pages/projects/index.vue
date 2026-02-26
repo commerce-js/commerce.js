@@ -1,12 +1,52 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'dashboard' })
 
-const projects = ref([
-  { id: '1', name: 'My Store', slug: 'my-store', status: 'active', url: 'https://my-store.cjs.app', lastDeploy: '2 min ago' },
-  { id: '2', name: 'Test Store', slug: 'test-store', status: 'building', url: 'https://test-store.cjs.app', lastDeploy: 'Building...' },
-])
+// Fetch projects from D1
+const { data: projects, refresh, status } = await useFetch('/api/projects', {
+  default: () => [],
+})
 
 const showCreateModal = ref(false)
+const newProject = ref({
+  name: '',
+  repoUrl: '',
+})
+const creating = ref(false)
+
+async function createProject() {
+  if (!newProject.value.name) return
+  creating.value = true
+
+  try {
+    await $fetch('/api/projects', {
+      method: 'POST',
+      body: {
+        name: newProject.value.name,
+        ownerId: 'default', // TODO: Replace with authenticated user
+        repoUrl: newProject.value.repoUrl || undefined,
+      },
+    })
+
+    showCreateModal.value = false
+    newProject.value = { name: '', repoUrl: '' }
+    await refresh()
+  }
+  catch (error) {
+    console.error('Failed to create project:', error)
+  }
+  finally {
+    creating.value = false
+  }
+}
+
+function projectStatus(project: any) {
+  // Derive status from last deployment
+  return project.cfPagesProjectName ? 'active' : 'pending'
+}
+
+function statusColor(status: string) {
+  return status === 'active' ? 'success' as const : 'warning' as const
+}
 </script>
 
 <template>
@@ -35,8 +75,30 @@ const showCreateModal = ref(false)
         </p>
       </div>
 
+      <!-- Loading state -->
+      <div v-if="status === 'pending'" class="flex justify-center py-12">
+        <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-dimmed" />
+      </div>
+
+      <!-- Empty state -->
+      <div v-else-if="!projects?.length" class="text-center py-16">
+        <UIcon name="i-lucide-folder-plus" class="size-12 text-dimmed mx-auto mb-4" />
+        <h3 class="text-lg font-semibold text-highlighted mb-2">
+          No projects yet
+        </h3>
+        <p class="text-sm text-muted mb-6">
+          Create your first project to deploy a CommerceJS store
+        </p>
+        <UButton
+          icon="i-lucide-plus"
+          label="Create Project"
+          color="primary"
+          @click="showCreateModal = true"
+        />
+      </div>
+
       <!-- Project Grid -->
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <NuxtLink
           v-for="project in projects"
           :key="project.id"
@@ -50,21 +112,21 @@ const showCreateModal = ref(false)
                   {{ project.name }}
                 </h3>
                 <p class="text-xs text-dimmed mt-1 font-mono">
-                  {{ project.slug }}
+                  {{ project.subdomain }}
                 </p>
               </div>
               <UBadge
-                :color="project.status === 'active' ? 'success' : 'warning'"
+                :color="statusColor(projectStatus(project))"
                 variant="subtle"
                 size="xs"
               >
-                {{ project.status }}
+                {{ projectStatus(project) }}
               </UBadge>
             </div>
 
             <div class="mt-4 pt-4 border-t border-default flex items-center justify-between text-xs text-dimmed">
-              <span>{{ project.url }}</span>
-              <span>{{ project.lastDeploy }}</span>
+              <span>{{ project.subdomain }}</span>
+              <span>{{ project.plan }}</span>
             </div>
           </UCard>
         </NuxtLink>
@@ -74,22 +136,20 @@ const showCreateModal = ref(false)
       <UModal v-model:open="showCreateModal" title="Create Project" description="Set up a new CommerceJS store">
         <template #body>
           <div class="space-y-4">
-            <UFormField label="Project Name">
-              <UInput placeholder="my-awesome-store" size="lg" />
+            <UFormField label="Project Name" required>
+              <UInput
+                v-model="newProject.name"
+                placeholder="my-awesome-store"
+                size="lg"
+              />
             </UFormField>
 
             <UFormField label="GitHub Repository">
-              <UInput placeholder="user/repo" size="lg" icon="i-simple-icons-github" />
-            </UFormField>
-
-            <UFormField label="Region">
-              <USelect
-                :items="[
-                  { label: 'GCC (Riyadh)', value: 'gcc' },
-                  { label: 'Europe (Frankfurt)', value: 'eu' },
-                  { label: 'US East (Virginia)', value: 'us' },
-                ]"
+              <UInput
+                v-model="newProject.repoUrl"
+                placeholder="https://github.com/user/repo"
                 size="lg"
+                icon="i-simple-icons-github"
               />
             </UFormField>
           </div>
@@ -98,7 +158,13 @@ const showCreateModal = ref(false)
         <template #footer>
           <div class="flex justify-end gap-3">
             <UButton variant="ghost" color="neutral" label="Cancel" @click="showCreateModal = false" />
-            <UButton color="primary" label="Create Project" @click="showCreateModal = false" />
+            <UButton
+              color="primary"
+              label="Create Project"
+              :loading="creating"
+              :disabled="!newProject.name"
+              @click="createProject"
+            />
           </div>
         </template>
       </UModal>

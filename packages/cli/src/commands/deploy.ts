@@ -4,6 +4,7 @@
 
 import { defineCommand } from 'citty'
 import { consola } from 'consola'
+import { resolve } from 'node:path'
 import { DeployOrchestrator } from '@commercejs/cloud'
 import { loadCloudConfig } from '../utils/config.js'
 
@@ -13,6 +14,12 @@ export const deployCommand = defineCommand({
     description: 'Deploy your CommerceJS store to the cloud',
   },
   args: {
+    dir: {
+      type: 'string',
+      description: 'Project directory to deploy (defaults to current directory)',
+      default: '.',
+      alias: 'd',
+    },
     env: {
       type: 'string',
       description: 'Target environment (production, staging, preview)',
@@ -28,29 +35,39 @@ export const deployCommand = defineCommand({
       type: 'string',
       description: 'PR number for preview deployments',
     },
+    project: {
+      type: 'string',
+      description: 'Project ID (overrides config)',
+      alias: 'p',
+    },
   },
   async run({ args }) {
     const environment = args.env as 'production' | 'staging' | 'preview'
+    const projectDir = resolve(args.dir)
 
     consola.start(`Deploying to ${environment}...`)
+    consola.info(`Project directory: ${projectDir}`)
 
     try {
       const config = await loadCloudConfig()
       const orchestrator = new DeployOrchestrator(config)
+      const projectId = args.project || config.projectId || 'default'
 
       const result = await orchestrator.deploy({
-        projectId: config.projectId ?? 'default',
+        projectId,
+        projectDir,
         environment,
         branch: args.branch,
         prNumber: args.pr ? Number(args.pr) : undefined,
       })
 
       if (result.status === 'ready') {
-        consola.success(`Deployed to ${result.url}`)
-        consola.info(`Build time: ${result.buildDurationMs}ms`)
+        consola.success(`\n🚀 Deployed to ${result.url}`)
+        consola.info(`   Build time: ${Math.round(result.buildDurationMs! / 1000)}s`)
+        consola.info(`   Deployment ID: ${result.id}`)
       }
       else {
-        consola.error(`Deployment failed: ${result.error}`)
+        consola.error(`\n❌ Deployment failed: ${result.error}`)
         process.exit(1)
       }
     }

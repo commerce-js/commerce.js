@@ -16,7 +16,7 @@ interface ExtendedCloudConfig extends CloudConfig {
  *
  * Configuration resolution order:
  * 1. `commercejs.config.json` in the project root
- * 2. Environment variables (CLOUDFLARE_API_TOKEN, NEON_API_KEY, etc.)
+ * 2. Environment variables (supports both CF_* and CLOUDFLARE_* prefixes)
  */
 export async function loadCloudConfig(): Promise<ExtendedCloudConfig> {
   // Try loading from config file
@@ -32,16 +32,16 @@ export async function loadCloudConfig(): Promise<ExtendedCloudConfig> {
     // Fall back to environment variables
   }
 
-  // Load from environment variables
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
+  // Load from environment variables (support both naming conventions)
+  const apiToken = process.env.CF_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN
+  const accountId = process.env.CF_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
   const neonApiKey = process.env.NEON_API_KEY
 
   if (!apiToken || !accountId) {
     consola.error(
       'Missing configuration. Either create a commercejs.config.json or set environment variables:\n'
-      + '  CLOUDFLARE_API_TOKEN\n'
-      + '  CLOUDFLARE_ACCOUNT_ID\n'
+      + '  CF_API_TOKEN (or CLOUDFLARE_API_TOKEN)\n'
+      + '  CF_ACCOUNT_ID (or CLOUDFLARE_ACCOUNT_ID)\n'
       + '  NEON_API_KEY',
     )
     process.exit(1)

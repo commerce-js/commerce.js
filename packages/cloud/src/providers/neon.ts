@@ -164,13 +164,17 @@ export class NeonProvider {
     const resolvedProjectId = projectId || this.defaultProjectId
     if (!resolvedProjectId) throw new Error('Neon project ID is required')
 
-    const response = await this.client<{ connection_uris: any[] }>(
+    const response = await this.client<{ uri: string }>(
       `/projects/${resolvedProjectId}/connection_uri`,
       {
-        params: { branch_id: branchId, role_name: 'neondb_owner' },
+        params: {
+          branch_id: branchId,
+          role_name: 'neondb_owner',
+          database_name: 'neondb',
+        },
       },
     )
 
-    return response.connection_uris?.[0]?.connection_uri ?? ''
+    return response.uri ?? ''
   }
 }

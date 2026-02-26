@@ -60,3 +60,34 @@
 - **Context:** `addItem()` threw if no cart ID existed. Stale cookies caused 500s.
 - **Decision:** `useCart.addItem()` now auto-creates a cart if none exists, and retries once if the stored cart ID is stale (500/404). `refresh()` clears stale cookies instead of setting an error state.
 - **Rationale:** Users should never see "No cart ID" errors. Cookie-persisted state can become stale after DB migrations — the composable must be resilient.
+
+## 2026-02-26: Cloud Platform — CLI-First (Option A)
+- **Context:** Needed to choose between CLI-First (bottom-up) or Dashboard-First (top-down) for making the Cloud Platform functional.
+- **Decision:** CLI-First — make `commercejs deploy` work end-to-end before building dashboard UI.
+- **Rationale:** Lower risk, faster time-to-first-deploy, validates core infrastructure without UI complexity. Dashboard frontend is built on top of proven backend.
+
+## 2026-02-26: Cloud deploy uses wrangler CLI, not direct upload API
+- **Context:** Cloudflare Pages supports both direct upload API and wrangler CLI for deployments.
+- **Decision:** Use `npx wrangler pages deploy` subprocess via `execa`, not the raw multipart upload API.
+- **Rationale:** wrangler handles asset hashing, deduplication, manifest generation, and retry logic. The raw API requires reimplementing all of this. wrangler is already a devDependency.
+
+## 2026-02-26: Dashboard persistence uses D1 + Drizzle, not KV
+- **Context:** Dashboard already had NuxtHub KV for Armada config. Cloud project data needs relational queries.
+- **Decision:** Added D1 (SQLite) with Drizzle ORM for projects, deployments, and env vars. KV remains for simple key-value data (Armada config).
+- **Rationale:** Projects have relational data (deployments → project, envVars → project) that doesn't fit KV. D1 is already enabled in NuxtHub config.
+
+## 2026-02-26: Neon branch operations need retry-with-backoff
+- **Context:** Neon returns 423 Locked for ~3s after project creation while endpoints initialize.
+- **Decision:** `DeployOrchestrator` retries branch operations with exponential backoff (2s base, 5 retries).
+- **Rationale:** This is a fundamental Neon API behavior — every path that provisions a project and then creates branches must include retry logic.
+
+## 2026-02-26: Cloudflare Pages projects auto-set nodejs_compat
+- **Context:** Nuxt 4 uses Node.js built-ins (`node:buffer`, `node:process`). First deploy failed with `No such module "node:buffer"`.
+- **Decision:** `createPagesProject()` in `CloudflareProvider` sets `compatibility_flags: ['nodejs_compat']` and `compatibility_date: '2024-09-23'` on both production and preview configs at creation time.
+- **Rationale:** This is always required for Nuxt/Nitro apps. Setting it at creation avoids a failed-first-deploy for every new project. The `--compatibility-flag` CLI option does NOT work with `wrangler pages deploy`.
+
+## 2026-02-26: @commercejs/cloud must be rebuilt before CLI picks up changes
+- **Context:** CLI imports `@commercejs/cloud` from built `dist/`, not source. Source edits had no effect until `pnpm --filter @commercejs/cloud build`.
+- **Decision:** This is expected behavior for monorepo packages with `"main": "./dist/index.js"`. Always rebuild after source changes.
+- **Workflow:** `pnpm --filter @commercejs/cloud build && npx tsx packages/cli/src/cli.ts deploy ...`
+

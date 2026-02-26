@@ -60,3 +60,48 @@ Hard-won lessons from debugging sessions. Read these before working in related a
 - **Root cause:** Browser had `commerce_cart_id` cookie pointing to a cart deleted during a DB migration. `useCart.addItem()` used this stale ID, server threw "Cart not found" → 500
 - **Fix:** Made `useCart` auto-recover: `refresh()` clears stale cookies, `addItem()` auto-creates a new cart if none exists + retries on 500/404
 - **Key takeaway:** Always handle stale references in cookie-persisted state — DB wipes and migrations invalidate client-side IDs
+
+---
+
+## Neon 423 Locked after project creation
+- **Date:** 2026-02-26
+- **Symptom:** `createBranch()` returns `423 Locked` immediately after `createProject()`
+- **Root cause:** Neon projects take a few seconds to initialize their compute endpoints. During this window, branch operations are locked.
+- **Fix:** Retry branch operations with exponential backoff (2s base, 5 retries). The `DeployOrchestrator` should use this pattern when provisioning.
+- **Key takeaway:** Neon project creation is async — always add retry logic for operations immediately following it.
+
+---
+
+## Neon getConnectionString response shape
+- **Date:** 2026-02-26
+- **Symptom:** `getConnectionString()` returns 400 Bad Request
+- **Root cause:** The Neon API `/connection_uri` endpoint returns `{ uri: string }`, not `{ connection_uris: [] }`. Also requires `database_name` parameter.
+- **Fix:** Updated `NeonProvider.getConnectionString()` to use `response.uri` and pass `database_name: 'neondb'`.
+- **Key takeaway:** Always verify API response shapes against real APIs — scaffolded code may have assumed incorrect shapes.
+
+---
+
+## Cloudflare KV namespace creation returns 400, not 409
+- **Date:** 2026-02-26
+- **Symptom:** `safeCreate` didn't catch KV duplicate errors — deploy failed on second run
+- **Root cause:** Cloudflare Pages/R2 return 409 Conflict for duplicate resources, but KV returns 400 Bad Request
+- **Fix:** `safeCreate` in `DeployOrchestrator` catches both 400 and 409 as "already exists" signals
+- **Key takeaway:** Cloudflare API is inconsistent across products — always catch multiple status codes for idempotent create operations
+
+---
+
+## wrangler binary must be resolved from the cloud package, not the deploy target
+- **Date:** 2026-02-26
+- **Symptom:** `sh: wrangler: command not found` during `deployWithWrangler`
+- **Root cause:** `npx wrangler` doesn't work in pnpm monorepos. wrangler was installed as a devDep of `@commercejs/cloud`, but the resolution logic looked in the storefront's `node_modules` (the deploy target)
+- **Fix:** Resolve wrangler binary from the cloud package's own `node_modules/.bin/` using `import.meta.url`, then fall back to project dir, monorepo root, and finally `npx`
+- **Key takeaway:** In monorepos, CLI tool resolution must consider where the package is installed, not where the target project lives. Always rebuild after source changes (`pnpm --filter @commercejs/cloud build`).
+
+---
+
+## Nuxt 4 on Cloudflare Pages requires nodejs_compat
+- **Date:** 2026-02-26
+- **Symptom:** `Deployment failed! No such module "node:buffer"` after successful wrangler upload
+- **Root cause:** Nuxt 4 uses Node.js built-in modules (`node:buffer`, `node:process`, etc.) which are not available in Cloudflare Workers without the `nodejs_compat` compatibility flag
+- **Fix:** Added `nodejs_compat` to `createPagesProject()` in `CloudflareProvider` so all new Pages projects get it automatically. `--compatibility-flag` is NOT a valid `wrangler pages deploy` CLI option — it must be set on the project via the Cloudflare API.
+- **Key takeaway:** Any Node.js app deployed to CF Workers needs `nodejs_compat`. Set it at project creation time, not deploy time.

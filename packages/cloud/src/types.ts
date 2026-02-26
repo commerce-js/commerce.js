@@ -60,6 +60,8 @@ export interface DeployConfig {
   projectId: string
   /** Target environment */
   environment: 'production' | 'staging' | 'preview'
+  /** Local project directory to build from */
+  projectDir: string
   /** Git branch to deploy from */
   branch?: string
   /** Git commit SHA */

@@ -42,9 +42,11 @@ export interface WebhookEvent {
 export class WebhookHandler {
   private orchestrator: DeployOrchestrator
   private github: GitHubProvider
+  private projectDir: string
 
-  constructor(private config: CloudConfig) {
+  constructor(private config: CloudConfig, options?: { projectDir?: string }) {
     this.orchestrator = new DeployOrchestrator(config)
+    this.projectDir = options?.projectDir ?? process.cwd()
 
     if (!config.github) {
       throw new Error('GitHub config required for webhook handler')
@@ -89,6 +91,7 @@ export class WebhookHandler {
 
     await this.orchestrator.deploy({
       projectId: projectName,
+      projectDir: this.projectDir,
       environment: 'production',
       branch: defaultBranch,
     })
@@ -111,6 +114,7 @@ export class WebhookHandler {
 
         const result = await this.orchestrator.deploy({
           projectId: projectName,
+          projectDir: this.projectDir,
           environment: 'preview',
           branch: pr.head.ref,
           prNumber: pr.number,

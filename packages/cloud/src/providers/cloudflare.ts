@@ -48,6 +48,16 @@ export class CloudflareProvider {
         body: {
           name,
           production_branch: options?.productionBranch ?? 'main',
+          deployment_configs: {
+            production: {
+              compatibility_flags: ['nodejs_compat'],
+              compatibility_date: '2024-09-23',
+            },
+            preview: {
+              compatibility_flags: ['nodejs_compat'],
+              compatibility_date: '2024-09-23',
+            },
+          },
         },
       },
     )
