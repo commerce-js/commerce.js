@@ -131,5 +131,26 @@ export function useAdminClient() {
         query: { _storeUrl: currentStore.value.url },
       })
     },
+
+    // Provider configs (stubs — backend in follow-up phase)
+    listProviderConfigs() {
+      return adminFetch<{ providers: Array<{ id: string; configured: boolean }> }>('providers')
+    },
+    getProviderConfig(providerId: string) {
+      return adminFetch<{ id: string; config: Record<string, string> }>(`providers/${providerId}`)
+    },
+    saveProviderConfig(providerId: string, config: Record<string, string>) {
+      return $fetch<void>(`/api/admin/providers/${providerId}`, {
+        method: 'PUT',
+        body: config,
+        query: { _storeUrl: currentStore.value.url },
+      })
+    },
+    deleteProviderConfig(providerId: string) {
+      return $fetch<void>(`/api/admin/providers/${providerId}`, {
+        method: 'DELETE',
+        query: { _storeUrl: currentStore.value.url },
+      })
+    },
   }
 }

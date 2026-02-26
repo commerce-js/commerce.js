@@ -57,6 +57,11 @@ const links = ref<NavigationMenuItem[][]>([
           label: 'Analytics',
           icon: 'i-lucide-trending-up',
           to: '/store/analytics'
+        },
+        {
+          label: 'Integrations',
+          icon: 'i-lucide-plug',
+          to: '/store/integrations'
         }
       ]
     }

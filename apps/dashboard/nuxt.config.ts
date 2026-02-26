@@ -26,6 +26,17 @@ export default defineNuxtConfig({
     preset: 'cloudflare-pages',
   },
 
+  // Allow tunnel hosts (e.g. cloudflared) in dev
+  devServer: {
+    host: '0.0.0.0',
+  },
+
+  vite: {
+    server: {
+      allowedHosts: ['.trycloudflare.com'],
+    },
+  },
+
   // App metadata
   app: {
     head: {
@@ -51,6 +62,10 @@ export default defineNuxtConfig({
     githubAppId: '',
     githubAppPrivateKey: '',
     sessionPassword: '',
+    // Armada Integration Studio credentials
+    armadaAppId: '',
+    armadaAppSecret: '',
+    databaseUrl: '',
     oauth: {
       github: {
         clientId: '',
@@ -59,6 +74,8 @@ export default defineNuxtConfig({
     },
     public: {
       appTitle: 'CommerceJS Cloud',
+      // Dashboard base URL (used for Armada callback redirects)
+      baseUrl: 'http://localhost:3002',
     },
   },
 })

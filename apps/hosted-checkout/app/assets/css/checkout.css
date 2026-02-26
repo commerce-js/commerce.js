@@ -796,3 +796,134 @@ body {
   animation: fadeInUp 0.2s ease-out;
 }
 
+/* ---------------------------------------------------------------------------
+ * Delivery Method Selector
+ * --------------------------------------------------------------------------- */
+.delivery-section {
+  margin-bottom: var(--space-md);
+}
+
+.delivery-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.toggle-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.toggle-option:hover {
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
+}
+
+.toggle-option.active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.04);
+  font-weight: 600;
+}
+
+.delivery-fields {
+  animation: fadeInUp 0.25s ease-out;
+}
+
+.delivery-estimate {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  animation: fadeInUp 0.25s ease-out;
+}
+
+.estimate-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.estimate-row + .estimate-row {
+  margin-top: var(--space-xs);
+}
+
+.estimate-value {
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.btn-location {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  color: var(--color-primary);
+  background: #eff6ff;
+  border: 1.5px dashed var(--color-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--space-md);
+}
+
+.btn-location:hover:not(:disabled) {
+  background: #dbeafe;
+  border-style: solid;
+}
+
+.btn-location:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner-sm {
+  width: 14px;
+  height: 14px;
+  border-width: 1.5px;
+  border-color: rgba(37, 99, 235, 0.3);
+  border-top-color: var(--color-primary);
+}
+
+.location-error {
+  font-size: 0.8125rem;
+  color: var(--color-error);
+  margin-bottom: var(--space-md);
+}
+
+.delivery-map {
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  transition: height 0.3s ease-out, margin 0.3s ease-out;
+  margin-bottom: 0;
+}
+
+.delivery-map.map-visible {
+  height: 220px;
+  margin-bottom: var(--space-md);
+}
+

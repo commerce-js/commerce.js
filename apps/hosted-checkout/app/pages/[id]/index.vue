@@ -28,6 +28,174 @@ const firstName = ref('')
 const lastName = ref('')
 const phone = ref('')
 
+// Delivery state
+const fulfillmentType = ref<'pickup' | 'delivery'>('pickup')
+const addrFlat = ref('')
+const addrBuilding = ref('')
+const addrRoad = ref('')
+const addrBlock = ref('')
+const addrArea = ref('')
+const deliveryLat = ref<number | null>(null)
+const deliveryLng = ref<number | null>(null)
+
+const deliveryFirstLine = computed(() =>
+  [addrFlat.value, addrBuilding.value, addrRoad.value, addrBlock.value, addrArea.value]
+    .filter(Boolean).join(', '),
+)
+const deliveryEstimate = ref<{ fee: number; estimatedDuration?: number } | null>(null)
+const estimatingDelivery = ref(false)
+const locatingUser = ref(false)
+const locationObtained = ref(false)
+const locationError = ref<string | null>(null)
+
+async function useMyLocation() {
+  if (!navigator.geolocation) {
+    locationError.value = 'Geolocation is not supported by your browser'
+    return
+  }
+  locatingUser.value = true
+  locationError.value = null
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      deliveryLat.value = position.coords.latitude
+      deliveryLng.value = position.coords.longitude
+      locationObtained.value = true
+      locatingUser.value = false
+      // Show / update map
+      await initOrUpdateMap(position.coords.latitude, position.coords.longitude)
+      // Auto-fetch estimate once we have coordinates
+      await fetchDeliveryEstimate()
+    },
+    (err) => {
+      locatingUser.value = false
+      if (err.code === err.PERMISSION_DENIED) {
+        locationError.value = 'Location access denied. Please enable it in your browser settings.'
+      } else {
+        locationError.value = 'Could not determine your location. Please try again.'
+      }
+    },
+    { enableHighAccuracy: true, timeout: 10000 },
+  )
+}
+
+// Google Maps
+const mapContainer = ref<HTMLElement | null>(null)
+let map: any = null
+let marker: any = null
+let mapsLoaded = false
+
+function loadGoogleMaps(): Promise<void> {
+  if (mapsLoaded || (window as any).google?.maps) {
+    mapsLoaded = true
+    return Promise.resolve()
+  }
+  return new Promise((resolve, reject) => {
+    const config = useRuntimeConfig()
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${config.public.googleMapsKey}`
+    script.async = true
+    script.defer = true
+    script.onload = () => { mapsLoaded = true; resolve() }
+    script.onerror = () => reject(new Error('Failed to load Google Maps'))
+    document.head.appendChild(script)
+  })
+}
+
+async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const google = (window as any).google
+    if (!google?.maps?.Geocoder) return
+
+    const geocoder = new google.maps.Geocoder()
+    const { results } = await geocoder.geocode({ location: { lat, lng } })
+    if (!results?.[0]) return
+
+    const components = results[0].address_components as any[]
+    const formatted = results[0].formatted_address || ''
+    const get = (type: string) =>
+      components.find((c: any) => c.types.includes(type))?.long_name || ''
+
+    // Auto-fill Area from structured components
+    const area = get('sublocality_level_1') || get('neighborhood') || get('locality') || get('administrative_area_level_2')
+    if (area) addrArea.value = area
+
+    // Parse Road number from formatted address (e.g. "Rd No 6463", "Road 6463")
+    const roadMatch = formatted.match(/(?:Rd\.?\s*(?:No\.?\s*)?|Road\s*)(\d+)/i)
+    if (roadMatch) addrRoad.value = roadMatch[1]
+
+    // Parse Block number from formatted address (e.g. "Block 264")
+    const blockMatch = formatted.match(/Block\s*(\d+)/i)
+    if (blockMatch) addrBlock.value = blockMatch[1]
+
+    console.log('[checkout] Reverse geocoded:', formatted, '→ Area:', area, 'Road:', roadMatch?.[1], 'Block:', blockMatch?.[1])
+  } catch (err) {
+    console.warn('[checkout] Reverse geocode failed:', err)
+  }
+}
+
+async function onMarkerPositionChanged(lat: number, lng: number) {
+  deliveryLat.value = lat
+  deliveryLng.value = lng
+  locationObtained.value = true
+  await Promise.all([
+    reverseGeocode(lat, lng),
+    fetchDeliveryEstimate(),
+  ])
+}
+
+async function initOrUpdateMap(lat: number, lng: number) {
+  try {
+    await loadGoogleMaps()
+  } catch {
+    console.warn('[checkout] Google Maps failed to load')
+    return
+  }
+
+  const google = (window as any).google
+  const position = { lat, lng }
+
+  // Reverse-geocode the initial position
+  reverseGeocode(lat, lng)
+
+  if (!map && mapContainer.value) {
+    map = new google.maps.Map(mapContainer.value, {
+      center: position,
+      zoom: 16,
+      disableDefaultUI: true,
+      zoomControl: true,
+      gestureHandling: 'greedy',
+      styles: [
+        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+      ],
+    })
+
+    marker = new google.maps.Marker({
+      position,
+      map,
+      draggable: true,
+      title: 'Drag to adjust delivery location',
+      animation: google.maps.Animation.DROP,
+    })
+
+    // Update coordinates + reverse geocode on marker drag
+    marker.addListener('dragend', async () => {
+      const pos = marker.getPosition()
+      await onMarkerPositionChanged(pos.lat(), pos.lng())
+    })
+
+    // Allow clicking anywhere on map to move marker
+    map.addListener('click', async (e: any) => {
+      marker.setPosition(e.latLng)
+      await onMarkerPositionChanged(e.latLng.lat(), e.latLng.lng())
+    })
+  } else if (map && marker) {
+    map.panTo(position)
+    marker.setPosition(position)
+  }
+}
+
 // OTP digit refs
 const otpDigits = ref(['', '', '', '', '', ''])
 const otpInputRefs = ref<HTMLInputElement[]>([])
@@ -69,14 +237,63 @@ if (route.query.cancelled) {
   error.value = 'Payment was cancelled'
 }
 
+const totalAmount = computed(() => {
+  if (!session.value) return 0
+  const base = session.value.amount
+  if (fulfillmentType.value === 'delivery' && deliveryEstimate.value) {
+    return base + deliveryEstimate.value.fee
+  }
+  return base
+})
+
 const formattedAmount = computed(() => {
   if (!session.value) return ''
   return new Intl.NumberFormat('en-BH', {
     style: 'currency',
     currency: session.value.currency,
     minimumFractionDigits: 3,
-  }).format(session.value.amount)
+  }).format(totalAmount.value)
 })
+
+const formattedDeliveryFee = computed(() => {
+  if (!deliveryEstimate.value || !session.value) return ''
+  return new Intl.NumberFormat('en-BH', {
+    style: 'currency',
+    currency: session.value.currency,
+    minimumFractionDigits: 3,
+  }).format(deliveryEstimate.value.fee)
+})
+
+async function fetchDeliveryEstimate() {
+  if (!deliveryLat.value || !deliveryLng.value) return
+  estimatingDelivery.value = true
+  try {
+    const result = await $fetch<any>('/api/delivery-estimate', {
+      method: 'POST',
+      body: {
+        origin: {
+          contactName: 'Store',
+          contactPhone: '+97300000000',
+          firstLine: 'Store',
+          latitude: 26.279793,
+          longitude: 50.662508,
+        },
+        destination: {
+          contactName: firstName.value || 'Customer',
+          contactPhone: phone.value || '+97300000000',
+          firstLine: deliveryFirstLine.value || 'Delivery',
+          latitude: deliveryLat.value,
+          longitude: deliveryLng.value,
+        },
+      },
+    })
+    deliveryEstimate.value = result
+  } catch {
+    deliveryEstimate.value = null
+  } finally {
+    estimatingDelivery.value = false
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Profile lookup on email blur
@@ -280,7 +497,7 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
           firstName: firstName.value,
           lastName: lastName.value,
           phone: phone.value,
-          street: 'Hosted Checkout',
+          street: fulfillmentType.value === 'delivery' ? deliveryFirstLine.value : 'Pickup',
           street2: null,
           city: 'Manama',
           state: null,
@@ -290,11 +507,49 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
           nationalAddress: null,
           additionalNumber: null,
         },
+        // Delivery info — used for auto-dispatch
+        delivery: fulfillmentType.value === 'delivery' ? {
+          type: 'delivery',
+          address: deliveryFirstLine.value,
+          latitude: deliveryLat.value,
+          longitude: deliveryLng.value,
+          fee: deliveryEstimate.value?.fee ?? 0,
+        } : { type: 'pickup' },
       },
     })
 
     // Save profile data + tapCustomerId BEFORE redirect (must complete before navigation)
     await saveProfileAfterPayment(result.tapCustomerId)
+
+    // Auto-dispatch delivery if delivery was selected
+    if (fulfillmentType.value === 'delivery' && deliveryLat.value && deliveryLng.value) {
+      try {
+        await $fetch('/api/delivery-dispatch', {
+          method: 'POST',
+          body: {
+            orderId: session.value?.orderId || sessionId,
+            origin: { branchId: '687e63052457a10038d739ff' },
+            destination: {
+              contactName: `${firstName.value} ${lastName.value}`.trim() || 'Customer',
+              contactPhone: phone.value || '+97300000000',
+              firstLine: deliveryFirstLine.value || 'Delivery',
+              latitude: deliveryLat.value,
+              longitude: deliveryLng.value,
+              instructions: '',
+            },
+            payment: {
+              type: 'paid',
+              amount: deliveryEstimate.value?.fee ?? 0,
+            },
+          },
+        })
+        console.log('[checkout] Delivery dispatched successfully')
+      }
+      catch (dispatchErr) {
+        // Don't block the checkout flow — delivery dispatch is best-effort
+        console.warn('[checkout] Delivery dispatch failed:', dispatchErr)
+      }
+    }
 
     if (result.redirectUrl) {
       await navigateTo(result.redirectUrl, { external: true })
@@ -553,6 +808,131 @@ watch(shouldShowCardForm, (show, wasShowing) => {
                 placeholder="+966 50 000 0000"
                 autocomplete="tel"
               >
+            </div>
+
+            <!-- Delivery method selector -->
+            <div class="delivery-section">
+              <label class="form-label">Fulfillment method</label>
+              <div class="delivery-toggle">
+                <button
+                  type="button"
+                  class="toggle-option"
+                  :class="{ active: fulfillmentType === 'pickup' }"
+                  @click="fulfillmentType = 'pickup'; deliveryEstimate = null"
+                >
+                  🏪 Pickup
+                </button>
+                <button
+                  type="button"
+                  class="toggle-option"
+                  :class="{ active: fulfillmentType === 'delivery' }"
+                  @click="fulfillmentType = 'delivery'"
+                >
+                  🚗 Delivery
+                </button>
+              </div>
+
+              <!-- Delivery address fields -->
+              <div v-show="fulfillmentType === 'delivery'" class="delivery-fields">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="addrFlat">Flat / Apt</label>
+                    <input
+                      id="addrFlat"
+                      v-model="addrFlat"
+                      class="form-input"
+                      type="text"
+                      placeholder="12A"
+                    >
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="addrBuilding">Building</label>
+                    <input
+                      id="addrBuilding"
+                      v-model="addrBuilding"
+                      class="form-input"
+                      type="text"
+                      placeholder="456"
+                    >
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="addrRoad">Road</label>
+                    <input
+                      id="addrRoad"
+                      v-model="addrRoad"
+                      class="form-input"
+                      type="text"
+                      placeholder="2814"
+                    >
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="addrBlock">Block</label>
+                    <input
+                      id="addrBlock"
+                      v-model="addrBlock"
+                      class="form-input"
+                      type="text"
+                      placeholder="328"
+                    >
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="addrArea">Area</label>
+                  <input
+                    id="addrArea"
+                    v-model="addrArea"
+                    class="form-input"
+                    type="text"
+                    placeholder="Juffair"
+                  >
+                </div>
+
+                <!-- Location button -->
+                <button
+                  type="button"
+                  class="btn-location"
+                  :disabled="locatingUser || estimatingDelivery"
+                  @click="useMyLocation"
+                >
+                  <template v-if="locatingUser">
+                    <span class="spinner spinner-sm" /> Getting your location...
+                  </template>
+                  <template v-else-if="estimatingDelivery">
+                    <span class="spinner spinner-sm" /> Estimating delivery...
+                  </template>
+                  <template v-else-if="locationObtained && deliveryEstimate">
+                    ✅ Location set · Update location
+                  </template>
+                  <template v-else>
+                    📍 Use my location
+                  </template>
+                </button>
+
+                <div v-if="locationError" class="location-error">
+                  {{ locationError }}
+                </div>
+
+                <!-- Google Map -->
+                <div
+                  ref="mapContainer"
+                  class="delivery-map"
+                  :class="{ 'map-visible': locationObtained }"
+                />
+
+                <!-- Estimate result -->
+                <div v-if="deliveryEstimate" class="delivery-estimate">
+                  <div class="estimate-row">
+                    <span>Delivery fee</span>
+                    <span class="estimate-value">{{ formattedDeliveryFee }}</span>
+                  </div>
+                  <div v-if="deliveryEstimate.estimatedDuration" class="estimate-row">
+                    <span>Est. time</span>
+                    <span class="estimate-value">~{{ deliveryEstimate.estimatedDuration }} min</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <hr class="checkout-divider">

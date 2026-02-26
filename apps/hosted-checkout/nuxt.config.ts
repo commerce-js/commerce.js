@@ -37,6 +37,8 @@ export default defineNuxtConfig({
       tapPublicKey: process.env.TAP_PUBLIC_KEY || '',
       // Base URL for redirect callbacks
       appUrl: process.env.APP_URL || 'http://localhost:3100',
+      // Google Maps JavaScript API key
+      googleMapsKey: process.env.GOOGLE_MAPS_KEY || '',
     },
   },
   vite: {

@@ -154,12 +154,12 @@ export class ArmadaDeliveryProvider implements DeliveryProvider {
     let originPayload: Record<string, unknown>
     if ('branchId' in input.origin) {
       originPayload = {
-        origin_format: 'branch',
-        origin: input.origin.branchId,
+        origin_format: 'branch_format',
+        origin: { branch_id: input.origin.branchId },
       }
     } else {
       originPayload = {
-        origin_format: 'location',
+        origin_format: 'location_format',
         origin: {
           latitude: input.origin.latitude,
           longitude: input.origin.longitude,
@@ -170,7 +170,7 @@ export class ArmadaDeliveryProvider implements DeliveryProvider {
     // Build destination payload
     const dest = input.destination
     const destinationPayload = {
-      destination_format: 'location',
+      destination_format: 'location_format',
       destination: {
         latitude: dest.latitude,
         longitude: dest.longitude,
@@ -179,7 +179,7 @@ export class ArmadaDeliveryProvider implements DeliveryProvider {
 
     const data = await this.request<ArmadaRawEstimate>(
       'POST',
-      '/deliveries/estimate/static',
+      '/deliveries/estimate',
       { ...originPayload, ...destinationPayload },
     )
 
@@ -206,13 +206,13 @@ export class ArmadaDeliveryProvider implements DeliveryProvider {
     let originPayload: Record<string, unknown>
     if ('branchId' in input.origin) {
       originPayload = {
-        origin_format: 'branch',
-        origin: input.origin.branchId,
+        origin_format: 'branch_format',
+        origin: { branch_id: input.origin.branchId },
       }
     } else {
       const o = input.origin as DeliveryAddress
       originPayload = {
-        origin_format: 'location',
+        origin_format: 'location_format',
         origin: {
           latitude: o.latitude,
           longitude: o.longitude,
@@ -227,21 +227,23 @@ export class ArmadaDeliveryProvider implements DeliveryProvider {
     const d = input.destination
     const body: Record<string, unknown> = {
       ...originPayload,
-      destination_format: 'location',
+      destination_format: 'location_format',
       destination: {
         latitude: d.latitude,
         longitude: d.longitude,
-        full_address: d.firstLine,
+        first_line: d.firstLine,
         contact_name: d.contactName,
-        contact_number: d.contactPhone,
-        special_instructions: d.instructions,
+        contact_phone: d.contactPhone,
+        instructions: d.instructions,
       },
     }
 
     if (input.orderId) body.reference = input.orderId
     if (input.payment) {
-      body.payment_type = input.payment.type === 'cash' ? 'cash_on_delivery' : 'prepaid'
-      body.payment_amount = input.payment.amount
+      body.payment = {
+        type: input.payment.type === 'cash' ? 'cash' : 'paid',
+        amount: input.payment.amount,
+      }
     }
     if (input.scheduledAt) body.scheduled_at = input.scheduledAt
     if (input.items) body.items = input.items

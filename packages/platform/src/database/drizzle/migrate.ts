@@ -434,4 +434,14 @@ export async function migrateDrizzle(connectionString?: string) {
     attempts INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`)
+
+  // Integrations — stores provider credentials (e.g. Armada access tokens)
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS integrations (
+    provider TEXT PRIMARY KEY,
+    access_token TEXT,
+    config JSONB,
+    status TEXT NOT NULL DEFAULT 'disconnected',
+    connected_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`)
 }
