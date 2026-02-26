@@ -78,8 +78,15 @@ export function useCart() {
     try {
       cart.value = await $fetch<Cart>(`${apiBase}/cart/${cartId.value}`)
     }
-    catch (err) {
-      handleError(err)
+    catch (err: any) {
+      // Cart no longer exists — clear stale cookie so a fresh one is created
+      if (err?.statusCode === 500 || err?.statusCode === 404) {
+        console.warn('[commerce] Stale cart cleared:', cartId.value)
+        cartId.value = ''
+        cart.value = null
+      } else {
+        handleError(err)
+      }
     }
     finally {
       loading.value = false
@@ -90,8 +97,9 @@ export function useCart() {
    * Add an item to the cart.
    */
   async function addItem(item: AddToCartInput) {
+    // Auto-create cart if no ID exists
     if (!cartId.value) {
-      throw new Error('[@commercejs/nuxt] No cart ID. Ensure the cart is initialized.')
+      await createCart()
     }
 
     loading.value = true
@@ -103,7 +111,21 @@ export function useCart() {
       })
       itemAddedHook.trigger(cart.value!)
     }
-    catch (err) {
+    catch (err: any) {
+      // Cart was deleted/expired — create a fresh one and retry once
+      if (err?.statusCode === 500 || err?.statusCode === 404) {
+        try {
+          await createCart()
+          cart.value = await $fetch<Cart>(`${apiBase}/cart/${cartId.value}/items`, {
+            method: 'POST',
+            body: item,
+          })
+          itemAddedHook.trigger(cart.value!)
+          return
+        } catch (retryErr) {
+          throw handleError(retryErr)
+        }
+      }
       throw handleError(err)
     }
     finally {
