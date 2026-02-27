@@ -29,6 +29,7 @@ const tabs = [
 const activeTab = ref('deployments')
 
 // Deploy
+const toast = useToast()
 const deploying = ref(false)
 async function triggerDeploy() {
   deploying.value = true
@@ -37,10 +38,13 @@ async function triggerDeploy() {
       method: 'POST',
       body: { environment: 'production' },
     })
+    toast.add({ title: 'Deployment started', color: 'success', icon: 'i-lucide-rocket' })
     await refreshDeployments()
     startPolling()
   }
-  catch (error) {
+  catch (error: any) {
+    const message = error?.data?.message || error?.message || 'Deployment failed'
+    toast.add({ title: 'Deploy failed', description: message, color: 'error', icon: 'i-lucide-alert-circle' })
     console.error('Deploy failed:', error)
   }
   finally {
@@ -463,6 +467,9 @@ function formatTime(iso: string | null | undefined) {
                   <template v-if="deploy.buildDurationMs">
                     · {{ formatDuration(deploy.buildDurationMs) }}
                   </template>
+                </p>
+                <p v-if="deploy.status === 'failed' && deploy.error" class="text-xs text-error mt-1 max-w-md truncate">
+                  {{ deploy.error }}
                 </p>
               </div>
             </div>
