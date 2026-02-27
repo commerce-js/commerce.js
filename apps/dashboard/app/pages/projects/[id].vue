@@ -34,13 +34,14 @@ const deploying = ref(false)
 async function triggerDeploy() {
   deploying.value = true
   try {
-    await $fetch(`/api/projects/${projectId}/deploy`, {
+    const result = await $fetch<{ deploymentId: string }>(`/api/projects/${projectId}/deploy`, {
       method: 'POST',
       body: { environment: 'production' },
     })
     toast.add({ title: 'Deployment started', color: 'success', icon: 'i-lucide-rocket' })
     await refreshDeployments()
-    startPolling()
+    // Connect SSE stream for real-time status updates
+    connectStream(result.deploymentId)
   }
   catch (error: any) {
     const message = error?.data?.message || error?.message || 'Deployment failed'
@@ -53,12 +54,16 @@ async function triggerDeploy() {
 }
 
 // ---------------------------------------------------------------------------
-// Live deploy polling — auto-refresh while a deploy is in progress
+// Live deploy status — SSE stream for real-time updates
 // ---------------------------------------------------------------------------
-const POLL_INTERVAL = 3000
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const { deployment: streamedDeploy, isStreaming, connect: connectStream, close: closeStream } = useDeployStream(projectId)
 
 const activeDeployment = computed(() => {
+  // If SSE is streaming, use its data
+  if (isStreaming.value && streamedDeploy.value) {
+    return streamedDeploy.value
+  }
+  // Otherwise, fallback to latest active from the deployments list
   if (!deployments.value?.length) return null
   const active = deployments.value.find((d: any) =>
     ['building', 'deploying', 'queued', 'initializing'].includes(d.status),
@@ -83,31 +88,20 @@ const deploySteps = computed(() => {
   }))
 })
 
-function startPolling() {
-  if (pollTimer) return
-  pollTimer = setInterval(async () => {
-    await refreshDeployments()
-    // Stop polling if no active deployment
-    if (!activeDeployment.value) {
-      stopPolling()
-    }
-  }, POLL_INTERVAL)
-}
-
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
+// When SSE reports done (ready/failed), refresh the full deployments list
+watch(isStreaming, (streaming) => {
+  if (!streaming && streamedDeploy.value) {
+    refreshDeployments()
   }
-}
+})
 
-// Start polling if there's already an active deployment
+// If there's already an active deployment when the page loads, connect SSE
 if (activeDeployment.value) {
-  startPolling()
+  connectStream(activeDeployment.value.id)
 }
 
 onUnmounted(() => {
-  stopPolling()
+  closeStream()
 })
 
 // Env vars
