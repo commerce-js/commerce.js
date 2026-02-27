@@ -104,8 +104,8 @@ async function provisionAndConnect(ctx: {
     }
 
     if (!pagesExists) {
-      // Create Pages project WITH GitHub source config for auto-builds
-      const createResult = await ofetch<{ result: any }>(
+      // Step 1a: Create Pages project (plain, without GitHub source — reliable)
+      await ofetch<{ result: any }>(
         `${CF_API_BASE}/accounts/${config.cloudflareAccountId}/pages/projects`,
         {
           method: 'POST',
@@ -118,18 +118,6 @@ async function provisionAndConnect(ctx: {
               destination_dir: '.output/public',
               root_dir: '/',
             },
-            source: {
-              type: 'github',
-              config: {
-                owner: repoOwner,
-                repo_name: repoName,
-                production_branch: 'main',
-                deployments_enabled: true,
-                production_deployments_enabled: true,
-                preview_deployment_setting: 'all',
-                preview_branch_includes: ['*'],
-              },
-            },
             deployment_configs: {
               production: {
                 compatibility_flags: ['nodejs_compat'],
@@ -139,8 +127,38 @@ async function provisionAndConnect(ctx: {
           },
         },
       )
-      results.push(`Pages project created with GitHub: ${cfProjectName} → ${repoOwner}/${repoName}`)
-      console.info('CF create result:', JSON.stringify(createResult.result?.source || {}, null, 2))
+      results.push(`Pages project created: ${cfProjectName}`)
+
+      // Step 1b: Try to connect GitHub repo (best-effort)
+      try {
+        await ofetch(
+          `${CF_API_BASE}/accounts/${config.cloudflareAccountId}/pages/projects/${cfProjectName}`,
+          {
+            method: 'PATCH',
+            headers: cfHeaders,
+            body: {
+              source: {
+                type: 'github',
+                config: {
+                  owner: repoOwner,
+                  repo_name: repoName,
+                  production_branch: 'main',
+                  deployments_enabled: true,
+                  production_deployments_enabled: true,
+                  preview_deployment_setting: 'all',
+                  preview_branch_includes: ['*'],
+                },
+              },
+            },
+          },
+        )
+        results.push(`GitHub connected: ${repoOwner}/${repoName}`)
+      }
+      catch (gitError: any) {
+        const gitMsg = gitError?.data?.errors?.[0]?.message || gitError?.message || 'unknown'
+        results.push(`GitHub auto-connect failed (connect manually in CF dashboard): ${gitMsg}`)
+        console.warn('GitHub PATCH failed:', gitMsg)
+      }
 
       // Save CF project name to DB
       await db.update(schema.projects)
