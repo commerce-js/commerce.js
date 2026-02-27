@@ -152,18 +152,68 @@ export class WebhookHandler {
   }
 
   /**
-   * Verify webhook signature (HMAC SHA-256).
+   * Verify GitHub webhook signature (HMAC SHA-256).
+   *
+   * Uses Web Crypto API for cross-runtime compatibility
+   * (Node.js 18+, Cloudflare Workers, Deno).
+   *
+   * @param body - Raw request body as string
+   * @param signature - The `x-hub-signature-256` header value (e.g. `sha256=abc123...`)
+   * @param secret - The webhook secret configured in GitHub
    */
-  static verifySignature(
+  static async verifySignature(
     body: string,
     signature: string,
     secret: string,
-  ): boolean {
-    // Implementation would use node:crypto.createHmac
-    // For now, this is a placeholder that will be completed with
-    // the appropriate crypto implementation for the target runtime
-    if (!signature || !secret) return false
-    // TODO: Implement HMAC verification
-    return signature.startsWith('sha256=')
+  ): Promise<boolean> {
+    if (!signature || !secret || !body) return false
+    if (!signature.startsWith('sha256=')) return false
+
+    const encoder = new TextEncoder()
+
+    // Import secret as HMAC key
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    )
+
+    // Compute expected signature
+    const signatureBuffer = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      encoder.encode(body),
+    )
+
+    // Convert to hex
+    const expectedHex = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+
+    const expected = `sha256=${expectedHex}`
+    const received = signature
+
+    // Timing-safe comparison via double-hashing
+    // (avoids timing leaks from string comparison)
+    if (expected.length !== received.length) return false
+
+    const expectedHash = await crypto.subtle.digest(
+      'SHA-256',
+      encoder.encode(expected),
+    )
+    const receivedHash = await crypto.subtle.digest(
+      'SHA-256',
+      encoder.encode(received),
+    )
+
+    const a = new Uint8Array(expectedHash)
+    const b = new Uint8Array(receivedHash)
+    let result = 0
+    for (let i = 0; i < a.length; i++) {
+      result |= a[i] ^ b[i]
+    }
+    return result === 0
   }
 }

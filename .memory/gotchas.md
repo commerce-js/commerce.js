@@ -105,3 +105,12 @@ Hard-won lessons from debugging sessions. Read these before working in related a
 - **Root cause:** Nuxt 4 uses Node.js built-in modules (`node:buffer`, `node:process`, etc.) which are not available in Cloudflare Workers without the `nodejs_compat` compatibility flag
 - **Fix:** Added `nodejs_compat` to `createPagesProject()` in `CloudflareProvider` so all new Pages projects get it automatically. `--compatibility-flag` is NOT a valid `wrangler pages deploy` CLI option — it must be set on the project via the Cloudflare API.
 - **Key takeaway:** Any Node.js app deployed to CF Workers needs `nodejs_compat`. Set it at project creation time, not deploy time.
+
+---
+
+## NuxtHub v0.10+ removed hubDatabase() — use event.context.cloudflare.env.DB
+- **Date:** 2026-02-27
+- **Symptom:** `hubDatabase is not defined` at runtime, even with `hub.database: true` in config
+- **Root cause:** NuxtHub v0.10+ replaced `hubDatabase()` with `db` and `schema` auto-imports from `@nuxthub/db`. The old `hubDatabase()` function no longer exists
+- **Fix:** Access D1 directly via `useEvent().context.cloudflare.env.DB` and pass to `drizzle(d1, { schema })`
+- **Key takeaway:** When using a custom schema with NuxtHub D1, access the raw D1 binding from the event context. Don't use the old `hubDatabase()` API.

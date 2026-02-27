@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
       neonProjectId: string
       neonBranchId: string
       dbConnectionString: string
+      githubWebhookSecret: string
     }>>(event)
 
     const [updated] = await db.update(schema.projects)

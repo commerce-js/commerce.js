@@ -139,6 +139,69 @@ async function deleteEnvVar(envId: string) {
   await refreshEnvVars()
 }
 
+// ---------------------------------------------------------------------------
+// Repository / Webhook settings
+// ---------------------------------------------------------------------------
+const repoUrl = ref(project.value?.repoUrl || '')
+const webhookSecret = ref(project.value?.githubWebhookSecret || '')
+const savingRepo = ref(false)
+
+// Auto-generate secret if project doesn't have one yet
+if (!webhookSecret.value && repoUrl.value) {
+  generateWebhookSecret()
+}
+
+const webhookUrl = computed(() => {
+  if (typeof window === 'undefined') return ''
+  return `${window.location.origin}/api/github-webhook`
+})
+
+function generateWebhookSecret() {
+  // Generate a random 32-byte hex string
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  webhookSecret.value = Array.from(array)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+async function saveRepoSettings() {
+  savingRepo.value = true
+  try {
+    // Generate a secret if there isn't one
+    if (!webhookSecret.value) {
+      generateWebhookSecret()
+    }
+
+    await $fetch(`/api/projects/${projectId}`, {
+      method: 'PATCH',
+      body: {
+        repoUrl: repoUrl.value,
+        githubWebhookSecret: webhookSecret.value,
+      },
+    })
+    await refreshProject()
+  }
+  finally {
+    savingRepo.value = false
+  }
+}
+
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+  }
+  catch {
+    // Fallback — select and copy
+    const el = document.createElement('textarea')
+    el.value = text
+    document.body.appendChild(el)
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+  }
+}
+
 // Delete project
 const confirmDelete = ref(false)
 async function deleteProject() {
@@ -455,15 +518,95 @@ function formatTime(iso: string | null | undefined) {
         </div>
 
         <!-- Settings Tab -->
-        <div v-else-if="activeTab === 'settings'">
+        <div v-else-if="activeTab === 'settings'" class="space-y-6">
+          <!-- Connect Repository -->
+          <UCard>
+            <div class="space-y-4">
+              <div class="flex items-center gap-2 mb-1">
+                <UIcon name="i-simple-icons-github" class="size-5" />
+                <h3 class="text-sm font-semibold text-highlighted">Connect Repository</h3>
+              </div>
+              <p class="text-xs text-dimmed">
+                Connect a GitHub repository to enable automatic deployments on push.
+              </p>
+
+              <UFormField label="Repository">
+                <UInput
+                  v-model="repoUrl"
+                  placeholder="owner/repo"
+                  size="lg"
+                  icon="i-simple-icons-github"
+                />
+              </UFormField>
+
+              <template v-if="repoUrl">
+                <UFormField label="Webhook URL">
+                  <div class="flex items-center gap-2">
+                    <UInput
+                      :model-value="webhookUrl"
+                      size="lg"
+                      readonly
+                      class="flex-1 font-mono text-xs"
+                    />
+                    <UButton
+                      icon="i-lucide-copy"
+                      variant="outline"
+                      color="neutral"
+                      @click="copyToClipboard(webhookUrl)"
+                    />
+                  </div>
+                </UFormField>
+
+                <UFormField label="Webhook Secret">
+                  <div class="flex items-center gap-2">
+                    <UInput
+                      v-model="webhookSecret"
+                      size="lg"
+                      readonly
+                      class="flex-1 font-mono text-xs"
+                      type="password"
+                    />
+                    <UButton
+                      icon="i-lucide-copy"
+                      variant="outline"
+                      color="neutral"
+                      @click="copyToClipboard(webhookSecret)"
+                    />
+                    <UButton
+                      icon="i-lucide-refresh-cw"
+                      variant="outline"
+                      color="neutral"
+                      @click="generateWebhookSecret"
+                    />
+                  </div>
+                </UFormField>
+
+                <div class="bg-elevated/50 rounded-lg p-3 text-xs text-dimmed space-y-1">
+                  <p class="font-medium text-muted">Setup Instructions:</p>
+                  <ol class="list-decimal ml-4 space-y-0.5">
+                    <li>Go to your GitHub repo → Settings → Webhooks → Add webhook</li>
+                    <li>Paste the <strong>Webhook URL</strong> above</li>
+                    <li>Set Content type to <code>application/json</code></li>
+                    <li>Paste the <strong>Webhook Secret</strong> above</li>
+                    <li>Select events: <strong>push</strong> and <strong>pull requests</strong></li>
+                  </ol>
+                </div>
+
+                <UButton
+                  label="Save Repository Settings"
+                  color="primary"
+                  :loading="savingRepo"
+                  @click="saveRepoSettings"
+                />
+              </template>
+            </div>
+          </UCard>
+
+          <!-- General Settings -->
           <UCard>
             <div class="space-y-6">
               <UFormField label="Project Name">
                 <UInput :model-value="project.name" size="lg" />
-              </UFormField>
-
-              <UFormField label="Git Repository">
-                <UInput :model-value="project.repoUrl || ''" size="lg" icon="i-simple-icons-github" />
               </UFormField>
 
               <USeparator />

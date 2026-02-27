@@ -23,6 +23,8 @@ export const projects = sqliteTable('projects', {
   neonProjectId: text('neon_project_id'),
   neonBranchId: text('neon_branch_id'),
   dbConnectionString: text('db_connection_string'),
+  // GitHub integration
+  githubWebhookSecret: text('github_webhook_secret'),
   // Timestamps
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
