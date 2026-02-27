@@ -17,54 +17,66 @@ export default defineEventHandler(async (event) => {
 
   try {
     // -------------------------------------------------------------------------
-    // 1. Exchange code for access token
+    // 1. Exchange code for access token (using native fetch for CF Workers compat)
     // -------------------------------------------------------------------------
     const requestUrl = getRequestURL(event)
     const origin = `${requestUrl.protocol}//${requestUrl.host}`
 
-    let tokenResponse: {
+    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: config.oauth.github.clientId,
+        client_secret: config.oauth.github.clientSecret,
+        code,
+        redirect_uri: `${origin}/api/auth/github/callback`,
+      }).toString(),
+    })
+
+    if (!tokenRes.ok) {
+      throw createError({
+        statusCode: 502,
+        message: `GitHub token exchange failed: HTTP ${tokenRes.status} ${tokenRes.statusText}`,
+      })
+    }
+
+    const tokenData = await tokenRes.json() as {
       access_token?: string
-      token_type?: string
-      scope?: string
       error?: string
       error_description?: string
     }
 
-    try {
-      tokenResponse = await $fetch('https://github.com/login/oauth/access_token', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          client_id: config.oauth.github.clientId,
-          client_secret: config.oauth.github.clientSecret,
-          code,
-          redirect_uri: `${origin}/api/auth/github/callback`,
-        }).toString(),
-      })
-    }
-    catch (fetchError: any) {
-      throw createError({
-        statusCode: 502,
-        message: `Token exchange HTTP error: ${fetchError.status || fetchError.statusCode || 'unknown'} - ${fetchError.message}`,
-      })
-    }
-
-    if (tokenResponse.error || !tokenResponse.access_token) {
+    if (tokenData.error || !tokenData.access_token) {
       throw createError({
         statusCode: 401,
-        message: `GitHub OAuth error: ${tokenResponse.error_description || tokenResponse.error || 'No access token returned'}`,
+        message: `GitHub OAuth error: ${tokenData.error_description || tokenData.error || 'No access token'}`,
       })
     }
 
-    const accessToken = tokenResponse.access_token
+    const accessToken = tokenData.access_token
 
     // -------------------------------------------------------------------------
-    // 2. Fetch GitHub user profile
+    // 2. Fetch GitHub user profile (native fetch)
     // -------------------------------------------------------------------------
-    let ghUser: {
+    const userRes = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'CommerceJS-Cloud',
+      },
+    })
+
+    if (!userRes.ok) {
+      throw createError({
+        statusCode: 502,
+        message: `GitHub user API failed: HTTP ${userRes.status} ${userRes.statusText}`,
+      })
+    }
+
+    const ghUser = await userRes.json() as {
       id: number
       login: string
       name: string | null
@@ -72,100 +84,59 @@ export default defineEventHandler(async (event) => {
       avatar_url: string
     }
 
-    try {
-      ghUser = await $fetch('https://api.github.com/user', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/vnd.github+json',
-        },
-      })
-    }
-    catch (fetchError: any) {
-      throw createError({
-        statusCode: 502,
-        message: `GitHub user API error: ${fetchError.status || fetchError.statusCode || 'unknown'} - ${fetchError.message}`,
-      })
-    }
-
     // -------------------------------------------------------------------------
     // 3. Upsert user in D1
     // -------------------------------------------------------------------------
-    let db: ReturnType<typeof useDB>
-    try {
-      db = useDB()
-    }
-    catch (dbError: any) {
-      throw createError({
-        statusCode: 500,
-        message: `D1 initialization error: ${dbError.message}`,
-      })
-    }
-
+    const db = useDB()
     const userId = `user_${ghUser.id}`
 
-    try {
-      const [existing] = await db.select()
-        .from(schema.users)
-        .where(eq(schema.users.githubId, ghUser.id))
+    const [existing] = await db.select()
+      .from(schema.users)
+      .where(eq(schema.users.githubId, ghUser.id))
 
-      if (existing) {
-        await db.update(schema.users)
-          .set({
-            githubAccessToken: accessToken,
-            name: ghUser.name || ghUser.login,
-            email: ghUser.email,
-            avatarUrl: ghUser.avatar_url,
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(schema.users.id, existing.id))
-      }
-      else {
-        await db.insert(schema.users).values({
-          id: userId,
-          email: ghUser.email,
-          name: ghUser.name || ghUser.login,
-          avatarUrl: ghUser.avatar_url,
-          githubId: ghUser.id,
-          githubUsername: ghUser.login,
+    if (existing) {
+      await db.update(schema.users)
+        .set({
           githubAccessToken: accessToken,
+          name: ghUser.name || ghUser.login,
+          email: ghUser.email,
+          avatarUrl: ghUser.avatar_url,
+          updatedAt: new Date().toISOString(),
         })
-      }
+        .where(eq(schema.users.id, existing.id))
     }
-    catch (queryError: any) {
-      throw createError({
-        statusCode: 500,
-        message: `D1 query error: ${queryError.message}`,
+    else {
+      await db.insert(schema.users).values({
+        id: userId,
+        email: ghUser.email,
+        name: ghUser.name || ghUser.login,
+        avatarUrl: ghUser.avatar_url,
+        githubId: ghUser.id,
+        githubUsername: ghUser.login,
+        githubAccessToken: accessToken,
       })
     }
 
     // -------------------------------------------------------------------------
     // 4. Set session and redirect to dashboard
     // -------------------------------------------------------------------------
-    try {
-      await setUserSession(event, {
-        userId,
-        githubToken: accessToken,
-        githubUsername: ghUser.login,
-      })
-    }
-    catch (sessionError: any) {
-      throw createError({
-        statusCode: 500,
-        message: `Session error: ${sessionError.message}`,
-      })
-    }
+    await setUserSession(event, {
+      userId: existing?.id || userId,
+      githubToken: accessToken,
+      githubUsername: ghUser.login,
+    })
 
     return sendRedirect(event, '/projects')
   }
   catch (error: any) {
-    // If it's already a createError, rethrow with the original status
+    // If it's already a createError, rethrow
     if (error.statusCode) {
       throw error
     }
-    // Catch-all for unexpected errors
+    // Unexpected errors — surface details
     throw createError({
       statusCode: 500,
-      message: `Unexpected callback error: ${error.message}`,
+      message: `Callback error: ${error.message || String(error)}`,
     })
   }
 })
