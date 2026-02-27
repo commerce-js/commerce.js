@@ -1,5 +1,12 @@
 # @commercejs/nuxt
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [[`a344101`](https://github.com/commerce-js/commerce.js/commit/a3441011a7542b3bfa637d1c472084f1b6ac275e)]:
+  - @commercejs/platform@0.5.2
+
 ## 0.5.1
 
 ### Patch Changes
