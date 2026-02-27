@@ -6,7 +6,7 @@
 
 import { defineEventHandler, readBody, getRouterParam } from 'h3'
 import { eq } from 'drizzle-orm'
-import { useDB, schema } from '../../utils/db'
+import { useDB, schema } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
   const db = useDB()

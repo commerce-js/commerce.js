@@ -1,32 +1,19 @@
-# Checkpoint — CommerceJS Cloud
+# Checkpoint
 
 ## Current Phase
-Cloud Platform — Phase 7
+Cloud Platform — Custom Domains + Preview Environments (COMPLETE)
 
 ## Status
-Real-time deploy status via SSE implemented. Queues created and deployed.
+Both features shipped and pushed to `main`.
 
-## What's Done
-- GitHub OAuth login + repo picker
-- Push-to-deploy via GitHub webhooks
-- Cloudflare Queue for async deploy jobs (`cjs-deploy-queue` + DLQ)
-- **Real-time deploy status via SSE** ← just completed
-  - SSE endpoint polls D1 every 2s, emits only on status change
-  - `useDeployStream` composable replaces 3s setInterval polling
-  - Auto-closes on terminal states, refreshes deployment list
+## Last Commits
+- `8bddb5f` — feat(dashboard): custom domain management
+- `4d14cf8` — feat(dashboard): PR preview environments with Neon DB branching
+
+## Detailed Checkpoint
+See [2026-02-27T2220.md](checkpoints/2026-02-27T2220.md)
 
 ## Next Step
-- Preview environments for every PR (webhook handler + Neon branching)
-- Custom domains (CF API wiring + dashboard UI)
-- Build logs viewer
-
-## Key Files
-- `apps/dashboard/wrangler.jsonc` — Queue producer + consumer config
-- `apps/dashboard/server/utils/deploy-queue.ts` — Shared types + `sendDeployJob()`
-- `apps/dashboard/server/utils/deploy-provisioner.ts` — Shared provisioning logic
-- `apps/dashboard/server/plugins/deploy-consumer.ts` — Queue consumer
-- `apps/dashboard/server/plugins/deploy-dlq.ts` — DLQ consumer
-- `apps/dashboard/server/api/projects/[id]/deploy.post.ts` — Slim queue producer (was 262 lines, now 77)
-
-## Blockers
-None
+- Domain verification status polling
+- Preview deployment logs/status page
+- Phase 7 remaining tasks (see `.plans/phase-7-cloud/`)
