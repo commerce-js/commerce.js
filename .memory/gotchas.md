@@ -113,3 +113,6 @@ Hard-won lessons from debugging sessions. Read these before working in related a
 - **Root cause:** NuxtHub v0.10+ replaced `hubDatabase()` with `db` and `schema` auto-imports from `@nuxthub/db`. The old `hubDatabase()` function no longer exists
 - **Fix:** Access D1 directly via `useEvent().context.cloudflare.env.DB` and pass to `drizzle(d1, { schema })`
 - **Key takeaway:** When using a custom schema with NuxtHub D1, access the raw D1 binding from the event context. Don't use the old `hubDatabase()` API.
+
+## CF Pages Build: Relative Import Paths
+When files are inside `server/api/projects/[id]/`, the path to `server/utils/db` is `../../../utils/db` (3 levels), NOT `../../../../utils/db` (4 levels). The 4th-level path works locally via Node resolution but fails on CF Pages build because Nitro's bundler enforces strict externals. Always count directory levels carefully for server route imports.
