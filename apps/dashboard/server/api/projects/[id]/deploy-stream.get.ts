@@ -17,7 +17,7 @@
 
 import { defineEventHandler, getRouterParam, getQuery, createEventStream } from 'h3'
 import { eq, desc } from 'drizzle-orm'
-import { useDB, schema } from '../../../../utils/db'
+import { useDB, schema } from '../../../utils/db'
 
 const POLL_MS = 2000
 const TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
           .select()
           .from(schema.deployments)
           .where(eq(schema.deployments.projectId, projectId))
-          .orderBy(desc(schema.deployments.createdAt))
+          .orderBy(desc(schema.deployments.deployedAt))
           .limit(1)
         deployment = row
       }
