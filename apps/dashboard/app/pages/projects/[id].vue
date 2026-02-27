@@ -104,6 +104,54 @@ onUnmounted(() => {
   closeStream()
 })
 
+// Domains
+const { data: domainsData, refresh: refreshDomains } = await useFetch(`/api/projects/${projectId}/domains`, {
+  default: () => ({ domains: [], dnsTarget: null }),
+})
+const newDomain = ref('')
+const addingDomain = ref(false)
+const dnsInstructions = ref<string | null>(null)
+
+async function addDomain() {
+  if (!newDomain.value) return
+  addingDomain.value = true
+  try {
+    const result = await $fetch<any>(`/api/projects/${projectId}/domains`, {
+      method: 'POST',
+      body: { domain: newDomain.value },
+    })
+    dnsInstructions.value = result.dnsInstructions
+    newDomain.value = ''
+    await refreshDomains()
+    toast.add({ title: 'Domain added', description: 'Configure your DNS to activate it.', color: 'success', icon: 'i-lucide-globe' })
+  }
+  catch (error: any) {
+    const message = error?.data?.message || 'Failed to add domain'
+    toast.add({ title: 'Error', description: message, color: 'error', icon: 'i-lucide-alert-circle' })
+  }
+  finally {
+    addingDomain.value = false
+  }
+}
+
+async function removeDomain(domainId: string) {
+  await $fetch(`/api/projects/${projectId}/domains`, {
+    method: 'DELETE',
+    body: { domainId },
+  })
+  await refreshDomains()
+  toast.add({ title: 'Domain removed', color: 'neutral', icon: 'i-lucide-trash-2' })
+}
+
+function domainStatusColor(status: string) {
+  switch (status) {
+    case 'active': return 'success' as const
+    case 'pending': return 'warning' as const
+    case 'error': return 'error' as const
+    default: return 'neutral' as const
+  }
+}
+
 // Env vars
 const newEnvKey = ref('')
 const newEnvValue = ref('')
@@ -521,44 +569,99 @@ function formatTime(iso: string | null | undefined) {
         </div>
 
         <!-- Domains Tab -->
-        <div v-else-if="activeTab === 'domains'">
+        <div v-else-if="activeTab === 'domains'" class="space-y-4">
           <UCard>
             <div class="space-y-4">
+              <!-- Add domain input -->
               <div class="flex items-center gap-3">
-                <UInput placeholder="store.example.com" class="flex-1" size="lg" />
-                <UButton label="Add Domain" color="primary" />
+                <UInput
+                  v-model="newDomain"
+                  placeholder="store.example.com"
+                  class="flex-1"
+                  size="lg"
+                  icon="i-lucide-globe"
+                  @keyup.enter="addDomain"
+                />
+                <UButton
+                  label="Add Domain"
+                  color="primary"
+                  icon="i-lucide-plus"
+                  :loading="addingDomain"
+                  :disabled="!newDomain"
+                  @click="addDomain"
+                />
               </div>
 
-              <div class="flex items-center justify-between py-3 border-t border-default">
-                <div>
-                  <p class="text-sm text-highlighted font-medium">
-                    {{ project.subdomain }}
-                  </p>
-                  <p class="text-xs text-dimmed">
-                    Default domain
-                  </p>
-                </div>
-                <UBadge color="success" variant="subtle" size="xs">
-                  Active
-                </UBadge>
-              </div>
+              <USeparator />
 
+              <!-- Domain list -->
               <div
-                v-if="project.customDomain"
-                class="flex items-center justify-between py-3 border-t border-default"
+                v-for="d in domainsData?.domains"
+                :key="d.id"
+                class="flex items-center justify-between py-3"
               >
-                <div>
-                  <p class="text-sm text-highlighted font-medium">
-                    {{ project.customDomain }}
-                  </p>
-                  <p class="text-xs text-dimmed">
-                    Custom domain
-                  </p>
+                <div class="flex items-center gap-3">
+                  <UIcon
+                    :name="d.isDefault ? 'i-lucide-server' : 'i-lucide-globe'"
+                    class="size-4 text-dimmed"
+                  />
+                  <div>
+                    <p class="text-sm text-highlighted font-medium">{{ d.domain }}</p>
+                    <p class="text-xs text-dimmed">
+                      {{ d.isDefault ? 'Default domain' : 'Custom domain' }}
+                    </p>
+                  </div>
                 </div>
-                <UBadge color="success" variant="subtle" size="xs">
-                  Active
-                </UBadge>
+                <div class="flex items-center gap-2">
+                  <UBadge :color="domainStatusColor(d.status)" variant="subtle" size="xs">
+                    {{ d.status }}
+                  </UBadge>
+                  <UButton
+                    v-if="!d.isDefault"
+                    icon="i-lucide-trash-2"
+                    variant="ghost"
+                    color="error"
+                    size="xs"
+                    @click="removeDomain(d.id)"
+                  />
+                </div>
               </div>
+
+              <div v-if="!domainsData?.domains?.length" class="py-4 text-center text-sm text-dimmed">
+                No domains configured yet
+              </div>
+            </div>
+          </UCard>
+
+          <!-- DNS Instructions -->
+          <UCard v-if="domainsData?.dnsTarget">
+            <div class="space-y-3">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-info" class="size-4 text-primary" />
+                <h3 class="text-sm font-semibold text-highlighted">DNS Configuration</h3>
+              </div>
+              <p class="text-xs text-dimmed">
+                To activate your custom domain, add a <strong>CNAME</strong> record with your DNS provider:
+              </p>
+              <div class="bg-elevated/50 border border-default rounded-lg p-3 font-mono text-xs">
+                <div class="flex items-center justify-between">
+                  <span>
+                    <span class="text-dimmed">Type:</span> <span class="text-highlighted">CNAME</span>
+                    &nbsp;&nbsp;
+                    <span class="text-dimmed">Target:</span> <span class="text-primary">{{ domainsData.dnsTarget }}</span>
+                  </span>
+                  <UButton
+                    icon="i-lucide-copy"
+                    variant="ghost"
+                    color="neutral"
+                    size="xs"
+                    @click="copyToClipboard(domainsData.dnsTarget!)"
+                  />
+                </div>
+              </div>
+              <p class="text-xs text-dimmed">
+                DNS changes may take up to 24 hours to propagate. Status will update automatically.
+              </p>
             </div>
           </UCard>
         </div>

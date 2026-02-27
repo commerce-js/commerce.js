@@ -75,3 +75,15 @@ export const envVars = sqliteTable('env_vars', {
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 })
+
+/**
+ * Custom domains — per-project domain bindings with CF Pages.
+ */
+export const domains = sqliteTable('domains', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  domain: text('domain').notNull(),
+  cfDomainId: text('cf_domain_id'),
+  status: text('status', { enum: ['pending', 'active', 'error'] }).notNull().default('pending'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+})
