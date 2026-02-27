@@ -1,10 +1,9 @@
 // ---------------------------------------------------------------------------
 // POST /api/projects/:id/deploy — provision & connect infrastructure
 // ---------------------------------------------------------------------------
-// 1. Creates a Cloudflare Pages project (if not exists)
-// 2. Connects it to the project's GitHub repo for auto-builds
-// 3. Creates a Neon DB (if not exists)
-// 4. Sets env vars on the Pages project (DATABASE_URL, etc.)
+// 1. Creates a Cloudflare Pages project WITH GitHub source (auto-builds)
+// 2. Creates a Neon DB (if not exists)
+// 3. Sets env vars on the Pages project (DATABASE_URL)
 //
 // After this, every git push triggers a Cloudflare build automatically.
 // ---------------------------------------------------------------------------
@@ -57,7 +56,7 @@ export default defineEventHandler(async (event) => {
   return {
     deploymentId: deployId,
     status: 'building',
-    message: `Provisioning and connecting ${project.name}...`,
+    message: `Provisioning ${project.name}...`,
   }
 })
 
@@ -86,109 +85,71 @@ async function provisionAndConnect(ctx: {
     const results: string[] = []
 
     // -----------------------------------------------------------------------
-    // Step 1: Create Cloudflare Pages project (skip if exists)
+    // Step 1: Verify CF Pages project exists or create with GitHub source
     // -----------------------------------------------------------------------
-    if (!project.cfPagesProjectName) {
-      try {
-        await ofetch<{ result: any }>(
-          `${CF_API_BASE}/accounts/${config.cloudflareAccountId}/pages/projects`,
-          {
-            method: 'POST',
-            headers: cfHeaders,
-            body: {
-              name: cfProjectName,
-              production_branch: 'main',
-              build_config: {
-                build_command: 'pnpm run build',
-                destination_dir: '.output/public',
-                root_dir: '/',
+    let pagesExists = false
+
+    // Check if it actually exists on Cloudflare (don't trust DB alone)
+    try {
+      await ofetch(
+        `${CF_API_BASE}/accounts/${config.cloudflareAccountId}/pages/projects/${cfProjectName}`,
+        { headers: cfHeaders },
+      )
+      pagesExists = true
+      results.push(`Pages project exists: ${cfProjectName}`)
+    }
+    catch {
+      // 404 = doesn't exist, we'll create it
+      pagesExists = false
+    }
+
+    if (!pagesExists) {
+      // Create Pages project WITH GitHub source config for auto-builds
+      const createResult = await ofetch<{ result: any }>(
+        `${CF_API_BASE}/accounts/${config.cloudflareAccountId}/pages/projects`,
+        {
+          method: 'POST',
+          headers: cfHeaders,
+          body: {
+            name: cfProjectName,
+            production_branch: 'main',
+            build_config: {
+              build_command: 'pnpm run build',
+              destination_dir: '.output/public',
+              root_dir: '/',
+            },
+            source: {
+              type: 'github',
+              config: {
+                owner: repoOwner,
+                repo_name: repoName,
+                production_branch: 'main',
+                deployments_enabled: true,
+                production_deployments_enabled: true,
+                preview_deployment_setting: 'all',
+                preview_branch_includes: ['*'],
               },
-              deployment_configs: {
-                production: {
-                  compatibility_flags: ['nodejs_compat'],
-                  compatibility_date: '2024-09-23',
-                },
+            },
+            deployment_configs: {
+              production: {
+                compatibility_flags: ['nodejs_compat'],
+                compatibility_date: '2024-09-23',
               },
             },
           },
-        )
-        results.push(`Pages project created: ${cfProjectName}`)
-      }
-      catch (error: any) {
-        if (error?.status === 409 || error?.statusCode === 409) {
-          results.push(`Pages project already exists`)
-        }
-        else {
-          throw new Error(`Cloudflare Pages creation failed: ${error?.data?.errors?.[0]?.message || error?.message || 'unknown error'}`)
-        }
-      }
+        },
+      )
+      results.push(`Pages project created with GitHub: ${cfProjectName} → ${repoOwner}/${repoName}`)
+      console.info('CF create result:', JSON.stringify(createResult.result?.source || {}, null, 2))
 
       // Save CF project name to DB
       await db.update(schema.projects)
         .set({ cfPagesProjectName: cfProjectName, updatedAt: new Date().toISOString() })
         .where(eq(schema.projects.id, projectId))
     }
-    else {
-      results.push(`Pages project exists: ${project.cfPagesProjectName}`)
-    }
 
     // -----------------------------------------------------------------------
-    // Step 2: Connect Pages project to GitHub repo
-    // -----------------------------------------------------------------------
-    try {
-      // First, get GitHub installations connected to Cloudflare
-      const installationsRes = await ofetch<{ result: any[] }>(
-        `${CF_API_BASE}/accounts/${config.cloudflareAccountId}/pages/connections`,
-        { headers: cfHeaders },
-      )
-
-      const githubInstallation = installationsRes?.result?.find(
-        (inst: any) => inst.provider_type === 'github',
-      )
-
-      if (githubInstallation) {
-        // PATCH the project to connect it to the GitHub repo
-        await ofetch(
-          `${CF_API_BASE}/accounts/${config.cloudflareAccountId}/pages/projects/${cfProjectName}`,
-          {
-            method: 'PATCH',
-            headers: cfHeaders,
-            body: {
-              source: {
-                type: 'github',
-                config: {
-                  owner: repoOwner,
-                  repo_name: repoName,
-                  production_branch: 'main',
-                  deployments_enabled: true,
-                  production_deployments_enabled: true,
-                  preview_deployment_setting: 'all',
-                  preview_branch_includes: ['*'],
-                },
-              },
-              build_config: {
-                build_command: 'pnpm run build',
-                destination_dir: '.output/public',
-                root_dir: '/',
-              },
-            },
-          },
-        )
-        results.push(`Connected to GitHub: ${project.repoUrl}`)
-      }
-      else {
-        results.push(`⚠️ No Cloudflare GitHub integration found — connect GitHub at https://dash.cloudflare.com`)
-      }
-    }
-    catch (error: any) {
-      // Don't fail the whole deploy if connection fails
-      const msg = error?.data?.errors?.[0]?.message || error?.message || 'unknown'
-      results.push(`GitHub connection failed: ${msg}`)
-      console.warn('GitHub connection error:', msg)
-    }
-
-    // -----------------------------------------------------------------------
-    // Step 3: Create Neon DB project (skip if exists)
+    // Step 2: Create Neon DB project (skip if exists)
     // -----------------------------------------------------------------------
     let dbConnectionUri = ''
     if (!project.neonProjectId && config.neonApiKey) {
@@ -226,7 +187,7 @@ async function provisionAndConnect(ctx: {
     }
 
     // -----------------------------------------------------------------------
-    // Step 4: Set env vars on Pages project (DATABASE_URL)
+    // Step 3: Set env vars on Pages project (DATABASE_URL)
     // -----------------------------------------------------------------------
     if (dbConnectionUri) {
       try {
@@ -246,7 +207,7 @@ async function provisionAndConnect(ctx: {
             },
           },
         )
-        results.push('Environment variables set')
+        results.push('Env vars set on Pages project')
       }
       catch (error: any) {
         results.push(`Env vars failed: ${error?.message || 'unknown'}`)
@@ -265,10 +226,10 @@ async function provisionAndConnect(ctx: {
       .where(eq(schema.deployments.id, deployId))
 
     console.info(`✅ Provisioned: ${results.join(' | ')}`)
-    console.info(`   URL: https://${cfProjectName}.pages.dev`)
+    console.info(`   URL: ${deployUrl}`)
   }
   catch (error: any) {
-    const message = error instanceof Error ? error.message : String(error)
+    const message = error?.data?.errors?.[0]?.message || (error instanceof Error ? error.message : String(error))
     console.error(`❌ Provisioning failed: ${message}`)
 
     await db.update(schema.deployments)
