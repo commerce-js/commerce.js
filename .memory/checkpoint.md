@@ -6,8 +6,7 @@
 Cloud Platform: GitHub OAuth login, repo picker (browse/create from template), storefront starter template (`commerce-js/storefront-starter`). Push-to-deploy via GitHub webhooks with HMAC-SHA256 verification. Fixed token exchange (form-encoded), SSR cookie forwarding, dynamic redirect URI.
 
 ## Next
-- Deploy dashboard to Cloudflare Pages
-- Cloudflare Queue for async deploy jobs
+- Cloudflare Queue for async deploy jobs (production optimization)
 
 
 | Timestamp | Summary | Details |

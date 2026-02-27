@@ -7,13 +7,22 @@ defineProps<{
 
 const colorMode = useColorMode()
 
-const user = ref({
-  name: 'Baker',
+// Fetch real user data from session
+const { data: sessionData } = await useFetch<{
+  authenticated: boolean
+  userId?: string
+  githubUsername?: string
+}>('/api/auth/session')
+
+const user = computed(() => ({
+  name: sessionData.value?.githubUsername || 'User',
   avatar: {
-    src: 'https://github.com/identicons/baker.png',
-    alt: 'Baker'
-  }
-})
+    src: sessionData.value?.githubUsername
+      ? `https://github.com/${sessionData.value.githubUsername}.png`
+      : '',
+    alt: sessionData.value?.githubUsername || 'User',
+  },
+}))
 
 const items = computed<DropdownMenuItem[][]>(() => [[{
   type: 'label',

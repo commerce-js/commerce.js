@@ -220,7 +220,7 @@ function statusColor(status: string) {
                       :class="repoMode === 'create' ? 'bg-default text-highlighted shadow-sm' : 'text-muted hover:text-highlighted'"
                       @click="repoMode = 'create'"
                     >
-                      Create from Template
+                      CommerceJS Starter
                     </button>
                   </div>
 
@@ -268,7 +268,7 @@ function statusColor(status: string) {
                       <span class="text-xs text-muted">Private</span>
                     </div>
                     <p class="text-xs text-dimmed">
-                      Creates <strong>{{ sessionData?.githubUsername || '...' }}/{{ newRepoName || '...' }}</strong> from starter template.
+                      Creates <strong>{{ sessionData?.githubUsername || '...' }}/{{ newRepoName || '...' }}</strong> from the CommerceJS storefront starter — a production-ready store with checkout, cart, and product pages.
                     </p>
                     <UButton
                       label="Create Repository"

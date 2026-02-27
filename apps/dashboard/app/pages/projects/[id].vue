@@ -345,10 +345,10 @@ function formatTime(iso: string | null | undefined) {
             <UIcon name="i-lucide-globe" class="size-4" />
             {{ project.subdomain }}
           </span>
-          <span v-if="project.repoUrl" class="flex items-center gap-1">
+          <a v-if="project.repoUrl" :href="`https://github.com/${project.repoUrl}`" target="_blank" class="flex items-center gap-1 hover:text-primary transition-colors">
             <UIcon name="i-simple-icons-github" class="size-4" />
             {{ project.repoUrl }}
-          </span>
+          </a>
           <span class="flex items-center gap-1">
             <UIcon name="i-lucide-zap" class="size-4" />
             {{ project.plan }}
