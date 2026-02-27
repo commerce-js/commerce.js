@@ -500,6 +500,9 @@ function formatTime(iso: string | null | undefined) {
               <div>
                 <p class="text-sm text-highlighted font-medium">
                   {{ deploy.environment }} deploy
+                  <UBadge v-if="deploy.prNumber" color="info" variant="subtle" size="xs" class="ml-1">
+                    PR #{{ deploy.prNumber }}
+                  </UBadge>
                 </p>
                 <p class="text-xs text-dimmed mt-0.5">
                   <span v-if="deploy.branch" class="font-mono">{{ deploy.branch }}</span>

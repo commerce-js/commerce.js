@@ -59,6 +59,7 @@ export const deployments = sqliteTable('deployments', {
   prNumber: integer('pr_number'),
   error: text('error'),
   buildDurationMs: integer('build_duration_ms'),
+  neonPreviewBranchId: text('neon_preview_branch_id'),
   deployedAt: text('deployed_at').notNull().$defaultFn(() => new Date().toISOString()),
 })
 
