@@ -18,23 +18,33 @@ export default defineEventHandler(async (event) => {
   // ---------------------------------------------------------------------------
   // 1. Exchange code for access token
   // ---------------------------------------------------------------------------
+  const requestUrl = getRequestURL(event)
+  const origin = `${requestUrl.protocol}//${requestUrl.host}`
+
   const tokenResponse = await $fetch<{
-    access_token: string
-    token_type: string
-    scope: string
+    access_token?: string
+    token_type?: string
+    scope?: string
+    error?: string
+    error_description?: string
   }>('https://github.com/login/oauth/access_token', {
     method: 'POST',
-    headers: { Accept: 'application/json' },
-    body: {
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
       client_id: config.oauth.github.clientId,
       client_secret: config.oauth.github.clientSecret,
       code,
-    },
+      redirect_uri: `${origin}/api/auth/github/callback`,
+    }).toString(),
   })
 
-  if (!tokenResponse.access_token) {
+  if (tokenResponse.error || !tokenResponse.access_token) {
     console.error('[auth/github] Token exchange failed:', tokenResponse)
-    throw createError({ statusCode: 401, message: 'Failed to exchange authorization code' })
+    console.error('[auth/github] Using client_id:', config.oauth.github.clientId)
+    throw createError({ statusCode: 401, message: `GitHub OAuth error: ${tokenResponse.error_description || 'Failed to exchange authorization code'}` })
   }
 
   const accessToken = tokenResponse.access_token
