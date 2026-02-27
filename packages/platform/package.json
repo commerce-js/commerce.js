@@ -38,19 +38,11 @@
   },
   "dependencies": {
     "@commercejs/types": "workspace:*",
+    "@neondatabase/serverless": "^1.0.2",
     "bcrypt-ts": "^5.0.3",
     "drizzle-orm": "^0.45.1"
   },
-  "peerDependencies": {
-    "@neondatabase/serverless": ">=0.10.4"
-  },
-  "peerDependenciesMeta": {
-    "@neondatabase/serverless": {
-      "optional": true
-    }
-  },
   "devDependencies": {
-    "@neondatabase/serverless": "^1.0.2",
     "drizzle-kit": "^0.31.9",
     "typescript": "^5.7.0",
     "vitest": "^4.0.0"
