@@ -15,8 +15,8 @@
 //   - Polls D1 every 2s server-side (lightweight single-row query)
 // ---------------------------------------------------------------------------
 
-import { defineEventHandler, getRouterParam, getQuery, setResponseHeaders } from 'h3'
-import { eq, and, desc } from 'drizzle-orm'
+import { defineEventHandler, getRouterParam, getQuery, createEventStream } from 'h3'
+import { eq, desc } from 'drizzle-orm'
 import { useDB, schema } from '../../../../utils/db'
 
 const POLL_MS = 2000
@@ -28,108 +28,93 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const deploymentId = query.deploymentId as string | undefined
 
-  // SSE headers
-  setResponseHeaders(event, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no', // disable nginx buffering
-  })
+  const eventStream = createEventStream(event)
 
-  const encoder = new TextEncoder()
   let lastStatus = ''
   let closed = false
   const startTime = Date.now()
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      function send(eventName: string, data: unknown) {
-        if (closed) return
-        controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`))
+  async function poll() {
+    if (closed) return
+
+    // Timeout guard
+    if (Date.now() - startTime > TIMEOUT_MS) {
+      await eventStream.push({ event: 'done', data: JSON.stringify({ reason: 'timeout' }) })
+      closed = true
+      eventStream.close()
+      return
+    }
+
+    try {
+      let deployment
+
+      if (deploymentId) {
+        const [row] = await db
+          .select()
+          .from(schema.deployments)
+          .where(eq(schema.deployments.id, deploymentId))
+        deployment = row
+      }
+      else {
+        const [row] = await db
+          .select()
+          .from(schema.deployments)
+          .where(eq(schema.deployments.projectId, projectId))
+          .orderBy(desc(schema.deployments.createdAt))
+          .limit(1)
+        deployment = row
       }
 
-      async function poll() {
-        if (closed) return
+      if (!deployment) {
+        await eventStream.push({ event: 'done', data: JSON.stringify({ reason: 'not_found' }) })
+        closed = true
+        eventStream.close()
+        return
+      }
 
-        // Timeout guard
-        if (Date.now() - startTime > TIMEOUT_MS) {
-          send('done', { reason: 'timeout' })
+      // Only emit when status changes
+      if (deployment.status !== lastStatus) {
+        lastStatus = deployment.status
+        await eventStream.push({
+          event: 'status',
+          data: JSON.stringify({
+            id: deployment.id,
+            status: deployment.status,
+            url: deployment.url,
+            error: deployment.error,
+            buildDurationMs: deployment.buildDurationMs,
+          }),
+        })
+
+        // Terminal states — send done and close
+        if (deployment.status === 'ready' || deployment.status === 'failed') {
+          await eventStream.push({
+            event: 'done',
+            data: JSON.stringify({ id: deployment.id, status: deployment.status }),
+          })
           closed = true
-          controller.close()
+          eventStream.close()
           return
         }
-
-        try {
-          let deployment
-
-          if (deploymentId) {
-            // Fetch specific deployment
-            const [row] = await db
-              .select()
-              .from(schema.deployments)
-              .where(eq(schema.deployments.id, deploymentId))
-            deployment = row
-          }
-          else {
-            // Find latest active deployment for this project
-            const [row] = await db
-              .select()
-              .from(schema.deployments)
-              .where(eq(schema.deployments.projectId, projectId))
-              .orderBy(desc(schema.deployments.createdAt))
-              .limit(1)
-            deployment = row
-          }
-
-          if (!deployment) {
-            send('done', { reason: 'not_found' })
-            closed = true
-            controller.close()
-            return
-          }
-
-          // Only emit when status changes
-          if (deployment.status !== lastStatus) {
-            lastStatus = deployment.status
-            send('status', {
-              id: deployment.id,
-              status: deployment.status,
-              url: deployment.url,
-              error: deployment.error,
-              buildDurationMs: deployment.buildDurationMs,
-            })
-
-            // Terminal states — send done and close
-            if (deployment.status === 'ready' || deployment.status === 'failed') {
-              send('done', { id: deployment.id, status: deployment.status })
-              closed = true
-              controller.close()
-              return
-            }
-          }
-        }
-        catch (error) {
-          console.error('[deploy-stream] Poll error:', error)
-        }
-
-        // Schedule next poll
-        if (!closed) {
-          setTimeout(poll, POLL_MS)
-        }
       }
+    }
+    catch (error) {
+      console.error('[deploy-stream] Poll error:', error)
+    }
 
-      // Start polling immediately
-      poll()
-    },
-    cancel() {
-      closed = true
-    },
+    // Schedule next poll
+    if (!closed) {
+      setTimeout(poll, POLL_MS)
+    }
+  }
+
+  // Clean up on client disconnect
+  eventStream.onClosed(() => {
+    closed = true
   })
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-    },
-  })
+  // Start polling immediately
+  poll()
+
+  return eventStream.send()
 })
