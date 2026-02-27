@@ -1,5 +1,11 @@
 # @commercejs/platform
 
+## 0.5.2
+
+### Patch Changes
+
+- [`a344101`](https://github.com/commerce-js/commerce.js/commit/a3441011a7542b3bfa637d1c472084f1b6ac275e) Thanks [@masterde](https://github.com/masterde)! - Move @neondatabase/serverless from peerDependencies to regular dependencies. This ensures the Neon driver is always installed with the package, fixing Cloudflare Pages builds where externals are not allowed.
+
 ## 0.5.1
 
 ### Patch Changes
