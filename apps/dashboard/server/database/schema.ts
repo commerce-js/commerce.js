@@ -5,6 +5,21 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 
 /**
+ * Users — GitHub-authenticated dashboard users.
+ */
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  email: text('email'),
+  name: text('name').notNull(),
+  avatarUrl: text('avatar_url'),
+  githubId: integer('github_id').unique().notNull(),
+  githubUsername: text('github_username').notNull(),
+  githubAccessToken: text('github_access_token'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+})
+
+/**
  * Cloud projects — each represents a deployed CommerceJS store.
  */
 export const projects = sqliteTable('projects', {

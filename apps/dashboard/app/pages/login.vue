@@ -30,10 +30,10 @@ definePageMeta({ layout: false })
             variant="outline"
             icon="i-simple-icons-github"
             label="Continue with GitHub"
-            @click="() => {}"
+            @click="navigateTo('/api/auth/github', { external: true })"
           />
 
-          <UDivider label="or" />
+          <USeparator label="or" />
 
           <!-- Email / Password -->
           <UFormField label="Email">

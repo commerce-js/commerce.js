@@ -140,24 +140,72 @@ async function deleteEnvVar(envId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Repository / Webhook settings
+// GitHub connection & repo picker
 // ---------------------------------------------------------------------------
+const { data: sessionData } = await useFetch<{ authenticated: boolean; githubUsername?: string }>('/api/auth/session')
+const isGithubConnected = computed(() => sessionData.value?.authenticated ?? false)
+const githubUsername = computed(() => sessionData.value?.githubUsername ?? '')
+
 const repoUrl = ref(project.value?.repoUrl || '')
 const webhookSecret = ref(project.value?.githubWebhookSecret || '')
 const savingRepo = ref(false)
 
-// Auto-generate secret if project doesn't have one yet
-if (!webhookSecret.value && repoUrl.value) {
-  generateWebhookSecret()
+// Repos list
+const repoSearch = ref('')
+const { data: githubRepos, status: reposStatus } = await useFetch<any[]>('/api/github/repos', {
+  lazy: true,
+  default: () => [],
+  watch: false,
+})
+const filteredRepos = computed(() => {
+  if (!githubRepos.value) return []
+  const q = repoSearch.value.toLowerCase()
+  if (!q) return githubRepos.value
+  return githubRepos.value.filter((r: any) =>
+    r.fullName.toLowerCase().includes(q) || r.description?.toLowerCase()?.includes(q),
+  )
+})
+
+// Create from template
+const showCreateRepo = ref(false)
+const newRepoName = ref('')
+const newRepoPrivate = ref(false)
+const creatingRepo = ref(false)
+
+async function createFromTemplate() {
+  if (!newRepoName.value) return
+  creatingRepo.value = true
+  try {
+    const repo = await $fetch<any>('/api/github/repos', {
+      method: 'POST',
+      body: {
+        name: newRepoName.value,
+        private: newRepoPrivate.value,
+      },
+    })
+    repoUrl.value = repo.fullName
+    showCreateRepo.value = false
+    newRepoName.value = ''
+    await saveRepoSettings()
+  }
+  finally {
+    creatingRepo.value = false
+  }
 }
 
+// Select an existing repo
+async function selectRepo(repo: any) {
+  repoUrl.value = repo.fullName
+  await saveRepoSettings()
+}
+
+// Webhook helpers
 const webhookUrl = computed(() => {
   if (typeof window === 'undefined') return ''
   return `${window.location.origin}/api/github-webhook`
 })
 
 function generateWebhookSecret() {
-  // Generate a random 32-byte hex string
   const array = new Uint8Array(32)
   crypto.getRandomValues(array)
   webhookSecret.value = Array.from(array)
@@ -168,11 +216,9 @@ function generateWebhookSecret() {
 async function saveRepoSettings() {
   savingRepo.value = true
   try {
-    // Generate a secret if there isn't one
     if (!webhookSecret.value) {
       generateWebhookSecret()
     }
-
     await $fetch(`/api/projects/${projectId}`, {
       method: 'PATCH',
       body: {
@@ -192,7 +238,6 @@ async function copyToClipboard(text: string) {
     await navigator.clipboard.writeText(text)
   }
   catch {
-    // Fallback — select and copy
     const el = document.createElement('textarea')
     el.value = text
     document.body.appendChild(el)
@@ -526,81 +571,151 @@ function formatTime(iso: string | null | undefined) {
                 <UIcon name="i-simple-icons-github" class="size-5" />
                 <h3 class="text-sm font-semibold text-highlighted">Connect Repository</h3>
               </div>
-              <p class="text-xs text-dimmed">
-                Connect a GitHub repository to enable automatic deployments on push.
-              </p>
 
-              <UFormField label="Repository">
-                <UInput
-                  v-model="repoUrl"
-                  placeholder="owner/repo"
-                  size="lg"
+              <!-- Not connected to GitHub -->
+              <template v-if="!isGithubConnected">
+                <p class="text-xs text-dimmed">
+                  Connect your GitHub account to browse repos, create from template, and enable push-to-deploy.
+                </p>
+                <UButton
+                  label="Connect GitHub"
                   icon="i-simple-icons-github"
+                  color="neutral"
+                  variant="outline"
+                  @click="navigateTo('/api/auth/github', { external: true })"
                 />
-              </UFormField>
+              </template>
 
-              <template v-if="repoUrl">
-                <UFormField label="Webhook URL">
-                  <div class="flex items-center gap-2">
-                    <UInput
-                      :model-value="webhookUrl"
-                      size="lg"
-                      readonly
-                      class="flex-1 font-mono text-xs"
-                    />
-                    <UButton
-                      icon="i-lucide-copy"
-                      variant="outline"
-                      color="neutral"
-                      @click="copyToClipboard(webhookUrl)"
-                    />
-                  </div>
-                </UFormField>
-
-                <UFormField label="Webhook Secret">
-                  <div class="flex items-center gap-2">
-                    <UInput
-                      v-model="webhookSecret"
-                      size="lg"
-                      readonly
-                      class="flex-1 font-mono text-xs"
-                      type="password"
-                    />
-                    <UButton
-                      icon="i-lucide-copy"
-                      variant="outline"
-                      color="neutral"
-                      @click="copyToClipboard(webhookSecret)"
-                    />
-                    <UButton
-                      icon="i-lucide-refresh-cw"
-                      variant="outline"
-                      color="neutral"
-                      @click="generateWebhookSecret"
-                    />
-                  </div>
-                </UFormField>
-
-                <div class="bg-elevated/50 rounded-lg p-3 text-xs text-dimmed space-y-1">
-                  <p class="font-medium text-muted">Setup Instructions:</p>
-                  <ol class="list-decimal ml-4 space-y-0.5">
-                    <li>Go to your GitHub repo → Settings → Webhooks → Add webhook</li>
-                    <li>Paste the <strong>Webhook URL</strong> above</li>
-                    <li>Set Content type to <code>application/json</code></li>
-                    <li>Paste the <strong>Webhook Secret</strong> above</li>
-                    <li>Select events: <strong>push</strong> and <strong>pull requests</strong></li>
-                  </ol>
+              <!-- Connected to GitHub -->
+              <template v-else>
+                <div class="flex items-center gap-2 text-xs text-dimmed">
+                  <UIcon name="i-lucide-check-circle" class="text-success size-4" />
+                  <span>Connected as <strong class="text-highlighted">{{ githubUsername }}</strong></span>
                 </div>
 
-                <UButton
-                  label="Save Repository Settings"
-                  color="primary"
-                  :loading="savingRepo"
-                  @click="saveRepoSettings"
-                />
+                <!-- Currently linked repo -->
+                <template v-if="repoUrl">
+                  <div class="flex items-center justify-between py-3 px-4 rounded-lg bg-elevated/50 border border-default">
+                    <div class="flex items-center gap-3">
+                      <UIcon name="i-simple-icons-github" class="size-5 text-dimmed" />
+                      <div>
+                        <p class="text-sm font-medium text-highlighted">{{ repoUrl }}</p>
+                        <p class="text-xs text-dimmed">Push-to-deploy enabled</p>
+                      </div>
+                    </div>
+                    <UButton
+                      icon="i-lucide-x"
+                      variant="ghost"
+                      color="neutral"
+                      size="xs"
+                      @click="repoUrl = ''; saveRepoSettings()"
+                    />
+                  </div>
+                </template>
+
+                <!-- Repo picker -->
+                <template v-else>
+                  <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                      <UInput
+                        v-model="repoSearch"
+                        placeholder="Search repositories..."
+                        icon="i-lucide-search"
+                        size="lg"
+                        class="flex-1"
+                      />
+                      <UButton
+                        label="New from Template"
+                        icon="i-lucide-plus"
+                        color="primary"
+                        variant="soft"
+                        @click="showCreateRepo = true"
+                      />
+                    </div>
+
+                    <div v-if="reposStatus === 'pending'" class="py-6 text-center text-xs text-dimmed">
+                      Loading repositories...
+                    </div>
+
+                    <div v-else class="max-h-64 overflow-y-auto space-y-1 rounded-lg border border-default">
+                      <button
+                        v-for="repo in filteredRepos"
+                        :key="repo.id"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-elevated/50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                        @click="selectRepo(repo)"
+                      >
+                        <UIcon
+                          :name="repo.private ? 'i-lucide-lock' : 'i-lucide-book'"
+                          class="size-4 text-dimmed shrink-0"
+                        />
+                        <div class="min-w-0 flex-1">
+                          <p class="text-sm font-medium text-highlighted truncate">{{ repo.fullName }}</p>
+                          <p v-if="repo.description" class="text-xs text-dimmed truncate">{{ repo.description }}</p>
+                        </div>
+                        <span v-if="repo.language" class="text-xs text-muted shrink-0">{{ repo.language }}</span>
+                      </button>
+
+                      <div v-if="filteredRepos.length === 0" class="px-3 py-6 text-center text-xs text-dimmed">
+                        No repositories found
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- Webhook info (when repo is linked) -->
+                <template v-if="repoUrl">
+                  <USeparator />
+                  <div class="space-y-3">
+                    <UFormField label="Webhook URL">
+                      <div class="flex items-center gap-2">
+                        <UInput :model-value="webhookUrl" size="lg" readonly class="flex-1 font-mono text-xs" />
+                        <UButton icon="i-lucide-copy" variant="outline" color="neutral" @click="copyToClipboard(webhookUrl)" />
+                      </div>
+                    </UFormField>
+                    <UFormField label="Webhook Secret">
+                      <div class="flex items-center gap-2">
+                        <UInput v-model="webhookSecret" size="lg" readonly class="flex-1 font-mono text-xs" type="password" />
+                        <UButton icon="i-lucide-copy" variant="outline" color="neutral" @click="copyToClipboard(webhookSecret)" />
+                      </div>
+                    </UFormField>
+                  </div>
+                </template>
               </template>
             </div>
           </UCard>
+
+          <!-- Create from Template Modal -->
+          <UModal v-model:open="showCreateRepo" title="Create Repository from Template" description="Start with the Commerce.js storefront template.">
+            <template #body>
+              <div class="space-y-4 p-4">
+                <UFormField label="Repository Name">
+                  <UInput v-model="newRepoName" placeholder="my-store" size="lg" icon="i-lucide-folder-git-2" />
+                </UFormField>
+                <UFormField>
+                  <div class="flex items-center gap-2">
+                    <UCheckbox v-model="newRepoPrivate" />
+                    <span class="text-sm text-muted">Make repository private</span>
+                  </div>
+                </UFormField>
+                <p class="text-xs text-dimmed">
+                  This will create <strong>{{ githubUsername }}/{{ newRepoName || '...' }}</strong> using the Commerce.js storefront starter template.
+                </p>
+              </div>
+            </template>
+            <template #footer>
+              <div class="flex justify-end gap-3">
+                <UButton variant="ghost" color="neutral" label="Cancel" @click="showCreateRepo = false" />
+                <UButton
+                  color="primary"
+                  label="Create & Link"
+                  icon="i-lucide-plus"
+                  :loading="creatingRepo"
+                  :disabled="!newRepoName"
+                  @click="createFromTemplate"
+                />
+              </div>
+            </template>
+          </UModal>
 
           <!-- General Settings -->
           <UCard>

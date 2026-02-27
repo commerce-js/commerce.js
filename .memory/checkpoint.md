@@ -1,17 +1,18 @@
 # Checkpoint
 
-**Latest:** [2026-02-26T1105](checkpoints/2026-02-26T1105.md)
+**Latest:** [2026-02-27T0345](checkpoints/2026-02-27T0345.md)
 
 ## Summary
-Cloud Platform fully functional. Storefront deployed to `https://903e7b15.cjs-default.pages.dev`. Dashboard UI wired to D1 with live deploy polling (3s auto-refresh, progress banner, step indicators). 4 E2E bugs fixed (KV 400, wrangler resolution, nodejs_compat, dist import). Memory updated with 3 gotchas + 2 decisions.
+Cloud Platform: push-to-deploy via GitHub webhooks now working. HMAC-SHA256 verification (Web Crypto), project lookup by repo URL, deployment record creation, dashboard Settings tab with Connect Repository UI. Fixed NuxtHub v0.10+ D1 binding (`hubDatabase()` → `event.context.cloudflare.env.DB`).
 
 ## Next
-- Wire GitHub webhook handler for push-to-deploy
 - Add Cloudflare Queue for async deploy jobs (production)
 - Dashboard auth (login/session, project scoping per user)
+- Deploy dashboard to Cloudflare Pages
 
 | Timestamp | Summary | Details |
 |:---|:---|:---|
+| 2026-02-27T03:45 | GitHub webhook push-to-deploy integration | [Full checkpoint](checkpoints/2026-02-27T0345.md) |
 | 2026-02-26T11:05 | E2E deploy complete + live deploy status in dashboard | [Full checkpoint](checkpoints/2026-02-26T1105.md) |
 | 2026-02-26T10:25 | Cloud Platform sprint: providers validated, build pipeline, CLI deploy, D1 schema, deploy trigger | [Full checkpoint](checkpoints/2026-02-26T1025.md) |
 | 2026-02-26T08:00 | Delivery Phase 2: hosted checkout deployed, storefront delivery added, stale cart fix | [Full checkpoint](checkpoints/2026-02-26T0800.md) |
