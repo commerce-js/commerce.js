@@ -56,7 +56,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build publishable packages
-        run: pnpm turbo run build --filter='@commercejs/*'
+        run: pnpm turbo run build --filter='@commercejs/*' --filter='!@commercejs/dashboard' --filter='!@commercejs/hosted-checkout'
 
       - name: Create Release PR or Publish
         uses: changesets/action@v1
