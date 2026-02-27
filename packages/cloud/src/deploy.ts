@@ -320,8 +320,8 @@ export class DeployOrchestrator {
 
   /**
    * Provision all infrastructure for an environment.
-   * Creates Pages project, R2 bucket, KV namespace, and Neon DB branch.
-   * Silently skips resources that already exist.
+   * Creates Pages project and Neon DB branch (required).
+   * Optionally creates R2 bucket and KV namespace (non-blocking).
    */
   async provisionEnvironment(
     projectName: string,
@@ -330,13 +330,29 @@ export class DeployOrchestrator {
     const envName = deployConfig.environment
     const envPrefix = envName === 'production' ? projectName : `${projectName}-${envName}`
 
-    // Provision in parallel for speed — catch "already exists" errors
-    const [pagesProject, r2Bucket, kvNamespace, dbBranch] = await Promise.all([
+    // Required: Pages project + database
+    const [pagesProject, dbBranch] = await Promise.all([
       this.safeCreate(() => this.cloudflare.createPagesProject(envPrefix), { id: '', name: envPrefix, subdomain: `${envPrefix}.pages.dev` }),
-      this.safeCreate(() => this.cloudflare.createR2Bucket(`${envPrefix}-assets`), { name: `${envPrefix}-assets` }),
-      this.safeCreate(() => this.cloudflare.createKVNamespace(`${envPrefix}-cache`), { id: '', title: `${envPrefix}-cache` }),
       this.provisionDatabase(projectName, deployConfig),
     ])
+
+    // Optional: R2 bucket + KV namespace (best-effort, don't block deploy)
+    let r2Bucket = { name: '' }
+    let kvNamespace = { id: '', title: '' }
+
+    try {
+      r2Bucket = await this.safeCreate(() => this.cloudflare.createR2Bucket(`${envPrefix}-assets`), { name: `${envPrefix}-assets` })
+    }
+    catch (error: any) {
+      consola.warn(`R2 bucket creation skipped: ${error?.message || 'unknown error'}`)
+    }
+
+    try {
+      kvNamespace = await this.safeCreate(() => this.cloudflare.createKVNamespace(`${envPrefix}-cache`), { id: '', title: `${envPrefix}-cache` })
+    }
+    catch (error: any) {
+      consola.warn(`KV namespace creation skipped: ${error?.message || 'unknown error'}`)
+    }
 
     return {
       name: envName,
