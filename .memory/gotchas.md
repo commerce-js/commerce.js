@@ -116,3 +116,10 @@ Hard-won lessons from debugging sessions. Read these before working in related a
 
 ## CF Pages Build: Relative Import Paths
 When files are inside `server/api/projects/[id]/`, the path to `server/utils/db` is `../../../utils/db` (3 levels), NOT `../../../../utils/db` (4 levels). The 4th-level path works locally via Node resolution but fails on CF Pages build because Nitro's bundler enforces strict externals. Always count directory levels carefully for server route imports.
+
+## NuxtHub D1: hubDatabase() vs Raw Binding
+NuxtHub admin has been sunsetted. To use D1 in production you must:
+1. Create a D1 database via CF API: `POST /accounts/{id}/d1/database`
+2. Bind it to the CF Pages project via: `PATCH /accounts/{id}/pages/projects/{name}` with `deployment_configs.production.d1_databases.DB`
+3. Apply migrations via D1 query API: `POST /accounts/{id}/d1/database/{db_id}/query`
+4. Use `hubDatabase()` with fallback to raw `event.context.cloudflare.env.DB` in `useDB()` since `hubDatabase()` may not find the binding if NuxtHub admin isn't managing it.
