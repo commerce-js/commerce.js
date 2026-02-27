@@ -6,12 +6,55 @@ const { data: projects, refresh, status } = await useFetch('/api/projects', {
   default: () => [],
 })
 
+// Session for ownerId
+const { data: sessionData } = await useFetch<{ authenticated: boolean; userId?: string; githubUsername?: string }>('/api/auth/session')
+
 const showCreateModal = ref(false)
-const newProject = ref({
-  name: '',
-  repoUrl: '',
-})
+const newProject = ref({ name: '', repoUrl: '' })
 const creating = ref(false)
+
+// GitHub repos for repo picker
+const repoSearch = ref('')
+const repoMode = ref<'select' | 'create'>('select')
+const newRepoName = ref('')
+const newRepoPrivate = ref(false)
+const creatingRepo = ref(false)
+
+const { data: githubRepos, status: reposStatus } = await useFetch<any[]>('/api/github/repos', {
+  lazy: true,
+  default: () => [],
+  watch: false,
+})
+
+const filteredRepos = computed(() => {
+  if (!githubRepos.value) return []
+  const q = repoSearch.value.toLowerCase()
+  if (!q) return githubRepos.value.slice(0, 20)
+  return githubRepos.value.filter((r: any) =>
+    r.fullName.toLowerCase().includes(q) || r.description?.toLowerCase()?.includes(q),
+  )
+})
+
+function selectRepo(repo: any) {
+  newProject.value.repoUrl = repo.fullName
+}
+
+async function createRepoFromTemplate() {
+  if (!newRepoName.value) return
+  creatingRepo.value = true
+  try {
+    const repo = await $fetch<any>('/api/github/repos', {
+      method: 'POST',
+      body: { name: newRepoName.value, private: newRepoPrivate.value },
+    })
+    newProject.value.repoUrl = repo.fullName
+    repoMode.value = 'select'
+    newRepoName.value = ''
+  }
+  finally {
+    creatingRepo.value = false
+  }
+}
 
 async function createProject() {
   if (!newProject.value.name) return
@@ -22,7 +65,7 @@ async function createProject() {
       method: 'POST',
       body: {
         name: newProject.value.name,
-        ownerId: 'default', // TODO: Replace with authenticated user
+        ownerId: sessionData.value?.userId || 'default',
         repoUrl: newProject.value.repoUrl || undefined,
       },
     })
@@ -40,7 +83,6 @@ async function createProject() {
 }
 
 function projectStatus(project: any) {
-  // Derive status from last deployment
   return project.cfPagesProjectName ? 'active' : 'pending'
 }
 
@@ -144,13 +186,104 @@ function statusColor(status: string) {
               />
             </UFormField>
 
+            <!-- GitHub Repository -->
             <UFormField label="GitHub Repository">
-              <UInput
-                v-model="newProject.repoUrl"
-                placeholder="https://github.com/user/repo"
-                size="lg"
-                icon="i-simple-icons-github"
-              />
+              <!-- Selected repo display -->
+              <div v-if="newProject.repoUrl" class="flex items-center justify-between py-2.5 px-3 rounded-lg bg-elevated/50 border border-default">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-simple-icons-github" class="size-4 text-dimmed" />
+                  <span class="text-sm font-medium text-highlighted">{{ newProject.repoUrl }}</span>
+                </div>
+                <UButton
+                  icon="i-lucide-x"
+                  variant="ghost"
+                  color="neutral"
+                  size="xs"
+                  @click="newProject.repoUrl = ''"
+                />
+              </div>
+
+              <!-- Repo picker -->
+              <template v-else>
+                <div class="space-y-2">
+                  <!-- Mode tabs -->
+                  <div class="flex gap-1 p-0.5 rounded-lg bg-elevated/50">
+                    <button
+                      class="flex-1 text-xs py-1.5 px-3 rounded-md transition-colors"
+                      :class="repoMode === 'select' ? 'bg-default text-highlighted shadow-sm' : 'text-muted hover:text-highlighted'"
+                      @click="repoMode = 'select'"
+                    >
+                      Select Existing
+                    </button>
+                    <button
+                      class="flex-1 text-xs py-1.5 px-3 rounded-md transition-colors"
+                      :class="repoMode === 'create' ? 'bg-default text-highlighted shadow-sm' : 'text-muted hover:text-highlighted'"
+                      @click="repoMode = 'create'"
+                    >
+                      Create from Template
+                    </button>
+                  </div>
+
+                  <!-- Select existing repo -->
+                  <template v-if="repoMode === 'select'">
+                    <UInput
+                      v-model="repoSearch"
+                      placeholder="Search repositories..."
+                      icon="i-lucide-search"
+                      size="sm"
+                    />
+                    <div v-if="reposStatus === 'pending'" class="py-4 text-center text-xs text-dimmed">
+                      Loading...
+                    </div>
+                    <div v-else class="max-h-40 overflow-y-auto rounded-lg border border-default">
+                      <button
+                        v-for="repo in filteredRepos"
+                        :key="repo.id"
+                        class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-elevated/50 transition-colors text-sm"
+                        @click="selectRepo(repo)"
+                      >
+                        <UIcon
+                          :name="repo.private ? 'i-lucide-lock' : 'i-lucide-book'"
+                          class="size-3.5 text-dimmed shrink-0"
+                        />
+                        <span class="truncate text-highlighted">{{ repo.fullName }}</span>
+                        <span v-if="repo.language" class="text-xs text-muted ml-auto shrink-0">{{ repo.language }}</span>
+                      </button>
+                      <div v-if="filteredRepos.length === 0" class="px-3 py-4 text-center text-xs text-dimmed">
+                        No repos found
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Create from template -->
+                  <template v-else>
+                    <UInput
+                      v-model="newRepoName"
+                      placeholder="my-store"
+                      size="sm"
+                      icon="i-lucide-folder-git-2"
+                    />
+                    <div class="flex items-center gap-2">
+                      <UCheckbox v-model="newRepoPrivate" />
+                      <span class="text-xs text-muted">Private</span>
+                    </div>
+                    <p class="text-xs text-dimmed">
+                      Creates <strong>{{ sessionData?.githubUsername || '...' }}/{{ newRepoName || '...' }}</strong> from starter template.
+                    </p>
+                    <UButton
+                      label="Create Repository"
+                      icon="i-lucide-plus"
+                      color="primary"
+                      variant="soft"
+                      size="sm"
+                      :loading="creatingRepo"
+                      :disabled="!newRepoName"
+                      block
+                      @click="createRepoFromTemplate"
+                    />
+                  </template>
+                </div>
+              </template>
             </UFormField>
           </div>
         </template>
