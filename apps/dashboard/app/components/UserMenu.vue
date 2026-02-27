@@ -64,7 +64,11 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
   }]
 }], [{
   label: 'Log out',
-  icon: 'i-lucide-log-out'
+  icon: 'i-lucide-log-out',
+  async onSelect() {
+    await $fetch('/api/auth/logout', { method: 'POST' })
+    await navigateTo('/login')
+  }
 }]])
 </script>
 
