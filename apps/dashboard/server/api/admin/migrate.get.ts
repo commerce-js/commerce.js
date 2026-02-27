@@ -2,16 +2,11 @@
 // GET /api/admin/migrate — one-time migration endpoint
 // ---------------------------------------------------------------------------
 // Apply D1 migrations to bootstrap the production database.
-// This endpoint should be removed after the initial migration is applied.
+// Remove this endpoint after the initial migration is applied.
 // ---------------------------------------------------------------------------
 
-import { defineEventHandler } from 'h3'
-
-export default defineEventHandler(async (event) => {
-  const d1 = (event.context.cloudflare?.env as any)?.DB
-  if (!d1) {
-    throw createError({ statusCode: 500, message: 'D1 binding not found' })
-  }
+export default defineEventHandler(async () => {
+  const db = hubDatabase()
 
   const migrations = [
     // 0001: Create cloud tables
@@ -73,7 +68,7 @@ export default defineEventHandler(async (event) => {
   const results = []
   for (const sql of migrations) {
     try {
-      await d1.exec(sql)
+      await db.exec(sql)
       results.push({ sql: sql.slice(0, 60) + '...', status: 'ok' })
     }
     catch (error: any) {
