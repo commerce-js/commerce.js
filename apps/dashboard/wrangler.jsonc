@@ -25,5 +25,23 @@
   ],
   // KV namespace will be created by NuxtHub when deployed
   // "kv_namespaces": [{ "binding": "CACHE", "id": "<your-id>" }]
+
+  // Deploy job queue — async provisioning pipeline
+  "queues": {
+    "producers": [
+      { "queue": "cjs-deploy-queue", "binding": "DEPLOY_QUEUE" }
+    ],
+    "consumers": [
+      {
+        "queue": "cjs-deploy-queue",
+        "max_batch_size": 1,
+        "max_batch_timeout": 0,
+        "max_retries": 3,
+        "retry_delay": 60,
+        "dead_letter_queue": "cjs-deploy-dlq"
+      }
+    ]
+  },
+
   "compatibility_flags": ["nodejs_compat"]
 }

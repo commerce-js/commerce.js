@@ -91,3 +91,13 @@
 - **Decision:** This is expected behavior for monorepo packages with `"main": "./dist/index.js"`. Always rebuild after source changes.
 - **Workflow:** `pnpm --filter @commercejs/cloud build && npx tsx packages/cli/src/cli.ts deploy ...`
 
+## 2026-02-27: Cloudflare Queues for async deploy provisioning
+- **Context:** `deploy.post.ts` used a floating promise for background provisioning — errors were silently dropped, no retries, no visibility
+- **Decision:** Use Cloudflare Queues (`cjs-deploy-queue`) with DLQ for deploy jobs. Dashboard Worker acts as both producer and consumer.
+- **Config:** `max_batch_size: 1` (heavy ops), `max_retries: 3`, `retry_delay: 60s`
+- **Patterns:**
+  - Per-message try/catch (never retry entire batch on single failure)
+  - Idempotency by deployment ID (skip if already `ready` or `failed`)
+  - Error classification: retry transient (423/429/5xx), ack permanent (400/401/403/404)
+  - Local dev fallback: inline provisioning when Queue binding is unavailable
+- **Key files:** `wrangler.jsonc`, `server/utils/deploy-queue.ts`, `server/utils/deploy-provisioner.ts`, `server/plugins/deploy-consumer.ts`

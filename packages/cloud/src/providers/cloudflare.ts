@@ -51,11 +51,11 @@ export class CloudflareProvider {
           deployment_configs: {
             production: {
               compatibility_flags: ['nodejs_compat'],
-              compatibility_date: '2024-09-23',
+              compatibility_date: '2026-02-01',
             },
             preview: {
               compatibility_flags: ['nodejs_compat'],
-              compatibility_date: '2024-09-23',
+              compatibility_date: '2026-02-01',
             },
           },
         },

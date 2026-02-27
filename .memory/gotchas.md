@@ -4,13 +4,12 @@ Hard-won lessons from debugging sessions. Read these before working in related a
 
 ---
 
-## Neon Serverless v1.x + Drizzle Incompatibility
+## ~~Neon Serverless v1.x + Drizzle Incompatibility~~ (RESOLVED)
 - **Date:** 2026-02-17
-- **Symptom:** `sql must be called as tagged template, not function` runtime error
-- **Root cause:** `@neondatabase/serverless` v1.x dropped the function-call API that `drizzle-orm@0.38.4`'s `neon-http` driver uses internally
-- **Fix:** Pin `@neondatabase/serverless` to `^0.10.4` (v0.x)
-- **Revisit when:** `drizzle-orm` releases a version compatible with `@neondatabase/serverless` v1.x
-- **Details:** was in `.debug/neon-v1-drizzle-compat.md`
+- **Resolved:** 2026-02-25 — Drizzle 0.45.1 + Neon 1.0.2 are compatible (46/46 tests pass)
+- **Original issue:** `@neondatabase/serverless` v1.x was incompatible with `drizzle-orm@0.38.4`'s `neon-http` driver
+- **Fix:** Upgraded `drizzle-orm` to 0.45.1 which supports Neon 1.0's tagged-template API
+- **Details:** See checkpoint 2026-02-25T0540
 
 ---
 

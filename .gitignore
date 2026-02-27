@@ -32,6 +32,7 @@ npm-debug.log*
 pnpm-debug.log*
 
 # Agent skills/config
+.agents/
 .agent/
 .tmp/
 
