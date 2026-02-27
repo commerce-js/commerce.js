@@ -1,14 +1,14 @@
 # Checkpoint
 
-**Latest:** [2026-02-27T0345](checkpoints/2026-02-27T0345.md)
+**Latest:** [2026-02-27T0510](checkpoints/2026-02-27T0510.md)
 
 ## Summary
-Cloud Platform: push-to-deploy via GitHub webhooks now working. HMAC-SHA256 verification (Web Crypto), project lookup by repo URL, deployment record creation, dashboard Settings tab with Connect Repository UI. Fixed NuxtHub v0.10+ D1 binding (`hubDatabase()` → `event.context.cloudflare.env.DB`).
+Cloud Platform: GitHub OAuth login, repo picker (browse/create from template), storefront starter template (`commerce-js/storefront-starter`). Push-to-deploy via GitHub webhooks with HMAC-SHA256 verification. Fixed token exchange (form-encoded), SSR cookie forwarding, dynamic redirect URI.
 
 ## Next
-- Add Cloudflare Queue for async deploy jobs (production)
-- Dashboard auth (login/session, project scoping per user)
 - Deploy dashboard to Cloudflare Pages
+- Cloudflare Queue for async deploy jobs
+
 
 | Timestamp | Summary | Details |
 |:---|:---|:---|
