@@ -35,15 +35,26 @@ export default defineEventHandler(async (event) => {
   const id = `proj_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
   const subdomain = `${body.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}.commercejs.cloud`
 
-  const [project] = await db.insert(schema.projects).values({
-    id,
-    name: body.name,
-    ownerId: body.ownerId,
-    repoUrl: body.repoUrl,
-    customDomain: body.customDomain,
-    subdomain,
-    plan: body.plan ?? 'starter',
-  }).returning()
+  try {
+    await db.insert(schema.projects).values({
+      id,
+      name: body.name,
+      ownerId: body.ownerId,
+      repoUrl: body.repoUrl,
+      customDomain: body.customDomain,
+      subdomain,
+      plan: body.plan ?? 'starter',
+    })
 
-  return project
+    // Fetch the created project back (more reliable than .returning() on D1)
+    const [project] = await db.select().from(schema.projects).where(eq(schema.projects.id, id))
+    return project
+  }
+  catch (error: any) {
+    console.error('[projects] Failed to create project:', error.message || error)
+    throw createError({
+      statusCode: 500,
+      message: `Failed to create project: ${error.message || 'Unknown error'}`,
+    })
+  }
 })
