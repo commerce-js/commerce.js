@@ -26,60 +26,74 @@ export default defineEventHandler(async (event) => {
 
   // Try template-based creation first, fall back to regular repo
   try {
-    const newRepo = await $fetch<any>(
+    const templateRes = await fetch(
       'https://api.github.com/repos/commerce-js/storefront-starter/generate',
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${session.githubToken}`,
-          Accept: 'application/vnd.github+json',
+          'Authorization': `Bearer ${session.githubToken}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'CommerceJS-Cloud',
         },
-        body: {
+        body: JSON.stringify({
           owner: session.githubUsername,
           name: body.name,
           description,
           private: isPrivate,
           include_all_branches: false,
-        },
+        }),
       },
     )
 
+    if (!templateRes.ok) {
+      const errBody = await templateRes.text()
+      throw new Error(`Template creation failed: ${templateRes.status} ${errBody}`)
+    }
+
+    const newRepo = await templateRes.json()
     return formatRepo(newRepo)
   }
   catch (templateError: any) {
-    console.warn('[github/repos] Template creation failed, falling back to regular repo:', templateError?.data?.message || templateError?.message)
+    console.warn('[github/repos] Template creation failed, falling back to regular repo:', templateError?.message)
 
     // Fallback: create a regular repo with auto-init
-    try {
-      const newRepo = await $fetch<any>(
-        'https://api.github.com/user/repos',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.githubToken}`,
-            Accept: 'application/vnd.github+json',
-          },
-          body: {
-            name: body.name,
-            description,
-            private: isPrivate,
-            auto_init: true,
-          },
+    const fallbackRes = await fetch(
+      'https://api.github.com/user/repos',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.githubToken}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'CommerceJS-Cloud',
         },
-      )
+        body: JSON.stringify({
+          name: body.name,
+          description,
+          private: isPrivate,
+          auto_init: true,
+        }),
+      },
+    )
 
-      return formatRepo(newRepo)
-    }
-    catch (fallbackError: any) {
-      console.error('[github/repos] Fallback creation also failed:', fallbackError?.data || fallbackError?.message)
-      const status = fallbackError?.response?.status || fallbackError?.statusCode || 500
-      const message = fallbackError?.data?.message || fallbackError?.message || 'Failed to create repository'
+    if (!fallbackRes.ok) {
+      const errData = await fallbackRes.text()
+      let message = 'Failed to create repository'
+      try {
+        const parsed = JSON.parse(errData)
+        message = parsed.message || message
+      }
+      catch {}
 
       throw createError({
-        statusCode: status,
+        statusCode: fallbackRes.status,
         message: `GitHub: ${message}`,
       })
     }
+
+    const newRepo = await fallbackRes.json()
+    return formatRepo(newRepo)
   }
 })
 
