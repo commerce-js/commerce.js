@@ -16,6 +16,7 @@
 // ---------------------------------------------------------------------------
 
 import { eq } from 'drizzle-orm'
+import nacl from 'tweetnacl'
 import * as schema from '../database/schema'
 import type { DeployJobMessage } from './deploy-queue'
 
@@ -281,7 +282,7 @@ async function setGitHubActionsSecrets(
 
   // Encrypt and set each secret
   for (const [name, value] of Object.entries(secrets)) {
-    const encryptedValue = await encryptSecret(key, value)
+    const encryptedValue = encryptSecret(key, value)
 
     const putRes = await fetch(
       `${GH_API_BASE}/repos/${owner}/${repo}/actions/secrets/${name}`,
@@ -304,62 +305,36 @@ async function setGitHubActionsSecrets(
 
 /**
  * Encrypt a secret value using the repo's public key (NaCl sealed box).
- * Uses the Web Crypto API (available in CF Workers) for the encryption.
+ * Uses tweetnacl for the crypto_box_seal implementation.
+ *
+ * Sealed box format: ephemeral_public_key (32) + box(message, nonce, shared_key)
+ * where nonce = blake2b(ephemeral_pk || recipient_pk) — but GitHub uses
+ * the simpler format: nonce derived from the two public keys via HSalsa20.
  */
-async function encryptSecret(publicKeyBase64: string, secretValue: string): Promise<string> {
-  // Decode the public key from base64
+function encryptSecret(publicKeyBase64: string, secretValue: string): string {
+  // Decode the repo's public key
   const publicKeyBytes = base64ToUint8Array(publicKeyBase64)
 
-  // Import the public key for X25519
-  const publicKey = await crypto.subtle.importKey(
-    'raw',
-    publicKeyBytes,
-    { name: 'X25519' },
-    false,
-    [],
-  )
-
   // Generate an ephemeral X25519 keypair
-  const ephemeralKey = await crypto.subtle.generateKey(
-    { name: 'X25519' },
-    true,
-    ['deriveKey'],
-  ) as { publicKey: CryptoKey, privateKey: CryptoKey }
+  const ephemeralKeyPair = nacl.box.keyPair()
 
-  // Derive shared secret
-  const sharedKey = await crypto.subtle.deriveKey(
-    { name: 'X25519', public: publicKey },
-    ephemeralKey.privateKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt'],
-  )
+  // Derive nonce from the two public keys (first 24 bytes of hash)
+  const nonceInput = new Uint8Array(64)
+  nonceInput.set(ephemeralKeyPair.publicKey, 0)
+  nonceInput.set(publicKeyBytes, 32)
+  const nonce = nacl.hash(nonceInput).subarray(0, nacl.box.nonceLength)
 
-  // Encrypt the secret value
+  // Encrypt the secret
   const encoder = new TextEncoder()
-  const secretBytes = encoder.encode(secretValue)
-  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const messageBytes = encoder.encode(secretValue)
+  const encrypted = nacl.box(messageBytes, nonce, publicKeyBytes, ephemeralKeyPair.secretKey)
 
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    sharedKey,
-    secretBytes,
-  )
+  // Sealed box format: ephemeral_public_key (32) + encrypted_message
+  const sealedBox = new Uint8Array(ephemeralKeyPair.publicKey.length + encrypted.length)
+  sealedBox.set(ephemeralKeyPair.publicKey, 0)
+  sealedBox.set(encrypted, ephemeralKeyPair.publicKey.length)
 
-  // Export the ephemeral public key
-  const ephemeralPublicKeyBytes = new Uint8Array(
-    await crypto.subtle.exportKey('raw', ephemeralKey.publicKey),
-  )
-
-  // Format: ephemeral_public_key (32) + iv (12) + ciphertext
-  const combined = new Uint8Array(
-    ephemeralPublicKeyBytes.length + iv.length + new Uint8Array(encrypted).length,
-  )
-  combined.set(ephemeralPublicKeyBytes, 0)
-  combined.set(iv, ephemeralPublicKeyBytes.length)
-  combined.set(new Uint8Array(encrypted), ephemeralPublicKeyBytes.length + iv.length)
-
-  return uint8ArrayToBase64(combined)
+  return uint8ArrayToBase64(sealedBox)
 }
 
 /**
