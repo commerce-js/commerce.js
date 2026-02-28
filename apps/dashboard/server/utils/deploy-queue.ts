@@ -16,6 +16,8 @@ export interface DeployJobMessage {
   commitSha?: string
   branch?: string
   trigger: 'manual' | 'webhook'
+  /** GitHub OAuth token for setting Actions secrets on the repo */
+  githubToken?: string
 }
 
 /**

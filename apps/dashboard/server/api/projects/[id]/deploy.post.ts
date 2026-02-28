@@ -15,9 +15,11 @@ import { eq } from 'drizzle-orm'
 import { useDB, schema } from '../../../utils/db'
 import { sendDeployJob, type DeployJobMessage } from '../../../utils/deploy-queue'
 import { provisionDeploy } from '../../../utils/deploy-provisioner'
+import { getUserSession } from '../../../utils/session'
 
 export default defineEventHandler(async (event) => {
   const db = useDB()
+  const session = await getUserSession(event)
   const projectId = getRouterParam(event, 'id')!
 
   const [project] = await db.select().from(schema.projects).where(eq(schema.projects.id, projectId))
@@ -54,6 +56,7 @@ export default defineEventHandler(async (event) => {
     repoUrl: project.repoUrl,
     environment,
     trigger: 'manual',
+    githubToken: session?.githubToken,
   }
 
   // Send to queue (falls back to inline provisioning for local dev)

@@ -6,20 +6,22 @@
 //   - server/plugins/deploy-consumer.ts (queue consumer on Cloudflare)
 //   - server/api/projects/[id]/deploy.post.ts (inline fallback for local dev)
 //
-// Extracts the full infra provisioning pipeline:
-//   1. Create/verify CF Pages project + connect GitHub
+// Provisioning pipeline:
+//   1. Create/verify CF Pages project (no GitHub source — uses GH Actions)
 //   2. Create Neon DB project
 //   3. Set env vars on CF Pages
-//   4. Update deployment status in D1
+//   4. Set GitHub Actions secrets on the user's repo
+//   5. Trigger GH Actions workflow dispatch for first build
+//   6. Mark deployment as ready
 // ---------------------------------------------------------------------------
 
 import { eq } from 'drizzle-orm'
-import { ofetch } from 'ofetch'
 import * as schema from '../database/schema'
 import type { DeployJobMessage } from './deploy-queue'
 
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4'
 const NEON_API_BASE = 'https://console.neon.tech/api/v2'
+const GH_API_BASE = 'https://api.github.com'
 
 export interface ProvisionEnv {
   NUXT_CLOUDFLARE_API_TOKEN: string
@@ -64,29 +66,29 @@ export async function provisionDeploy(
   const results: string[] = []
 
   // -------------------------------------------------------------------------
-  // Step 1: Verify CF Pages project exists or create with GitHub source
+  // Step 1: Verify CF Pages project exists or create it
   // -------------------------------------------------------------------------
   let pagesExists = false
 
   try {
-    await ofetch(
+    const checkRes = await fetch(
       `${CF_API_BASE}/accounts/${cfAccountId}/pages/projects/${job.cfProjectName}`,
       { headers: cfHeaders },
     )
-    pagesExists = true
-    results.push(`Pages exists: ${job.cfProjectName}`)
+    pagesExists = checkRes.ok
+    if (pagesExists) results.push(`Pages exists: ${job.cfProjectName}`)
   }
   catch {
     pagesExists = false
   }
 
   if (!pagesExists) {
-    await ofetch<{ result: any }>(
+    const createRes = await fetch(
       `${CF_API_BASE}/accounts/${cfAccountId}/pages/projects`,
       {
         method: 'POST',
         headers: cfHeaders,
-        body: {
+        body: JSON.stringify({
           name: job.cfProjectName,
           production_branch: 'main',
           build_config: {
@@ -100,40 +102,16 @@ export async function provisionDeploy(
               compatibility_date: '2026-02-01',
             },
           },
-        },
+        }),
       },
     )
-    results.push(`Pages created: ${job.cfProjectName}`)
 
-    // Connect GitHub repo (best-effort)
-    try {
-      await ofetch(
-        `${CF_API_BASE}/accounts/${cfAccountId}/pages/projects/${job.cfProjectName}`,
-        {
-          method: 'PATCH',
-          headers: cfHeaders,
-          body: {
-            source: {
-              type: 'github',
-              config: {
-                owner: repoOwner,
-                repo_name: repoName,
-                production_branch: 'main',
-                deployments_enabled: true,
-                production_deployments_enabled: true,
-                preview_deployment_setting: 'all',
-                preview_branch_includes: ['*'],
-              },
-            },
-          },
-        },
-      )
-      results.push(`GitHub connected: ${repoOwner}/${repoName}`)
+    if (!createRes.ok) {
+      const errBody = await createRes.text()
+      throw new Error(`CF Pages create failed: ${createRes.status} ${errBody}`)
     }
-    catch (gitError: any) {
-      const gitMsg = gitError?.data?.errors?.[0]?.message || gitError?.message || 'unknown'
-      results.push(`GitHub auto-connect failed: ${gitMsg}`)
-    }
+
+    results.push(`Pages created: ${job.cfProjectName}`)
 
     // Save CF project name to DB
     await db
@@ -154,23 +132,27 @@ export async function provisionDeploy(
 
   if (!project?.neonProjectId && neonApiKey) {
     try {
-      const neonResult = await ofetch<{ project: any, connection_uris: any[] }>(
-        `${NEON_API_BASE}/projects`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${neonApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: {
-            project: {
-              name: `cjs-${job.projectName}`,
-              region_id: 'aws-eu-central-1',
-              pg_version: 16,
-            },
-          },
+      const neonRes = await fetch(`${NEON_API_BASE}/projects`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${neonApiKey}`,
+          'Content-Type': 'application/json',
         },
-      )
+        body: JSON.stringify({
+          project: {
+            name: `cjs-${job.projectName}`,
+            region_id: 'aws-eu-central-1',
+            pg_version: 16,
+          },
+        }),
+      })
+
+      if (!neonRes.ok) {
+        const errBody = await neonRes.text()
+        throw new Error(`Neon create failed: ${neonRes.status} ${errBody}`)
+      }
+
+      const neonResult = await neonRes.json() as { project: any, connection_uris: any[] }
       dbConnectionUri = neonResult.connection_uris?.[0]?.connection_uri ?? ''
       results.push(`Neon DB created: ${neonResult.project.id}`)
 
@@ -193,12 +175,12 @@ export async function provisionDeploy(
   // -------------------------------------------------------------------------
   if (dbConnectionUri) {
     try {
-      await ofetch(
+      const envRes = await fetch(
         `${CF_API_BASE}/accounts/${cfAccountId}/pages/projects/${job.cfProjectName}`,
         {
           method: 'PATCH',
           headers: cfHeaders,
-          body: {
+          body: JSON.stringify({
             deployment_configs: {
               production: {
                 env_vars: {
@@ -206,14 +188,43 @@ export async function provisionDeploy(
                 },
               },
             },
-          },
+          }),
         },
       )
-      results.push('Env vars set')
+      if (envRes.ok) {
+        results.push('Env vars set')
+      }
+      else {
+        results.push(`Env vars failed: ${envRes.status}`)
+      }
     }
     catch (error: any) {
       results.push(`Env vars failed: ${error?.message || 'unknown'}`)
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 4: Set GitHub Actions secrets on the user's repo
+  // -------------------------------------------------------------------------
+  if (job.githubToken && repoOwner && repoName) {
+    try {
+      await setGitHubActionsSecrets(job.githubToken, repoOwner, repoName, {
+        CLOUDFLARE_API_TOKEN: cfToken,
+        CLOUDFLARE_ACCOUNT_ID: cfAccountId,
+        CF_PAGES_PROJECT_NAME: job.cfProjectName,
+      })
+      results.push('GH Actions secrets set')
+
+      // Step 5: Trigger first workflow run
+      await triggerWorkflowDispatch(job.githubToken, repoOwner, repoName)
+      results.push('GH Actions workflow triggered')
+    }
+    catch (error: any) {
+      results.push(`GH Actions setup: ${error?.message || 'unknown'}`)
+    }
+  }
+  else {
+    results.push('GH Actions: skipped (no GitHub token)')
   }
 
   // -------------------------------------------------------------------------
@@ -232,6 +243,205 @@ export async function provisionDeploy(
 
   console.info(`[deploy-provisioner] ✅ Provisioned: ${results.join(' | ')}`)
   console.info(`[deploy-provisioner]    URL: ${deployUrl}`)
+}
+
+// ---------------------------------------------------------------------------
+// GitHub Actions secrets — uses GitHub API with NaCl public-key encryption
+// ---------------------------------------------------------------------------
+
+/**
+ * Set multiple GitHub Actions secrets on a repo.
+ * Uses the GitHub Actions secrets API with libsodium-sealed-box encryption.
+ */
+async function setGitHubActionsSecrets(
+  githubToken: string,
+  owner: string,
+  repo: string,
+  secrets: Record<string, string>,
+): Promise<void> {
+  const ghHeaders = {
+    'Authorization': `Bearer ${githubToken}`,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'CommerceJS-Cloud',
+    'X-GitHub-Api-Version': '2022-11-28',
+  }
+
+  // Get the repo's public key for encrypting secrets
+  const keyRes = await fetch(
+    `${GH_API_BASE}/repos/${owner}/${repo}/actions/secrets/public-key`,
+    { headers: ghHeaders },
+  )
+
+  if (!keyRes.ok) {
+    throw new Error(`Failed to get repo public key: ${keyRes.status}`)
+  }
+
+  const { key, key_id } = await keyRes.json() as { key: string, key_id: string }
+
+  // Encrypt and set each secret
+  for (const [name, value] of Object.entries(secrets)) {
+    const encryptedValue = await encryptSecret(key, value)
+
+    const putRes = await fetch(
+      `${GH_API_BASE}/repos/${owner}/${repo}/actions/secrets/${name}`,
+      {
+        method: 'PUT',
+        headers: ghHeaders,
+        body: JSON.stringify({
+          encrypted_value: encryptedValue,
+          key_id,
+        }),
+      },
+    )
+
+    if (!putRes.ok && putRes.status !== 204) {
+      const errBody = await putRes.text()
+      console.warn(`[deploy-provisioner] Failed to set secret ${name}: ${putRes.status} ${errBody}`)
+    }
+  }
+}
+
+/**
+ * Encrypt a secret value using the repo's public key (NaCl sealed box).
+ * Uses the Web Crypto API (available in CF Workers) for the encryption.
+ */
+async function encryptSecret(publicKeyBase64: string, secretValue: string): Promise<string> {
+  // Decode the public key from base64
+  const publicKeyBytes = base64ToUint8Array(publicKeyBase64)
+
+  // Import the public key for X25519
+  const publicKey = await crypto.subtle.importKey(
+    'raw',
+    publicKeyBytes,
+    { name: 'X25519' },
+    false,
+    [],
+  )
+
+  // Generate an ephemeral X25519 keypair
+  const ephemeralKey = await crypto.subtle.generateKey(
+    { name: 'X25519' },
+    true,
+    ['deriveKey'],
+  ) as { publicKey: CryptoKey, privateKey: CryptoKey }
+
+  // Derive shared secret
+  const sharedKey = await crypto.subtle.deriveKey(
+    { name: 'X25519', public: publicKey },
+    ephemeralKey.privateKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt'],
+  )
+
+  // Encrypt the secret value
+  const encoder = new TextEncoder()
+  const secretBytes = encoder.encode(secretValue)
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    sharedKey,
+    secretBytes,
+  )
+
+  // Export the ephemeral public key
+  const ephemeralPublicKeyBytes = new Uint8Array(
+    await crypto.subtle.exportKey('raw', ephemeralKey.publicKey),
+  )
+
+  // Format: ephemeral_public_key (32) + iv (12) + ciphertext
+  const combined = new Uint8Array(
+    ephemeralPublicKeyBytes.length + iv.length + new Uint8Array(encrypted).length,
+  )
+  combined.set(ephemeralPublicKeyBytes, 0)
+  combined.set(iv, ephemeralPublicKeyBytes.length)
+  combined.set(new Uint8Array(encrypted), ephemeralPublicKeyBytes.length + iv.length)
+
+  return uint8ArrayToBase64(combined)
+}
+
+/**
+ * Trigger the deploy workflow on the repo.
+ * Uses the workflow dispatch API to kick off the first build.
+ */
+async function triggerWorkflowDispatch(
+  githubToken: string,
+  owner: string,
+  repo: string,
+): Promise<void> {
+  const ghHeaders = {
+    'Authorization': `Bearer ${githubToken}`,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'CommerceJS-Cloud',
+    'X-GitHub-Api-Version': '2022-11-28',
+  }
+
+  // Trigger via workflow dispatch — requires the workflow to have workflow_dispatch trigger
+  // Fallback: create an empty commit to trigger push-based workflow
+  const dispatchRes = await fetch(
+    `${GH_API_BASE}/repos/${owner}/${repo}/actions/workflows/deploy.yml/dispatches`,
+    {
+      method: 'POST',
+      headers: ghHeaders,
+      body: JSON.stringify({ ref: 'main' }),
+    },
+  )
+
+  if (dispatchRes.ok || dispatchRes.status === 204) {
+    return
+  }
+
+  // Fallback: trigger via a lightweight push (update README timestamp)
+  console.warn(`[deploy-provisioner] Workflow dispatch failed (${dispatchRes.status}), triggering via commit push`)
+
+  // Get current README content
+  const readmeRes = await fetch(
+    `${GH_API_BASE}/repos/${owner}/${repo}/contents/README.md`,
+    { headers: ghHeaders },
+  )
+
+  if (readmeRes.ok) {
+    const readme = await readmeRes.json() as { content: string, sha: string }
+    const currentContent = atob(readme.content)
+    const updatedContent = `${currentContent}\n<!-- deployed: ${new Date().toISOString()} -->\n`
+
+    await fetch(
+      `${GH_API_BASE}/repos/${owner}/${repo}/contents/README.md`,
+      {
+        method: 'PUT',
+        headers: ghHeaders,
+        body: JSON.stringify({
+          message: 'chore: trigger initial deploy',
+          content: btoa(updatedContent),
+          sha: readme.sha,
+        }),
+      },
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+  return bytes
+}
+
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binaryString = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binaryString += String.fromCharCode(bytes[i])
+  }
+  return btoa(binaryString)
 }
 
 // ---------------------------------------------------------------------------

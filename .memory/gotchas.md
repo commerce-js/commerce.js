@@ -123,3 +123,13 @@ NuxtHub admin has been sunsetted. To use D1 in production you must:
 2. Bind it to the CF Pages project via: `PATCH /accounts/{id}/pages/projects/{name}` with `deployment_configs.production.d1_databases.DB`
 3. Apply migrations via D1 query API: `POST /accounts/{id}/d1/database/{db_id}/query`
 4. Use `hubDatabase()` with fallback to raw `event.context.cloudflare.env.DB` in `useDB()` since `hubDatabase()` may not find the binding if NuxtHub admin isn't managing it.
+
+---
+
+## D1 Schema Drift: Manual Creation vs Drizzle Schema
+- **Date:** 2026-02-28
+- **Symptom:** `POST /api/projects` returns 500 with no helpful error message
+- **Root cause:** The production D1 `projects` table was created manually via CF D1 API with `user_id` column, but Drizzle schema maps `ownerId` → `owner_id`. Also missing `subdomain` column entirely.
+- **Fix:** Renamed column via wrangler CLI: `ALTER TABLE projects RENAME COLUMN user_id TO owner_id`, added `ALTER TABLE projects ADD COLUMN subdomain TEXT NOT NULL DEFAULT ''`
+- **Key takeaway:** When D1 tables are bootstrapped manually, always verify column names match the Drizzle schema exactly using `PRAGMA table_info(table_name)`. Drizzle won't warn about mismatches — it just generates SQL with wrong column names and D1 returns a generic error.
+
