@@ -16,7 +16,7 @@
 // ---------------------------------------------------------------------------
 
 import { eq } from 'drizzle-orm'
-import nacl from 'tweetnacl'
+import sodium from 'libsodium-wrappers-sumo'
 import * as schema from '../database/schema'
 import type { DeployJobMessage } from './deploy-queue'
 
@@ -282,7 +282,7 @@ async function setGitHubActionsSecrets(
 
   // Encrypt and set each secret
   for (const [name, value] of Object.entries(secrets)) {
-    const encryptedValue = encryptSecret(key, value)
+    const encryptedValue = await encryptSecret(key, value)
 
     const putRes = await fetch(
       `${GH_API_BASE}/repos/${owner}/${repo}/actions/secrets/${name}`,
@@ -305,36 +305,17 @@ async function setGitHubActionsSecrets(
 
 /**
  * Encrypt a secret value using the repo's public key (NaCl sealed box).
- * Uses tweetnacl for the crypto_box_seal implementation.
- *
- * Sealed box format: ephemeral_public_key (32) + box(message, nonce, shared_key)
- * where nonce = blake2b(ephemeral_pk || recipient_pk) — but GitHub uses
- * the simpler format: nonce derived from the two public keys via HSalsa20.
+ * Uses libsodium's crypto_box_seal — the exact algorithm GitHub expects.
  */
-function encryptSecret(publicKeyBase64: string, secretValue: string): string {
-  // Decode the repo's public key
+async function encryptSecret(publicKeyBase64: string, secretValue: string): Promise<string> {
+  await sodium.ready
+
   const publicKeyBytes = base64ToUint8Array(publicKeyBase64)
-
-  // Generate an ephemeral X25519 keypair
-  const ephemeralKeyPair = nacl.box.keyPair()
-
-  // Derive nonce from the two public keys (first 24 bytes of hash)
-  const nonceInput = new Uint8Array(64)
-  nonceInput.set(ephemeralKeyPair.publicKey, 0)
-  nonceInput.set(publicKeyBytes, 32)
-  const nonce = nacl.hash(nonceInput).subarray(0, nacl.box.nonceLength)
-
-  // Encrypt the secret
   const encoder = new TextEncoder()
   const messageBytes = encoder.encode(secretValue)
-  const encrypted = nacl.box(messageBytes, nonce, publicKeyBytes, ephemeralKeyPair.secretKey)
 
-  // Sealed box format: ephemeral_public_key (32) + encrypted_message
-  const sealedBox = new Uint8Array(ephemeralKeyPair.publicKey.length + encrypted.length)
-  sealedBox.set(ephemeralKeyPair.publicKey, 0)
-  sealedBox.set(encrypted, ephemeralKeyPair.publicKey.length)
-
-  return uint8ArrayToBase64(sealedBox)
+  const encrypted = sodium.crypto_box_seal(messageBytes, publicKeyBytes)
+  return uint8ArrayToBase64(encrypted)
 }
 
 /**

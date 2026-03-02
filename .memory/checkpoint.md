@@ -1,27 +1,25 @@
 # Checkpoint
 
 ## Current Phase
-Cloud Platform — Production Setup Complete
+Cloud Platform — Deploy Pipeline Implementation
 
 ## Status
-Custom Domains, Preview Environments, and Production OAuth all working.
+GitHub Actions deploy pipeline implemented. Template repos auto-deploy to CF Pages on push.
 
 ## Last Commits
-- `60b50ab` — fix: correct import path in deploy-stream (fixed CF Pages build)
-- `7545a29` — fix: use native fetch in OAuth callback (fixed CF Workers crash)
-- `bd9345b` — fix: hubDatabase() + raw D1 fallback in useDB()
-- `ada823b` — chore: remove temporary migration endpoint
+- `616c947` — fix: remove cache:pnpm from deploy workflow (needs lockfile)
+- `268e967` — fix: use tweetnacl for GH secrets encryption
+- `7491b39` — feat: add GitHub Actions deploy pipeline for storefronts
 
-## Production Setup
-- D1 database: `commercejs-cloud-db` (id: `50d2cc4b-ceae-4779-bde0-4496baacd084`)
-- D1 binding: `DB` on CF Pages `commercejs-cloud` (production + preview)
-- Tables: `users`, `projects`, `deployments`, `domains` applied via CF D1 API
-- GitHub OAuth: working with native fetch (not $fetch)
+## Remaining
+- Dashboard CF Pages needs to redeploy with commit `268e967` to enable auto-setting of GH secrets
+- Once redeployed: new projects will auto-deploy storefronts end-to-end
+- Wildcard DNS for `*.commercejs.cloud` still needed
 
 ## Detailed Checkpoint
-See [2026-02-27T2220.md](checkpoints/2026-02-27T2220.md)
+See [2026-02-28T0530.md](checkpoints/2026-02-28T0530.md)
 
 ## Next Step
+- Verify dashboard redeploy picked up tweetnacl fix
+- Test full end-to-end: create project → auto-set secrets → GH Actions builds → domain live
 - Phase 7 remaining tasks: T01-T05 (see `.plans/phase-7-cloud/tasks/`)
-- Domain verification status polling
-- Preview deployment logs/status page

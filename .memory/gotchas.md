@@ -133,3 +133,15 @@ NuxtHub admin has been sunsetted. To use D1 in production you must:
 - **Fix:** Renamed column via wrangler CLI: `ALTER TABLE projects RENAME COLUMN user_id TO owner_id`, added `ALTER TABLE projects ADD COLUMN subdomain TEXT NOT NULL DEFAULT ''`
 - **Key takeaway:** When D1 tables are bootstrapped manually, always verify column names match the Drizzle schema exactly using `PRAGMA table_info(table_name)`. Drizzle won't warn about mismatches — it just generates SQL with wrong column names and D1 returns a generic error.
 
+
+## CF Pages GitHub Source Connection (2026-02-28)
+Cannot connect GitHub source to CF Pages via REST API alone. Requires Cloudflare GitHub App to be installed via the CF Dashboard UI first (Workers & Pages → Create → Connect to Git).
+
+## GitHub Actions Secrets API Encryption (2026-02-28)
+GitHub's Actions secrets API requires NaCl sealed box encryption (`crypto_box_seal`), NOT standard AES-GCM or Web Crypto. Use `tweetnacl` library (pure JS, Workers-compatible) with `nacl.box()` and `nacl.hash()` for proper sealed box format.
+
+## GH Actions Lockfile Requirements (2026-02-28)
+- `actions/setup-node` with `cache: pnpm` requires `pnpm-lock.yaml` for cache key computation
+- `pnpm install --frozen-lockfile` also requires lockfile
+- Template-generated repos don't have lockfiles initially
+- Use `--no-frozen-lockfile` and don't use `cache: pnpm` for template repos

@@ -17,10 +17,9 @@
     "@nuxthub/core": "^0.10.6",
     "@vueuse/core": "^14.2.0",
     "drizzle-orm": "^0.45.1",
+    "libsodium-wrappers-sumo": "^0.8.2",
     "nuxt": "^4.3.0",
-    "tailwindcss": "^4.2.1",
-    "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1"
+    "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.89",
