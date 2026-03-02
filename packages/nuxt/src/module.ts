@@ -1,10 +1,12 @@
 import { resolve } from 'path'
+import { readdirSync, statSync, existsSync } from 'fs'
 import {
   defineNuxtModule,
   addPlugin,
   createResolver,
   addImportsDir,
-  addServerScanDir,
+  addServerHandler,
+  addServerImportsDir,
   addTypeTemplate,
   addServerPlugin,
   installModule,
@@ -12,6 +14,77 @@ import {
 import type { NuxtModule } from '@nuxt/schema'
 import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
+
+/**
+ * Recursively discover route handler files and register them via addServerHandler.
+ *
+ * Published Nuxt modules can't rely on addServerScanDir because:
+ * 1. Auto-imports don't work in node_modules (route files need explicit imports)
+ * 2. Compile-time macros like defineRouteMeta aren't stripped from pre-compiled dist files
+ *
+ * This function scans the dist/runtime/server/api directory and registers each
+ * route file explicitly with its HTTP method and route path.
+ */
+function registerApiRoutes(apiDir: string, basePath: string = '/api') {
+  if (!existsSync(apiDir)) {
+    logger.warn(`API routes directory not found: ${apiDir}`)
+    return 0
+  }
+
+  let count = 0
+
+  function scan(dir: string, routePrefix: string) {
+    const entries = readdirSync(dir)
+    for (const entry of entries) {
+      const fullPath = resolve(dir, entry)
+      const stat = statSync(fullPath)
+
+      if (stat.isDirectory()) {
+        // Convert directory [param] to :param for route
+        const dirRoute = entry.startsWith('[') && entry.endsWith(']')
+          ? `:${entry.slice(1, -1)}`
+          : entry
+        scan(fullPath, `${routePrefix}/${dirRoute}`)
+        continue
+      }
+
+      // Only process .ts/.js/.mjs files, skip .d.ts
+      if (!entry.match(/\.(ts|js|mjs)$/) || entry.endsWith('.d.ts')) continue
+
+      // Parse filename: name.method.ts → { name, method }
+      // e.g. store.get.ts → route: /store, method: GET
+      // e.g. index.post.ts → route: /, method: POST
+      const parts = entry.replace(/\.(ts|js|mjs)$/, '').split('.')
+      const method = parts.length > 1 ? parts.pop()!.toUpperCase() : undefined
+      const name = parts.join('.')
+
+      // Build route path
+      let routePath: string
+      if (name === 'index') {
+        routePath = routePrefix || '/'
+      } else {
+        // Convert [param] in filename to :param
+        const routeName = name.startsWith('[') && name.endsWith(']')
+          ? `:${name.slice(1, -1)}`
+          : name
+        routePath = `${routePrefix}/${routeName}`
+      }
+
+      // Strip file extension for handler path (Nuxt Kit resolves it)
+      const handlerPath = fullPath.replace(/\.(ts|js|mjs)$/, '')
+
+      addServerHandler({
+        route: routePath,
+        method: method as any,
+        handler: handlerPath,
+      })
+      count++
+    }
+  }
+
+  scan(apiDir, basePath)
+  return count
+}
 
 export interface CommerceModuleOptions {
   /**
@@ -112,12 +185,19 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     // Auto-import composables
     addImportsDir(resolve('./runtime/composables'))
 
-    // Register server API routes via Nitro's convention-based scanning
-    // Routes are auto-discovered from runtime/server/api/_commerce/**/*.ts
-    // e.g. api/_commerce/store.get.ts → GET /api/_commerce/store
+    // Register server API routes via explicit addServerHandler calls.
+    // Published Nuxt modules can NOT use addServerScanDir because:
+    //   1. Auto-imports don't resolve in node_modules
+    //   2. Compile-time macros (defineRouteMeta) aren't stripped from pre-compiled dist
+    // Instead, we scan the dist/api directory and register each handler explicitly.
     if (options.apiRoutes) {
-      addServerScanDir(resolve('./runtime/server'))
-      logger.info(`Server routes auto-discovered under ${options.apiBase}`)
+      const apiDir = resolve('./runtime/server/api')
+      const routeCount = registerApiRoutes(apiDir, '/api')
+      logger.info(`Registered ${routeCount} server routes under ${options.apiBase}`)
+
+      // Register server utils (defineCommerceHandler, useServerAdapter, etc.)
+      // so they're available as auto-imports for user-defined routes
+      addServerImportsDir(resolve('./runtime/server/utils'))
     }
 
     // Note: WASM handling was removed — Drizzle uses @neondatabase/serverless
