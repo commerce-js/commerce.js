@@ -1,5 +1,12 @@
 # @commercejs/nuxt
 
+## 0.5.3
+
+### Patch Changes
+
+- [`31c5688`](https://github.com/commerce-js/commerce.js/commit/31c5688e1e048dc579c4d8dd5956c5be8a7d3444) Thanks [@masterde](https://github.com/masterde)! - Fix `defineNitroPlugin is not defined` error when deploying to Cloudflare Pages.
+  Added explicit import from `nitropack/runtime` since Nitro auto-imports don't work for published packages at runtime.
+
 ## 0.5.2
 
 ### Patch Changes
