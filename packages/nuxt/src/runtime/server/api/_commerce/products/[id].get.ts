@@ -1,14 +1,5 @@
 import { getRouterParam } from 'h3'
 
-defineRouteMeta({
-  openAPI: {
-    tags: ['Catalog'],
-    description: 'Get a single product by ID or slug',
-    parameters: [
-      { in: 'path', name: 'id', required: true, description: 'Product ID or slug' },
-    ],
-  },
-})
 
 export default defineCommerceHandler(async (event, adapter) => {
   const idOrSlug = getRouterParam(event, 'id')!

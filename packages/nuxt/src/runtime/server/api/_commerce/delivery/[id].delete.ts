@@ -1,10 +1,4 @@
 import { getRouterParam, getQuery } from 'h3'
-defineRouteMeta({
-  openAPI: {
-    tags: ['Delivery'],
-    description: 'Cancel a pending or in-progress delivery',
-  },
-})
 
 export default defineCommerceHandler(async (event) => {
   const id = getRouterParam(event, 'id')!

@@ -2,12 +2,6 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { useAdminAPI } from '../../../../utils/admin'
 
-defineRouteMeta({
-  openAPI: {
-    tags: ['Admin Auth'],
-    description: 'Authenticate an admin user with email and password',
-  },
-})
 
 export default defineEventHandler(async (event) => {
   const { email, password } = await readBody(event)

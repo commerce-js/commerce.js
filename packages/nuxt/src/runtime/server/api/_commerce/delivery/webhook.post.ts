@@ -1,11 +1,5 @@
 import { readBody, readRawBody, getHeader } from 'h3'
 
-defineRouteMeta({
-  openAPI: {
-    tags: ['Delivery'],
-    description: 'Verify a delivery provider webhook and parse the event',
-  },
-})
 
 export default defineCommerceHandler(async (event) => {
   const { providerId } = deliveryWebhookSchema.parse(await readBody(event).catch(() => ({

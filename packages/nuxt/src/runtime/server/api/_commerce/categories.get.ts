@@ -1,11 +1,5 @@
 import { getQuery } from 'h3'
 
-defineRouteMeta({
-  openAPI: {
-    tags: ['Catalog'],
-    description: 'List all categories',
-  },
-})
 
 export default defineCommerceHandler(async (event, adapter) => {
   const query = getQuery(event)
