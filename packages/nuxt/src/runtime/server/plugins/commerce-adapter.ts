@@ -6,6 +6,7 @@
 // useServerAdapter(event) can retrieve it in API route handlers.
 
 import type { CommerceAdapter } from '@commercejs/types'
+import { defineNitroPlugin, useRuntimeConfig } from 'nitropack/runtime'
 
 let _adapter: CommerceAdapter | null = null
 let _adminApi: any = null
