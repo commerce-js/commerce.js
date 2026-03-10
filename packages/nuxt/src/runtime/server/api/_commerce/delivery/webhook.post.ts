@@ -1,4 +1,4 @@
-import { defineCommerceHandler } from '@commercejs/nuxt/runtime/server/utils/handler'
+import { defineCommerceHandler } from '@commercejs/nuxt/runtime/server/utils/handler.js'
 import { createError, getHeader, readBody, readRawBody } from 'h3'
 
 export default defineCommerceHandler(async (event) => {
