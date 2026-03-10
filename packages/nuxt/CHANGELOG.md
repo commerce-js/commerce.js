@@ -1,5 +1,15 @@
 # @commercejs/nuxt
 
+## 0.6.21
+
+### Patch Changes
+
+- [`26e47b9`](https://github.com/commerce-js/commerce.js/commit/26e47b9557fbca9728fa9b6f8408b9b2f14f2184) Thanks [@masterde](https://github.com/masterde)! - Use addServerScanDir instead of manual addTemplate + addServerHandler.
+  This tells Nitro to treat the package's runtime/server/ directory as
+  the app's own server/ directory, enabling full auto-import injection
+  and auto route discovery. Handler source files have no imports and
+  rely entirely on auto-imports.
+
 ## 0.6.20
 
 ### Patch Changes
