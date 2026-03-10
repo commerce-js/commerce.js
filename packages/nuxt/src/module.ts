@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { readdirSync, statSync, existsSync } from 'fs'
+import { readdirSync, statSync, existsSync, readFileSync } from 'fs'
 import {
   defineNuxtModule,
   addPlugin,
@@ -9,29 +9,92 @@ import {
   addServerImportsDir,
   addTypeTemplate,
   addServerPlugin,
+  addTemplate,
   installModule,
 } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
 import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
+/**
+ * Transform compiled handler code so it has ZERO explicit imports.
+ *
+ * Problem chain that caused v1–v4 failures:
+ * - Rollup can't resolve relative imports within node_modules → need templates
+ * - Templates with explicit imports create duplicate module identities
+ * - Rollup renames duplicates with $1 suffix → ReferenceError at runtime
+ *
+ * Solution: strip ALL imports. Replace `defineCommerceHandler(fn)` with an
+ * inline `defineEventHandler(...)` wrapper that does the same thing. All
+ * functions used (`defineEventHandler`, `createError`, `useServerAdapter`,
+ * `createCommerceContext`, `isCommerceError`, `ZodError`) are available via
+ * Nitro auto-imports from `addServerImportsDir`.
+ */
+function transformHandler(code: string): string {
+  // 1. Strip all import statements
+  let transformed = code.replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
 
+  // 2. Replace defineCommerceHandler(fn) with inlined defineEventHandler wrapper
+  // Pattern: export default defineCommerceHandler(async (event, adapter[, ctx]) => { ... })
+  // or:      export default defineCommerceHandler(async (_event, adapter[, ctx]) => { ... })
+  transformed = transformed.replace(
+    /export\s+default\s+defineCommerceHandler\s*\(\s*async\s*\((\w+),\s*(\w+)(?:,\s*(\w+))?\)\s*=>\s*\{/,
+    (_, eventParam, adapterParam, ctxParam) => {
+      const lines = [
+        `export default defineEventHandler(async (${eventParam}) => {`,
+        `  const ${adapterParam} = useServerAdapter(${eventParam});`,
+      ]
+      if (ctxParam) {
+        lines.push(`  const ${ctxParam} = createCommerceContext(${eventParam});`)
+      }
+      lines.push('  try {')
+      return lines.join('\n')
+    }
+  )
 
+  // 3. Close the try/catch block with error handling at the end
+  // Replace the final closing });  (end of defineCommerceHandler)
+  // with the error handling logic + proper closing
+  if (transformed.includes('try {')) {
+    // Find the last }); which ends the handler
+    const lastParen = transformed.lastIndexOf('});')
+    if (lastParen !== -1) {
+      transformed = transformed.substring(0, lastParen) + [
+        '  } catch (err) {',
+        '    if (err && typeof err === "object" && "statusCode" in err) throw err;',
+        '    if (err instanceof ZodError) {',
+        '      throw createError({',
+        '        statusCode: 422,',
+        '        message: "Validation failed",',
+        '        data: { code: "VALIDATION", errors: err.errors.map(e => ({ path: e.path.join("."), message: e.message })) }',
+        '      });',
+        '    }',
+        '    if (isCommerceError(err)) {',
+        '      throw createError({',
+        '        statusCode: err.statusCode ?? 500,',
+        '        message: err.message,',
+        '        data: { code: err.code }',
+        '      });',
+        '    }',
+        '    console.error("[commerce] Unhandled error:", err);',
+        '    throw createError({ statusCode: 500, message: "Internal server error" });',
+        '  }',
+        '});',
+      ].join('\n')
+    }
+  }
+
+  return transformed
+}
 
 /**
- * Recursively discover route handler files and register them with
- * addServerHandler, pointing directly at the files in node_modules.
+ * Recursively discover route handler files and register them as virtual
+ * template files via addTemplate + addServerHandler.
  *
- * The module configures `nitro.externals.inline` to include `@commercejs/nuxt`,
- * which forces Nitro to bundle these handler files (and their imports) through
- * its normal module graph — resolving relative imports correctly.
+ * Templates are necessary because Rollup can't resolve relative imports
+ * between files inside node_modules (pnpm .pnpm directory layout).
  *
- * Previous approaches tried generating template files in .nuxt/ to avoid
- * node_modules import issues, but this caused Rollup to create duplicate
- * module identities for functions like `defineCommerceHandler`, renaming
- * them with `$1` suffixes and causing ReferenceError on CF Workers.
- *
- * The direct approach is simpler and works because `externals.inline`
- * ensures the handler files are processed through Rollup's normal bundling.
+ * Handler code is transformed to have ZERO external imports — all functions
+ * are provided by Nitro's auto-import system (addServerImportsDir).
  */
 function registerApiRoutes(apiDir: string, basePath: string = '/api') {
   if (!existsSync(apiDir)) {
@@ -41,7 +104,7 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
 
   let count = 0
 
-  function scan(dir: string, routePrefix: string) {
+  function scan(dir: string, routePrefix: string, templatePrefix: string) {
     const entries = readdirSync(dir)
     for (const entry of entries) {
       const fullPath = resolve(dir, entry)
@@ -52,7 +115,7 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
         const dirRoute = entry.startsWith('[') && entry.endsWith(']')
           ? `:${entry.slice(1, -1)}`
           : entry
-        scan(fullPath, `${routePrefix}/${dirRoute}`)
+        scan(fullPath, `${routePrefix}/${dirRoute}`, `${templatePrefix}/${entry}`)
         continue
       }
 
@@ -78,18 +141,28 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
         routePath = `${routePrefix}/${routeName}`
       }
 
-      // Point directly at the handler file in node_modules
-      // nitro.externals.inline ensures proper bundling
+      // Read the handler source and transform it (strip imports, inline defineCommerceHandler)
+      const handlerSource = readFileSync(fullPath, 'utf-8')
+      const cleanedSource = transformHandler(handlerSource)
+
+      // Generate a virtual file in .nuxt/ via addTemplate
+      const templateFilename = `commerce-api${templatePrefix}/${entry}`
+      const template = addTemplate({
+        filename: templateFilename,
+        write: true,
+        getContents: () => cleanedSource,
+      })
+
       addServerHandler({
         route: routePath,
         method: method as any,
-        handler: fullPath,
+        handler: template.dst,
       })
       count++
     }
   }
 
-  scan(apiDir, basePath)
+  scan(apiDir, basePath, '')
   return count
 }
 
