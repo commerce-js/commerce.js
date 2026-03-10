@@ -35,7 +35,7 @@ const logger = consola.withTag('@commercejs/nuxt')
  * @param code - The handler source code
  * @param serverDir - The absolute path to dist/runtime/server/
  */
-function rewriteRelativeImports(code: string, serverDir: string): string {
+function rewriteRelativeImports(code: string, _serverDir: string): string {
   return code.replace(
     /(from\s+['"])(\.\.?\/[^'"]+)(['"])/g,
     (_match, prefix, relPath, suffix) => {
@@ -44,11 +44,15 @@ function rewriteRelativeImports(code: string, serverDir: string): string {
       // e.g. "../../../../utils/admin" → "utils/admin"
       // e.g. "../../data/cities" → "data/cities"
       const cleanPath = relPath.replace(/^(\.\.?\/?)+/, '')
-      // Resolve against the server base directory
-      let absPath = resolve(serverDir, cleanPath)
+      // Use the package export path instead of absolute filesystem paths.
+      // This ensures Rollup treats the import as the SAME module identity
+      // as the package's own internal imports, preventing name collisions
+      // where Rollup would rename `defineCommerceHandler` to
+      // `defineCommerceHandler$1` (causing ReferenceError at runtime on CF).
+      let pkgPath = `@commercejs/nuxt/runtime/server/${cleanPath}`
       // Ensure .js extension for ESM resolution
-      if (!absPath.endsWith('.js')) absPath += '.js'
-      return `${prefix}${absPath}${suffix}`
+      if (!pkgPath.endsWith('.js')) pkgPath += '.js'
+      return `${prefix}${pkgPath}${suffix}`
     }
   )
 }
