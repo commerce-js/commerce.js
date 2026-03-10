@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { readdirSync, statSync, existsSync, readFileSync } from 'fs'
+import { readdirSync, statSync, existsSync } from 'fs'
 import {
   defineNuxtModule,
   addPlugin,
@@ -9,73 +9,29 @@ import {
   addServerImportsDir,
   addTypeTemplate,
   addServerPlugin,
-  addTemplate,
   installModule,
 } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
 import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
 
-/**
- * Rewrite all import statements in compiled handler code to use `#imports`.
- *
- * Route handlers import utilities like `defineCommerceHandler`, `useAdminAPI`,
- * etc. from package-relative paths. When these explicit imports coexist with
- * Nitro's auto-import system, Rollup sees two separate module identities for
- * the same function — the package's copy and Nitro's auto-imported copy.
- *
- * On CF Workers, Rollup resolves this collision by renaming one copy with a
- * `$1` suffix (e.g., `defineCommerceHandler$1`). But handler code still
- * references the original name → `ReferenceError` at runtime.
- *
- * This also cascades: even if `defineCommerceHandler` is fixed, its internal
- * `import { defineEventHandler } from 'h3'` creates the same dual-identity
- * problem for h3 functions.
- *
- * Solution: rewrite ALL imports to use `#imports` — Nitro's virtual module
- * that provides a single, deduplicated copy of every auto-imported function.
- * Since `addServerImportsDir` registers all our utils, `#imports` resolves
- * everything through Nitro's unified module graph.
- *
- * @param code - The handler source code
- */
-function rewriteToAutoImports(code: string): string {
-  // Collect all named imports from all import statements
-  const namedImports: string[] = []
 
-  // Match: import { foo, bar } from '...'
-  // Match: import { foo } from '...'
-  const importRegex = /^import\s+\{([^}]+)\}\s+from\s+['"][^'"]+['"];?\s*$/gm
-  let match
-  // eslint-disable-next-line no-cond-assign
-  while ((match = importRegex.exec(code)) !== null) {
-    const names = match[1].split(',').map(n => n.trim()).filter(Boolean)
-    namedImports.push(...names)
-  }
-
-  if (namedImports.length === 0) return code
-
-  // Remove all original import statements
-  const cleaned = code.replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
-
-  // Add single consolidated import from #imports
-  return `import { ${namedImports.join(', ')} } from '#imports';\n${cleaned}`
-}
 
 /**
- * Recursively discover route handler files and register them as virtual
- * template files via addTemplate + addServerHandler.
+ * Recursively discover route handler files and register them with
+ * addServerHandler, pointing directly at the files in node_modules.
  *
- * Published Nuxt modules can't point addServerHandler directly at files
- * in node_modules because Rollup can't resolve relative imports between
- * files inside node_modules during Nitro's CF Workers bundling.
+ * The module configures `nitro.externals.inline` to include `@commercejs/nuxt`,
+ * which forces Nitro to bundle these handler files (and their imports) through
+ * its normal module graph — resolving relative imports correctly.
  *
- * Instead, this function:
- * 1. Scans the dist/runtime/server/api directory for compiled .js handlers
- * 2. Reads each handler's content
- * 3. Strips relative imports (auto-imports replace them)
- * 4. Generates a template file in .nuxt/ via addTemplate
- * 5. Points addServerHandler at the generated template
+ * Previous approaches tried generating template files in .nuxt/ to avoid
+ * node_modules import issues, but this caused Rollup to create duplicate
+ * module identities for functions like `defineCommerceHandler`, renaming
+ * them with `$1` suffixes and causing ReferenceError on CF Workers.
+ *
+ * The direct approach is simpler and works because `externals.inline`
+ * ensures the handler files are processed through Rollup's normal bundling.
  */
 function registerApiRoutes(apiDir: string, basePath: string = '/api') {
   if (!existsSync(apiDir)) {
@@ -85,7 +41,7 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
 
   let count = 0
 
-  function scan(dir: string, routePrefix: string, templatePrefix: string) {
+  function scan(dir: string, routePrefix: string) {
     const entries = readdirSync(dir)
     for (const entry of entries) {
       const fullPath = resolve(dir, entry)
@@ -96,7 +52,7 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
         const dirRoute = entry.startsWith('[') && entry.endsWith(']')
           ? `:${entry.slice(1, -1)}`
           : entry
-        scan(fullPath, `${routePrefix}/${dirRoute}`, `${templatePrefix}/${entry}`)
+        scan(fullPath, `${routePrefix}/${dirRoute}`)
         continue
       }
 
@@ -122,31 +78,18 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
         routePath = `${routePrefix}/${routeName}`
       }
 
-      // Read the handler source, strip import statements since Nitro auto-imports
-      // provide everything (defineCommerceHandler, useAdminAPI, etc.)
-      const handlerSource = readFileSync(fullPath, 'utf-8')
-      const cleanedSource = rewriteToAutoImports(handlerSource)
-
-      // Generate a unique template filename for this handler
-      const templateFilename = `commerce-api${templatePrefix}/${entry}`
-
-      // Generate a virtual file in .nuxt/ via addTemplate
-      const template = addTemplate({
-        filename: templateFilename,
-        write: true,
-        getContents: () => cleanedSource,
-      })
-
+      // Point directly at the handler file in node_modules
+      // nitro.externals.inline ensures proper bundling
       addServerHandler({
         route: routePath,
         method: method as any,
-        handler: template.dst,
+        handler: fullPath,
       })
       count++
     }
   }
 
-  scan(apiDir, basePath, '')
+  scan(apiDir, basePath)
   return count
 }
 
