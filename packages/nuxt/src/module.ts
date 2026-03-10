@@ -30,18 +30,22 @@ const logger = consola.withTag('@commercejs/nuxt')
  * Nitro auto-imports from `addServerImportsDir`.
  */
 function transformHandler(code: string): string {
-  // 1. Strip all import statements
-  let transformed = code.replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
+  // 1. Strip only RELATIVE imports (./something, ../something) that Rollup
+  //    can't resolve within node_modules. Keep PACKAGE imports (h3, zod,
+  //    @commercejs/types) which Rollup CAN resolve from any file location.
+  //    Nitro's h3 auto-imports DON'T apply to addTemplate-generated files.
+  let transformed = code.replace(/^import\s+.*?from\s+['"]\.\.?\/[^'"]+['"];?\s*$/gm, '')
 
-  // 2. Replace defineCommerceHandler(fn) with inlined defineEventHandler wrapper
-  // Pattern: export default defineCommerceHandler(async (event, adapter[, ctx]) => { ... })
-  // or:      export default defineCommerceHandler(async (_event, adapter[, ctx]) => { ... })
+  // 2. Replace defineCommerceHandler(fn) with inlined defineEventHandler wrapper.
+  // The inlined code needs h3 functions directly, so we add the h3 import.
   let didReplace = false
   transformed = transformed.replace(
     /export\s+default\s+defineCommerceHandler\s*\(\s*async\s*\((\w+),\s*(\w+)(?:,\s*(\w+))?\)\s*=>\s*\{/,
     (_, eventParam, adapterParam, ctxParam) => {
       didReplace = true
       const lines = [
+        // Add h3 import for the inlined defineEventHandler and createError
+        `import { defineEventHandler, createError } from 'h3';`,
         `export default defineEventHandler(async (${eventParam}) => {`,
         `  const ${adapterParam} = useServerAdapter(${eventParam});`,
       ]
