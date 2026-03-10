@@ -1,5 +1,15 @@
 # @commercejs/nuxt
 
+## 0.6.6
+
+### Patch Changes
+
+- [`a3b4700`](https://github.com/commerce-js/commerce.js/commit/a3b4700ccbda174c7c94ea8c7429211504623289) Thanks [@masterde](https://github.com/masterde)! - Add .js extensions to relative imports for CF Workers ESM resolution
+
+  Post-build script patches compiled .js files to include explicit .js
+  extensions on relative imports, matching @nuxt/module-builder@1.x
+  behavior. Required for ESM resolution in Cloudflare Workers.
+
 ## 0.6.5
 
 ### Patch Changes
