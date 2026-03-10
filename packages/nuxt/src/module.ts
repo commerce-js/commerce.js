@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { readdirSync, statSync, existsSync } from 'fs'
+import { readdirSync, statSync, existsSync, readFileSync } from 'fs'
 import {
   defineNuxtModule,
   addPlugin,
@@ -9,6 +9,7 @@ import {
   addServerImportsDir,
   addTypeTemplate,
   addServerPlugin,
+  addTemplate,
   installModule,
 } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
@@ -16,14 +17,46 @@ import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
 
 /**
- * Recursively discover route handler files and register them via addServerHandler.
+ * Strip relative import lines from compiled handler content.
  *
- * Published Nuxt modules can't rely on addServerScanDir because:
- * 1. Auto-imports don't work in node_modules (route files need explicit imports)
- * 2. Compile-time macros like defineRouteMeta aren't stripped from pre-compiled dist files
+ * Route handlers import `defineCommerceHandler`, `useAdminAPI`, etc. from
+ * relative paths (e.g. `../utils/handler`). These relative imports FAIL
+ * when Rollup tries to resolve them during Nitro bundling for CF Workers
+ * because they point between files inside `node_modules`.
  *
- * This function scans the dist/runtime/server/api directory and registers each
- * route file explicitly with its HTTP method and route path.
+ * Since `addServerImportsDir` registers the utils dir, all exported
+ * functions become auto-imports in the Nitro server context. The generated
+ * template files (in `.nuxt/`) go through Nitro's auto-import transform,
+ * so explicit imports are unnecessary.
+ *
+ * We strip relative imports but keep npm package imports (h3, zod, etc.)
+ * since Nitro resolves those correctly.
+ */
+function stripRelativeImports(code: string): string {
+  return code
+    .split('\n')
+    .filter(line => {
+      // Remove lines that import from relative paths (./  ../)
+      const isRelativeImport = /^\s*import\s+.*from\s+['"]\.\.?\//.test(line)
+      return !isRelativeImport
+    })
+    .join('\n')
+}
+
+/**
+ * Recursively discover route handler files and register them as virtual
+ * template files via addTemplate + addServerHandler.
+ *
+ * Published Nuxt modules can't point addServerHandler directly at files
+ * in node_modules because Rollup can't resolve relative imports between
+ * files inside node_modules during Nitro's CF Workers bundling.
+ *
+ * Instead, this function:
+ * 1. Scans the dist/runtime/server/api directory for compiled .js handlers
+ * 2. Reads each handler's content
+ * 3. Strips relative imports (auto-imports replace them)
+ * 4. Generates a template file in .nuxt/ via addTemplate
+ * 5. Points addServerHandler at the generated template
  */
 function registerApiRoutes(apiDir: string, basePath: string = '/api') {
   if (!existsSync(apiDir)) {
@@ -33,7 +66,7 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
 
   let count = 0
 
-  function scan(dir: string, routePrefix: string) {
+  function scan(dir: string, routePrefix: string, templatePrefix: string) {
     const entries = readdirSync(dir)
     for (const entry of entries) {
       const fullPath = resolve(dir, entry)
@@ -44,17 +77,17 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
         const dirRoute = entry.startsWith('[') && entry.endsWith(']')
           ? `:${entry.slice(1, -1)}`
           : entry
-        scan(fullPath, `${routePrefix}/${dirRoute}`)
+        scan(fullPath, `${routePrefix}/${dirRoute}`, `${templatePrefix}/${entry}`)
         continue
       }
 
-      // Only process .ts/.js/.mjs files, skip .d.ts
-      if (!entry.match(/\.(ts|js|mjs)$/) || entry.endsWith('.d.ts')) continue
+      // Only process .js files (compiled output), skip .d.ts
+      if (!entry.endsWith('.js') || entry.endsWith('.d.ts')) continue
 
-      // Parse filename: name.method.ts → { name, method }
-      // e.g. store.get.ts → route: /store, method: GET
-      // e.g. index.post.ts → route: /, method: POST
-      const parts = entry.replace(/\.(ts|js|mjs)$/, '').split('.')
+      // Parse filename: name.method.js → { name, method }
+      // e.g. store.get.js → route: /store, method: GET
+      // e.g. index.post.js → route: /, method: POST
+      const parts = entry.replace(/\.js$/, '').split('.')
       const method = parts.length > 1 ? parts.pop()!.toUpperCase() : undefined
       const name = parts.join('.')
 
@@ -70,19 +103,30 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
         routePath = `${routePrefix}/${routeName}`
       }
 
-      // Strip file extension for handler path (Nuxt Kit resolves it)
-      const handlerPath = fullPath.replace(/\.(ts|js|mjs)$/, '')
+      // Read the handler source, strip relative imports (auto-imports replace them)
+      const handlerSource = readFileSync(fullPath, 'utf-8')
+      const cleanedSource = stripRelativeImports(handlerSource)
+
+      // Generate a unique template filename for this handler
+      const templateFilename = `commerce-api${templatePrefix}/${entry}`
+
+      // Generate a virtual file in .nuxt/ via addTemplate
+      const template = addTemplate({
+        filename: templateFilename,
+        write: true,
+        getContents: () => cleanedSource,
+      })
 
       addServerHandler({
         route: routePath,
         method: method as any,
-        handler: handlerPath,
+        handler: template.dst,
       })
       count++
     }
   }
 
-  scan(apiDir, basePath)
+  scan(apiDir, basePath, '')
   return count
 }
 
@@ -129,16 +173,6 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     const { resolve } = createResolver(import.meta.url)
 
     logger.info('Initializing CommerceJS module...')
-
-    // Force Nitro to bundle @commercejs/nuxt runtime files instead of
-    // externalizing them. Without this, Cloudflare Workers (and other
-    // edge runtimes) fail with "defineCommerceHandler is not defined"
-    // because Nitro treats node_modules as externals by default.
-    nuxt.hook('nitro:config', (nitroConfig) => {
-      nitroConfig.externals = nitroConfig.externals || {}
-      nitroConfig.externals.inline = nitroConfig.externals.inline || []
-      nitroConfig.externals.inline.push('@commercejs/nuxt')
-    })
 
     // Register nuxt-auth-utils for admin session support
     await installModule('nuxt-auth-utils')
@@ -195,19 +229,20 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     // Auto-import composables
     addImportsDir(resolve('./runtime/composables'))
 
-    // Register server API routes via explicit addServerHandler calls.
-    // Published Nuxt modules can NOT use addServerScanDir because:
-    //   1. Auto-imports don't resolve in node_modules
-    //   2. Compile-time macros (defineRouteMeta) aren't stripped from pre-compiled dist
-    // Instead, we scan the dist/api directory and register each handler explicitly.
+    // Register server utils for auto-imports (defineCommerceHandler, useAdminAPI, etc.)
+    // MUST be registered before API routes so auto-imports work in generated templates
+    addServerImportsDir(resolve('./runtime/server/utils'))
+    addServerImportsDir(resolve('./runtime/server/data'))
+
+    // Register server API routes as virtual template files in .nuxt/
+    // Route handlers are read from dist/, relative imports stripped (auto-imports
+    // replace them), and generated as template files that go through Nitro's
+    // full bundling pipeline. This is required because Rollup can't resolve
+    // relative imports between files in node_modules during CF Workers bundling.
     if (options.apiRoutes) {
       const apiDir = resolve('./runtime/server/api')
       const routeCount = registerApiRoutes(apiDir, '/api')
       logger.info(`Registered ${routeCount} server routes under ${options.apiBase}`)
-
-      // Register server utils (defineCommerceHandler, useServerAdapter, etc.)
-      // so they're available as auto-imports for user-defined routes
-      addServerImportsDir(resolve('./runtime/server/utils'))
     }
 
     // Note: WASM handling was removed — Drizzle uses @neondatabase/serverless
