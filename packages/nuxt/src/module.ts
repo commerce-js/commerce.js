@@ -17,27 +17,49 @@ import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
 
 /**
- * Strip all import statements from compiled handler code.
+ * Rewrite all import statements in compiled handler code to use `#imports`.
  *
- * Route handlers import `defineCommerceHandler`, `useAdminAPI`, etc. via
- * explicit `import { ... } from '...'` statements. However, these utilities
- * are ALREADY registered as Nitro auto-imports via `addServerImportsDir()`.
+ * Route handlers import utilities like `defineCommerceHandler`, `useAdminAPI`,
+ * etc. from package-relative paths. When these explicit imports coexist with
+ * Nitro's auto-import system, Rollup sees two separate module identities for
+ * the same function — the package's copy and Nitro's auto-imported copy.
  *
- * Keeping the explicit imports causes Rollup to see two separate module
- * identities for the same function. When bundling for CF Workers, Rollup
- * renames one to `defineCommerceHandler$1` to avoid collision — but the
- * route handler code still references `defineCommerceHandler` (no suffix),
- * causing `Uncaught ReferenceError: defineCommerceHandler is not defined`
- * at Worker runtime.
+ * On CF Workers, Rollup resolves this collision by renaming one copy with a
+ * `$1` suffix (e.g., `defineCommerceHandler$1`). But handler code still
+ * references the original name → `ReferenceError` at runtime.
  *
- * Solution: strip ALL import statements. Nitro's auto-import system
- * provides everything needed (defineCommerceHandler, useAdminAPI, etc.).
+ * This also cascades: even if `defineCommerceHandler` is fixed, its internal
+ * `import { defineEventHandler } from 'h3'` creates the same dual-identity
+ * problem for h3 functions.
+ *
+ * Solution: rewrite ALL imports to use `#imports` — Nitro's virtual module
+ * that provides a single, deduplicated copy of every auto-imported function.
+ * Since `addServerImportsDir` registers all our utils, `#imports` resolves
+ * everything through Nitro's unified module graph.
  *
  * @param code - The handler source code
  */
-function stripImports(code: string): string {
-  // Remove all import statements (single-line and multi-line)
-  return code.replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
+function rewriteToAutoImports(code: string): string {
+  // Collect all named imports from all import statements
+  const namedImports: string[] = []
+
+  // Match: import { foo, bar } from '...'
+  // Match: import { foo } from '...'
+  const importRegex = /^import\s+\{([^}]+)\}\s+from\s+['"][^'"]+['"];?\s*$/gm
+  let match
+  // eslint-disable-next-line no-cond-assign
+  while ((match = importRegex.exec(code)) !== null) {
+    const names = match[1].split(',').map(n => n.trim()).filter(Boolean)
+    namedImports.push(...names)
+  }
+
+  if (namedImports.length === 0) return code
+
+  // Remove all original import statements
+  const cleaned = code.replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
+
+  // Add single consolidated import from #imports
+  return `import { ${namedImports.join(', ')} } from '#imports';\n${cleaned}`
 }
 
 /**
@@ -103,7 +125,7 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
       // Read the handler source, strip import statements since Nitro auto-imports
       // provide everything (defineCommerceHandler, useAdminAPI, etc.)
       const handlerSource = readFileSync(fullPath, 'utf-8')
-      const cleanedSource = stripImports(handlerSource)
+      const cleanedSource = rewriteToAutoImports(handlerSource)
 
       // Generate a unique template filename for this handler
       const templateFilename = `commerce-api${templatePrefix}/${entry}`
