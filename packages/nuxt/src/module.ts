@@ -37,18 +37,21 @@ function transformHandler(code: string): string {
   let transformed = code.replace(/^import\s+.*?from\s+['"]\.\.?\/[^'"]+['"];?\s*$/gm, '')
 
   // 2. Replace defineCommerceHandler(fn) with inlined defineEventHandler wrapper.
+  // Handles 1-param (event only), 2-param (event, adapter), and 3-param (event, adapter, ctx).
   // The inlined code needs h3 functions directly, so we add the h3 import.
   let didReplace = false
   transformed = transformed.replace(
-    /export\s+default\s+defineCommerceHandler\s*\(\s*async\s*\((\w+),\s*(\w+)(?:,\s*(\w+))?\)\s*=>\s*\{/,
+    /export\s+default\s+defineCommerceHandler\s*\(\s*async\s*\((\w+)(?:,\s*(\w+))?(?:,\s*(\w+))?\)\s*=>\s*\{/,
     (_, eventParam, adapterParam, ctxParam) => {
       didReplace = true
       const lines = [
         // Add h3 import for the inlined defineEventHandler and createError
         `import { defineEventHandler, createError } from 'h3';`,
         `export default defineEventHandler(async (${eventParam}) => {`,
-        `  const ${adapterParam} = useServerAdapter(${eventParam});`,
       ]
+      if (adapterParam) {
+        lines.push(`  const ${adapterParam} = useServerAdapter(${eventParam});`)
+      }
       if (ctxParam) {
         lines.push(`  const ${ctxParam} = createCommerceContext(${eventParam});`)
       }
