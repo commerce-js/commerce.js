@@ -1,5 +1,13 @@
 # @commercejs/nuxt
 
+## 0.6.15
+
+### Patch Changes
+
+- [`c2c9125`](https://github.com/commerce-js/commerce.js/commit/c2c91254aa223a5443c856f29bd5e6c4d8217d53) Thanks [@masterde](https://github.com/masterde)! - Fix transformHandler to only inject try/catch error handling when
+  defineCommerceHandler was actually replaced, not for handlers that
+  already use defineEventHandler directly (like change-password.post.js).
+
 ## 0.6.14
 
 ### Patch Changes
