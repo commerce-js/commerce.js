@@ -36,9 +36,11 @@ function transformHandler(code: string): string {
   // 2. Replace defineCommerceHandler(fn) with inlined defineEventHandler wrapper
   // Pattern: export default defineCommerceHandler(async (event, adapter[, ctx]) => { ... })
   // or:      export default defineCommerceHandler(async (_event, adapter[, ctx]) => { ... })
+  let didReplace = false
   transformed = transformed.replace(
     /export\s+default\s+defineCommerceHandler\s*\(\s*async\s*\((\w+),\s*(\w+)(?:,\s*(\w+))?\)\s*=>\s*\{/,
     (_, eventParam, adapterParam, ctxParam) => {
+      didReplace = true
       const lines = [
         `export default defineEventHandler(async (${eventParam}) => {`,
         `  const ${adapterParam} = useServerAdapter(${eventParam});`,
@@ -51,11 +53,11 @@ function transformHandler(code: string): string {
     }
   )
 
-  // 3. Close the try/catch block with error handling at the end
-  // Replace the final closing });  (end of defineCommerceHandler)
-  // with the error handling logic + proper closing
-  if (transformed.includes('try {')) {
-    // Find the last }); which ends the handler
+  // 3. Only inject error handling if we actually replaced defineCommerceHandler above.
+  // Handlers that already use defineEventHandler directly (e.g. change-password.post.js)
+  // have their own try/catch and must NOT be modified.
+  if (didReplace) {
+    // Find the last }); which ends the handler wrapper
     const lastParen = transformed.lastIndexOf('});')
     if (lastParen !== -1) {
       transformed = transformed.substring(0, lastParen) + [
