@@ -1,4 +1,5 @@
 // Admin Auth: Current user
+import { defineEventHandler, createError } from 'h3'
 
 
 export default defineEventHandler(async (event) => {

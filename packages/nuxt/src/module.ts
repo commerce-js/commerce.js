@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { readdirSync, statSync, existsSync } from 'fs'
+import { readdirSync, statSync, existsSync, readFileSync } from 'fs'
 import {
   defineNuxtModule,
   addPlugin,
@@ -9,6 +9,7 @@ import {
   addServerImportsDir,
   addTypeTemplate,
   addServerPlugin,
+  addTemplate,
   installModule,
 } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
@@ -16,18 +17,34 @@ import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
 
 /**
- * Recursively discover route handler files and register them with
- * addServerHandler, pointing directly at the compiled JS files.
+ * Rewrite relative imports in compiled handler code to use @commercejs/nuxt
+ * package export paths that Rollup can resolve from any location.
  *
- * Handler source files have NO import statements — they rely entirely on
- * Nitro's auto-import system (server/utils pattern). This means the compiled
- * output has zero imports, so Rollup doesn't need to resolve any paths
- * within node_modules.
+ * Extracts the meaningful tail of each relative import (e.g. "utils/handler"
+ * from "../../utils/handler.js") and maps it to the correct package export:
+ *   @commercejs/nuxt/runtime/server/utils/handler
+ *   @commercejs/nuxt/runtime/server/data/cities
+ */
+function rewriteImportsToPackageExports(code: string): string {
+  return code.replace(
+    /from\s+['"](\.\.?\/)+([^'"]+)['"]/g,
+    (_match, _dots, tail) => {
+      // Strip .js extension from the tail path
+      const cleanTail = tail.replace(/\.js$/, '')
+      return `from '@commercejs/nuxt/runtime/server/${cleanTail}'`
+    }
+  )
+}
+
+/**
+ * Recursively discover route handler files and register them as virtual
+ * template files via addTemplate + addServerHandler.
  *
- * Functions like `defineCommerceHandler`, `useServerAdapter`, `useAdminAPI`
- * are auto-imported via `addServerImportsDir('./runtime/server/utils')`.
- * h3 functions (`defineEventHandler`, `createError`, etc.) are Nitro built-ins.
- * Data exports (`citiesByCountry`) come from `addServerImportsDir('./runtime/server/data')`.
+ * Templates are necessary because Nitro auto-imports don't inject into
+ * handler files resolved from node_modules/ on Cloudflare Workers.
+ *
+ * Relative imports are rewritten to @commercejs/nuxt package export paths
+ * which Rollup CAN resolve from any file location.
  */
 function registerApiRoutes(apiDir: string, basePath: string = '/api') {
   if (!existsSync(apiDir)) {
@@ -37,53 +54,58 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
 
   let count = 0
 
-  function scan(dir: string, routePrefix: string) {
+  function scan(dir: string, routePrefix: string, templatePrefix: string) {
     const entries = readdirSync(dir)
     for (const entry of entries) {
       const fullPath = resolve(dir, entry)
       const stat = statSync(fullPath)
 
       if (stat.isDirectory()) {
-        // Convert directory [param] to :param for route
         const dirRoute = entry.startsWith('[') && entry.endsWith(']')
           ? `:${entry.slice(1, -1)}`
           : entry
-        scan(fullPath, `${routePrefix}/${dirRoute}`)
+        scan(fullPath, `${routePrefix}/${dirRoute}`, `${templatePrefix}/${entry}`)
         continue
       }
 
-      // Only process .js files (compiled output), skip .d.ts
       if (!entry.endsWith('.js') || entry.endsWith('.d.ts')) continue
 
-      // Parse filename: name.method.js → { name, method }
-      // e.g. store.get.js → route: /store, method: GET
-      // e.g. index.post.js → route: /, method: POST
       const parts = entry.replace(/\.js$/, '').split('.')
       const method = parts.length > 1 ? parts.pop()!.toUpperCase() : undefined
       const name = parts.join('.')
 
-      // Build route path
       let routePath: string
       if (name === 'index') {
         routePath = routePrefix || '/'
       } else {
-        // Convert [param] in filename to :param
         const routeName = name.startsWith('[') && name.endsWith(']')
           ? `:${name.slice(1, -1)}`
           : name
         routePath = `${routePrefix}/${routeName}`
       }
 
+      // Read handler source and rewrite relative imports to package exports
+      const handlerSource = readFileSync(fullPath, 'utf-8')
+      const rewrittenSource = rewriteImportsToPackageExports(handlerSource)
+
+      // Generate a virtual file in .nuxt/ via addTemplate
+      const templateFilename = `commerce-api${templatePrefix}/${entry}`
+      const template = addTemplate({
+        filename: templateFilename,
+        write: true,
+        getContents: () => rewrittenSource,
+      })
+
       addServerHandler({
         route: routePath,
         method: method as any,
-        handler: fullPath,
+        handler: template.dst,
       })
       count++
     }
   }
 
-  scan(apiDir, basePath)
+  scan(apiDir, basePath, '')
   return count
 }
 
@@ -202,10 +224,8 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     addServerImportsDir(resolve('./runtime/server/data'))
 
     // Register server API routes as virtual template files in .nuxt/
-    // Route handlers are read from dist/, relative imports stripped (auto-imports
-    // replace them), and generated as template files that go through Nitro's
-    // full bundling pipeline. This is required because Rollup can't resolve
-    // relative imports between files in node_modules during CF Workers bundling.
+    // Relative imports are rewritten to @commercejs/nuxt package export paths
+    // so Rollup can resolve them from any location (avoids pnpm symlink issues).
     if (options.apiRoutes) {
       const apiDir = resolve('./runtime/server/api')
       const routeCount = registerApiRoutes(apiDir, '/api')

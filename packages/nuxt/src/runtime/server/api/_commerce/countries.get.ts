@@ -1,3 +1,4 @@
+import { countryMeta } from '../../data/country-meta'
 
 
 export default defineCommerceHandler(async (_event, adapter) => {
