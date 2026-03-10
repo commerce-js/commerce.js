@@ -1,5 +1,3 @@
-import { defineCommerceHandler } from '../../utils/handler'
-import { getQuery, getRouterParam } from 'h3'
 
 export default defineCommerceHandler(async (event) => {
   const id = getRouterParam(event, 'id')!

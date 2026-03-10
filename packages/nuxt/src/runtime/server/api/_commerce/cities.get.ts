@@ -1,5 +1,3 @@
-import { defineEventHandler, getQuery } from 'h3'
-import { citiesByCountry } from '../../data/cities'
 
 /**
  * GET /api/_commerce/cities?country=SA
