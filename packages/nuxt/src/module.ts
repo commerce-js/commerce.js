@@ -130,6 +130,16 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
 
     logger.info('Initializing CommerceJS module...')
 
+    // Force Nitro to bundle @commercejs/nuxt runtime files instead of
+    // externalizing them. Without this, Cloudflare Workers (and other
+    // edge runtimes) fail with "defineCommerceHandler is not defined"
+    // because Nitro treats node_modules as externals by default.
+    nuxt.hook('nitro:config', (nitroConfig) => {
+      nitroConfig.externals = nitroConfig.externals || {}
+      nitroConfig.externals.inline = nitroConfig.externals.inline || []
+      nitroConfig.externals.inline.push('@commercejs/nuxt')
+    })
+
     // Register nuxt-auth-utils for admin session support
     await installModule('nuxt-auth-utils')
 
