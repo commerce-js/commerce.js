@@ -1,5 +1,13 @@
 # @commercejs/nuxt
 
+## 0.6.16
+
+### Patch Changes
+
+- [`070b6ea`](https://github.com/commerce-js/commerce.js/commit/070b6eae516844f7d58365ff09df995bbc63a55b) Thanks [@masterde](https://github.com/masterde)! - Fix handler templates to only strip relative imports and keep package
+  imports (h3, zod). Add h3 import to inlined defineCommerceHandler
+  replacements since Nitro h3 auto-imports don't apply to addTemplate files.
+
 ## 0.6.15
 
 ### Patch Changes
