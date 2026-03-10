@@ -25,7 +25,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "nuxt-module-build build",
+    "build": "nuxt-module-build build && node scripts/fix-esm-extensions.mjs",
     "dev": "nuxi dev playground",
     "typecheck": "nuxt-module-build build",
     "clean": "rm -rf dist .nuxt"
