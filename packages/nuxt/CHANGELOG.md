@@ -1,5 +1,15 @@
 # @commercejs/nuxt
 
+## 0.6.5
+
+### Patch Changes
+
+- [`9f1a626`](https://github.com/commerce-js/commerce.js/commit/9f1a626184e22b5988e21008b909285e0a40808b) Thanks [@masterde](https://github.com/masterde)! - Revert to original relative imports with nitro.externals.inline
+
+  Restores the original relative import paths and relies solely on
+  `nitro.externals.inline` to force Nitro to bundle the module. This
+  is the correct minimal fix — one config hook in module.ts.
+
 ## 0.6.4
 
 ### Patch Changes
