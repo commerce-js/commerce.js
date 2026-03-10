@@ -1,5 +1,18 @@
 # @commercejs/nuxt
 
+## 0.6.11
+
+### Patch Changes
+
+- [`1ed80a5`](https://github.com/commerce-js/commerce.js/commit/1ed80a52a2bdd3305ee0387ae558699f01793440) Thanks [@masterde](https://github.com/masterde)! - Fix defineCommerceHandler runtime error on CF Workers by stripping
+  explicit import statements from generated route handler templates.
+
+  Since addServerImportsDir already registers the utils directory,
+  Nitro auto-imports provide defineCommerceHandler. Keeping explicit
+  imports caused Rollup to see two module identities for the same
+  function, renaming one to defineCommerceHandler$1 while route handlers
+  still referenced the original name — causing ReferenceError at runtime.
+
 ## 0.6.10
 
 ### Patch Changes
