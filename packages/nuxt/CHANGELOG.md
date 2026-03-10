@@ -1,5 +1,16 @@
 # @commercejs/nuxt
 
+## 0.6.3
+
+### Patch Changes
+
+- [`a2d7445`](https://github.com/commerce-js/commerce.js/commit/a2d744549801797dc7ecbef3af6d9226d02f28b0) Thanks [@masterde](https://github.com/masterde)! - Add .js extension to handler import path for Nitro compatibility
+
+  Route files import defineCommerceHandler from the package exports path
+  but Nitro requires the `.js` extension to resolve the file from
+  node_modules. Changes import to
+  `@commercejs/nuxt/runtime/server/utils/handler.js`.
+
 ## 0.6.2
 
 ### Patch Changes
