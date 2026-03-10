@@ -17,30 +17,35 @@ import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
 
 /**
- * Strip relative import lines from compiled handler content.
+ * Rewrite relative import paths in compiled handler content to absolute paths.
  *
  * Route handlers import `defineCommerceHandler`, `useAdminAPI`, etc. from
  * relative paths (e.g. `../utils/handler`). These relative imports FAIL
  * when Rollup tries to resolve them during Nitro bundling for CF Workers
  * because they point between files inside `node_modules`.
  *
- * Since `addServerImportsDir` registers the utils dir, all exported
- * functions become auto-imports in the Nitro server context. The generated
- * template files (in `.nuxt/`) go through Nitro's auto-import transform,
- * so explicit imports are unnecessary.
+ * Auto-imports also don't work for template files (they only apply to
+ * files in recognized server directories like server/).
  *
- * We strip relative imports but keep npm package imports (h3, zod, etc.)
- * since Nitro resolves those correctly.
+ * Solution: rewrite relative imports to absolute paths. Since we know the
+ * handler's original location in dist/, we can resolve the relative path
+ * to the absolute path of the target module. Nitro/Rollup can then bundle
+ * the absolute path correctly.
+ *
+ * @param code - The handler source code
+ * @param handlerDir - The directory containing the handler file
  */
-function stripRelativeImports(code: string): string {
-  return code
-    .split('\n')
-    .filter(line => {
-      // Remove lines that import from relative paths (./  ../)
-      const isRelativeImport = /^\s*import\s+.*from\s+['"]\.\.?\//.test(line)
-      return !isRelativeImport
-    })
-    .join('\n')
+function rewriteRelativeImports(code: string, handlerDir: string): string {
+  return code.replace(
+    /(from\s+['"])(\.\.?\/[^'"]+)(['"])/g,
+    (_match, prefix, relPath, suffix) => {
+      // Resolve the relative path to an absolute path
+      let absPath = resolve(handlerDir, relPath)
+      // Ensure .js extension for ESM resolution
+      if (!absPath.endsWith('.js')) absPath += '.js'
+      return `${prefix}${absPath}${suffix}`
+    }
+  )
 }
 
 /**
@@ -103,9 +108,11 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
         routePath = `${routePrefix}/${routeName}`
       }
 
-      // Read the handler source, strip relative imports (auto-imports replace them)
+      // Read the handler source, rewrite relative imports to absolute paths
+      // so Nitro/Rollup can resolve them from the generated .nuxt/ template
       const handlerSource = readFileSync(fullPath, 'utf-8')
-      const cleanedSource = stripRelativeImports(handlerSource)
+      const handlerDir = resolve(fullPath, '..')
+      const cleanedSource = rewriteRelativeImports(handlerSource, handlerDir)
 
       // Generate a unique template filename for this handler
       const templateFilename = `commerce-api${templatePrefix}/${entry}`
@@ -173,6 +180,16 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     const { resolve } = createResolver(import.meta.url)
 
     logger.info('Initializing CommerceJS module...')
+
+    // Force Nitro to bundle @commercejs/nuxt runtime files instead of
+    // externalizing them. Generated route templates import utils via absolute
+    // paths that resolve to node_modules — without inlining, these would be
+    // externalized and the imports would fail on CF Workers.
+    nuxt.hook('nitro:config', (nitroConfig: any) => {
+      nitroConfig.externals = nitroConfig.externals || {}
+      nitroConfig.externals.inline = nitroConfig.externals.inline || []
+      nitroConfig.externals.inline.push('@commercejs/nuxt')
+    })
 
     // Register nuxt-auth-utils for admin session support
     await installModule('nuxt-auth-utils')
