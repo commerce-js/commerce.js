@@ -17,21 +17,20 @@ import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
 
 /**
- * Rewrite relative imports in compiled handler code to use @commercejs/nuxt
- * package export paths that Rollup can resolve from any location.
+ * Strip ALL import statements from compiled handler code.
  *
- * Extracts the meaningful tail of each relative import (e.g. "utils/handler"
- * from "../../utils/handler.js") and maps it to the correct package export:
- *   @commercejs/nuxt/runtime/server/utils/handler
- *   @commercejs/nuxt/runtime/server/data/cities
+ * Template files are generated in .nuxt/ via addTemplate. At this location,
+ * Nitro's auto-import system provides all needed functions:
+ * - defineCommerceHandler, useServerAdapter, useAdminAPI (via addServerImportsDir)
+ * - defineEventHandler, createError, readBody, etc. (Nitro h3 built-ins)
+ * - citiesByCountry, countryMeta (via addServerImportsDir for data/)
+ * - ZodError (via addServerImportsDir or Nitro auto-import)
+ *
+ * Explicit imports cause Rollup module identity conflicts where it creates
+ * renamed copies (e.g. defineCommerceHandler$1) that are undefined at runtime.
  */
-function rewriteImportsToPackageExports(code: string): string {
-  return code.replace(
-    /from\s+['"](\.\.?\/)+([^'"]+)['"]/g,
-    (_match, _dots, tail) => {
-      return `from '@commercejs/nuxt/runtime/server/${tail}'`
-    }
-  )
+function stripAllImports(code: string): string {
+  return code.replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
 }
 
 /**
@@ -82,16 +81,16 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
         routePath = `${routePrefix}/${routeName}`
       }
 
-      // Read handler source and rewrite relative imports to package exports
+      // Read handler source and strip all imports (auto-imports provide everything)
       const handlerSource = readFileSync(fullPath, 'utf-8')
-      const rewrittenSource = rewriteImportsToPackageExports(handlerSource)
+      const cleanedSource = stripAllImports(handlerSource)
 
       // Generate a virtual file in .nuxt/ via addTemplate
       const templateFilename = `commerce-api${templatePrefix}/${entry}`
       const template = addTemplate({
         filename: templateFilename,
         write: true,
-        getContents: () => rewrittenSource,
+        getContents: () => cleanedSource,
       })
 
       addServerHandler({
