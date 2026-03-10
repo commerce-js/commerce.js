@@ -1,5 +1,13 @@
 # @commercejs/nuxt
 
+## 0.6.20
+
+### Patch Changes
+
+- [`52f2cee`](https://github.com/commerce-js/commerce.js/commit/52f2ceee919131d942967a271ba96a1ef3ffa2ba) Thanks [@masterde](https://github.com/masterde)! - Strip ALL imports from handler templates generated in .nuxt/ and
+  rely entirely on Nitro's auto-import system. Templates in .nuxt/
+  receive auto-imports unlike files in node_modules/.
+
 ## 0.6.19
 
 ### Patch Changes
