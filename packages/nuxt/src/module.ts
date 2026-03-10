@@ -29,9 +29,7 @@ function rewriteImportsToPackageExports(code: string): string {
   return code.replace(
     /from\s+['"](\.\.?\/)+([^'"]+)['"]/g,
     (_match, _dots, tail) => {
-      // Strip .js extension from the tail path
-      const cleanTail = tail.replace(/\.js$/, '')
-      return `from '@commercejs/nuxt/runtime/server/${cleanTail}'`
+      return `from '@commercejs/nuxt/runtime/server/${tail}'`
     }
   )
 }
