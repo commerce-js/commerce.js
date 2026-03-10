@@ -20,27 +20,32 @@ const logger = consola.withTag('@commercejs/nuxt')
  * Rewrite relative import paths in compiled handler content to absolute paths.
  *
  * Route handlers import `defineCommerceHandler`, `useAdminAPI`, etc. from
- * relative paths (e.g. `../utils/handler`). These relative imports FAIL
- * when Rollup tries to resolve them during Nitro bundling for CF Workers
- * because they point between files inside `node_modules`.
+ * relative paths like `../utils/handler` or `../../../../utils/admin`.
+ * These relative imports can't be resolved by Rollup during Nitro bundling
+ * because:
+ *   1. Files are in node_modules (relative imports between node_modules fail)
+ *   2. The relative paths have incorrect depth (mkdist preserves source paths
+ *      as-is, but the dist layout differs from the source layout)
  *
- * Auto-imports also don't work for template files (they only apply to
- * files in recognized server directories like server/).
- *
- * Solution: rewrite relative imports to absolute paths. Since we know the
- * handler's original location in dist/, we can resolve the relative path
- * to the absolute path of the target module. Nitro/Rollup can then bundle
- * the absolute path correctly.
+ * Solution: extract the meaningful path suffix (e.g. `utils/handler`) from
+ * the relative import, and resolve it against the server base directory.
+ * This gives the correct absolute path regardless of how many `../` prefixes
+ * the original import has.
  *
  * @param code - The handler source code
- * @param handlerDir - The directory containing the handler file
+ * @param serverDir - The absolute path to dist/runtime/server/
  */
-function rewriteRelativeImports(code: string, handlerDir: string): string {
+function rewriteRelativeImports(code: string, serverDir: string): string {
   return code.replace(
     /(from\s+['"])(\.\.?\/[^'"]+)(['"])/g,
     (_match, prefix, relPath, suffix) => {
-      // Resolve the relative path to an absolute path
-      let absPath = resolve(handlerDir, relPath)
+      // Strip all leading ../ and ./ to get the meaningful path suffix
+      // e.g. "../utils/handler" → "utils/handler"
+      // e.g. "../../../../utils/admin" → "utils/admin"
+      // e.g. "../../data/cities" → "data/cities"
+      const cleanPath = relPath.replace(/^(\.\.?\/?)+/, '')
+      // Resolve against the server base directory
+      let absPath = resolve(serverDir, cleanPath)
       // Ensure .js extension for ESM resolution
       if (!absPath.endsWith('.js')) absPath += '.js'
       return `${prefix}${absPath}${suffix}`
@@ -109,10 +114,10 @@ function registerApiRoutes(apiDir: string, basePath: string = '/api') {
       }
 
       // Read the handler source, rewrite relative imports to absolute paths
-      // so Nitro/Rollup can resolve them from the generated .nuxt/ template
+      // resolved against the server base directory (dist/runtime/server/)
       const handlerSource = readFileSync(fullPath, 'utf-8')
-      const handlerDir = resolve(fullPath, '..')
-      const cleanedSource = rewriteRelativeImports(handlerSource, handlerDir)
+      const serverDir = resolve(apiDir, '..')
+      const cleanedSource = rewriteRelativeImports(handlerSource, serverDir)
 
       // Generate a unique template filename for this handler
       const templateFilename = `commerce-api${templatePrefix}/${entry}`
