@@ -4,21 +4,21 @@
 Phase 7 — Cloud Platform (Sprint 1 Complete)
 
 ## Status
-All 5 sprint tasks (T01-T05) completed. Deploy pipeline functional: Dashboard creates CF Pages + Neon DB, sets GH Actions secrets on user repos, triggers workflow dispatch. Nuxt module route issue on CF Workers was resolved. Ready for next sprint planning.
+CI deploy issue resolved (0.6.10→0.6.21). Root cause: `addServerHandler` bypasses Nitro's auto-import pipeline. Fix: `addServerScanDir` + zero-import handler sources. All deploy pipelines functional. Ready for next sprint planning.
 
 ## Last Commits
-- `1d1162b` — fix(nuxt): replace addServerScanDir with explicit addServerHandler registration
-- `d68c1b5` — fix(nuxt): strip defineRouteMeta from API route files
-- `dfc6264` — fix(nuxt): inject adapter name into server-side runtimeConfig
+- `fix(nuxt): use addServerScanDir for full auto-import support` — replaced ~90 lines of registerApiRoutes/addTemplate with single addServerScanDir call
+- Handler source files (74 files) stripped of all explicit imports
 
 ## Current npm version
-`@commercejs/nuxt@0.6.0`
+`@commercejs/nuxt@0.6.21`
 
 ## What's Working
 - Dashboard at `commercejs-cloud` on CF Pages (GitHub OAuth, project CRUD, deploy trigger)
 - GH Actions deploy pipeline (template repo → user repo → auto-deploy)
 - Cloudflare Queues for async provisioning with DLQ + retry
 - D1 schema with projects, deployments, env vars, domains tables
+- **Nuxt module server routes deploy successfully to CF Workers** (via addServerScanDir)
 
 ## Next Steps
 1. Verify full end-to-end flow works in production (create project → auto-deploy → storefront live)
@@ -26,4 +26,4 @@ All 5 sprint tasks (T01-T05) completed. Deploy pipeline functional: Dashboard cr
 3. Clean up test projects (demo-shop, final-test)
 
 ## Detailed Checkpoint
-See [2026-03-10T0450.md](checkpoints/2026-03-10T0450.md)
+See [2026-03-10T1230.md](checkpoints/2026-03-10T1230.md)

@@ -146,10 +146,15 @@ GitHub's Actions secrets API requires NaCl sealed box encryption (`crypto_box_se
 - Template-generated repos don't have lockfiles initially
 - Use `--no-frozen-lockfile` and don't use `cache: pnpm` for template repos
 
-## Nuxt Module Server Routes on CF Workers (2026-03-02)
-- **`addServerScanDir` does NOT work for published npm modules** — auto-imports don't resolve in `node_modules`, and compile-time macros like `defineRouteMeta` aren't stripped from pre-compiled dist files
-- **`addServerHandler` with npm dist files also fails** — Nitro can't resolve relative imports (`../utils/handler`) from npm package files when bundling for CF Workers (`externals are not allowed`)
-- **The nuxt-modules skill explicitly says**: "Auto-imports don't work in `node_modules`. Runtime files must explicitly import."
-- **The correct approach**: Either use package export paths (`@commercejs/nuxt/server`) that Nitro can resolve, use Nitro `addServerTemplate` to generate route code at build time, or ship a single catch-all handler
+## Nuxt Module Server Routes on CF Workers (2026-03-02, RESOLVED 2026-03-10)
+- **Original issue (2026-03-02):** Used `addServerHandler` pointing at pre-compiled dist files in `node_modules/`. Broke on CF Workers because Rollup couldn't resolve relative imports through pnpm's `.pnpm` symlink directory.
+- **Failed approaches (0.6.10–0.6.20, 16 versions):**
+  - `addServerHandler` → file in `node_modules/` — relative imports fail (`externals not allowed`)
+  - `addTemplate` + `addServerHandler` → file in `.nuxt/`, imports rewritten to package exports — Rollup module identity conflicts (`defineCommerceHandler$1`)
+  - `addTemplate` + strip ALL imports → file in `.nuxt/` — `defineEventHandler is not defined` (auto-imports don't inject into `addServerHandler` registered files)
+- **Root cause:** `addServerHandler` bypasses Nitro's auto-import injection pipeline. Files registered via `addServerHandler` (whether from `node_modules/` or `.nuxt/`) do NOT receive auto-imports.
+- **✅ Fix (0.6.21):** `addServerScanDir(resolve('./runtime/server'))` — tells Nitro to scan the directory as the app's own `server/`, enabling full auto-import injection + auto route discovery. Handler source files have zero imports.
+- **Key takeaway:** For Nuxt modules providing server API routes, use `addServerScanDir` not `addServerHandler`. This is the only API that participates in Nitro's auto-import injection pipeline. Handler source files should NOT have explicit imports — rely on auto-imports from `server/utils/`.
 - **`^0.x.y` semver gotcha**: Caret ranges for 0.x versions only allow patch updates — `^0.5.1` means `>=0.5.1 <0.6.0`, NOT `>=0.5.1 <1.0.0`
+
 
