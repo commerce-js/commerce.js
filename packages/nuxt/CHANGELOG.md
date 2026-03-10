@@ -1,5 +1,15 @@
 # @commercejs/nuxt
 
+## 0.6.18
+
+### Patch Changes
+
+- [`0143af8`](https://github.com/commerce-js/commerce.js/commit/0143af8638ba616dd2bce7d2e745e104e791ac04) Thanks [@masterde](https://github.com/masterde)! - Rewrite relative imports in handler templates to @commercejs/nuxt
+  package export paths. Uses tail-matching to extract the meaningful
+  import suffix (e.g. utils/handler from ../../utils/handler.js) and
+  prefix it with the package export base. This ensures Rollup can
+  resolve all imports regardless of file location.
+
 ## 0.6.17
 
 ### Patch Changes
