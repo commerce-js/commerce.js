@@ -1,5 +1,16 @@
 # @commercejs/nuxt
 
+## 0.6.7
+
+### Patch Changes
+
+- [`f9b5b01`](https://github.com/commerce-js/commerce.js/commit/f9b5b01f9e6f58626192b375c277f8f9e82f74ac) Thanks [@masterde](https://github.com/masterde)! - Generate route handlers as virtual templates for CF Workers compatibility
+
+  Route handlers are now generated as template files in .nuxt/ at build time
+  instead of pointing to pre-compiled files in node_modules. This resolves
+  Rollup's inability to resolve relative imports between node_modules files
+  during Nitro's CF Workers bundling.
+
 ## 0.6.6
 
 ### Patch Changes
