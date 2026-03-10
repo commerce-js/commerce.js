@@ -1,5 +1,12 @@
 # @commercejs/nuxt
 
+## 0.6.19
+
+### Patch Changes
+
+- [`87740fd`](https://github.com/commerce-js/commerce.js/commit/87740fd831418226c45e0a19c753ca36ff067415) Thanks [@masterde](https://github.com/masterde)! - Keep .js extension in rewritten import paths so Rollup can find
+  the actual files in the package dist/ directory.
+
 ## 0.6.18
 
 ### Patch Changes
