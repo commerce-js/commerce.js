@@ -1,4 +1,4 @@
-import { defineCommerceHandler } from '@commercejs/nuxt/runtime/server/utils/handler.js'
+import { defineCommerceHandler } from '../../utils/handler'
 import { getQuery, getRouterParam } from 'h3'
 
 export default defineCommerceHandler(async (event) => {
