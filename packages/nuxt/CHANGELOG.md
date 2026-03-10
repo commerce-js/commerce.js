@@ -1,5 +1,12 @@
 # @commercejs/nuxt
 
+## 0.6.9
+
+### Patch Changes
+
+- [`d6dbee7`](https://github.com/commerce-js/commerce.js/commit/d6dbee773d04ec6ea827731e1933b0d23ae47c0d) Thanks [@masterde](https://github.com/masterde)! - Fix import path resolution for CF Workers by resolving against server
+  directory instead of handler directory.
+
 ## 0.6.8
 
 ### Patch Changes
