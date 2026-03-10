@@ -1,5 +1,3 @@
-import { defineCommerceHandler } from '../../utils/handler'
-import { readBody } from 'h3'
 
 export default defineCommerceHandler(async (event, adapter) => {
   const { cartId } = placeOrderSchema.parse(await readBody(event))

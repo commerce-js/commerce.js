@@ -1,110 +1,16 @@
-import { resolve } from 'path'
-import { readdirSync, statSync, existsSync, readFileSync } from 'fs'
 import {
   defineNuxtModule,
   addPlugin,
   createResolver,
   addImportsDir,
-  addServerHandler,
-  addServerImportsDir,
   addTypeTemplate,
   addServerPlugin,
-  addTemplate,
+  addServerScanDir,
   installModule,
 } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
 import { consola } from 'consola'
 const logger = consola.withTag('@commercejs/nuxt')
-
-/**
- * Strip ALL import statements from compiled handler code.
- *
- * Template files are generated in .nuxt/ via addTemplate. At this location,
- * Nitro's auto-import system provides all needed functions:
- * - defineCommerceHandler, useServerAdapter, useAdminAPI (via addServerImportsDir)
- * - defineEventHandler, createError, readBody, etc. (Nitro h3 built-ins)
- * - citiesByCountry, countryMeta (via addServerImportsDir for data/)
- * - ZodError (via addServerImportsDir or Nitro auto-import)
- *
- * Explicit imports cause Rollup module identity conflicts where it creates
- * renamed copies (e.g. defineCommerceHandler$1) that are undefined at runtime.
- */
-function stripAllImports(code: string): string {
-  return code.replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
-}
-
-/**
- * Recursively discover route handler files and register them as virtual
- * template files via addTemplate + addServerHandler.
- *
- * Templates are necessary because Nitro auto-imports don't inject into
- * handler files resolved from node_modules/ on Cloudflare Workers.
- *
- * Relative imports are rewritten to @commercejs/nuxt package export paths
- * which Rollup CAN resolve from any file location.
- */
-function registerApiRoutes(apiDir: string, basePath: string = '/api') {
-  if (!existsSync(apiDir)) {
-    logger.warn(`API routes directory not found: ${apiDir}`)
-    return 0
-  }
-
-  let count = 0
-
-  function scan(dir: string, routePrefix: string, templatePrefix: string) {
-    const entries = readdirSync(dir)
-    for (const entry of entries) {
-      const fullPath = resolve(dir, entry)
-      const stat = statSync(fullPath)
-
-      if (stat.isDirectory()) {
-        const dirRoute = entry.startsWith('[') && entry.endsWith(']')
-          ? `:${entry.slice(1, -1)}`
-          : entry
-        scan(fullPath, `${routePrefix}/${dirRoute}`, `${templatePrefix}/${entry}`)
-        continue
-      }
-
-      if (!entry.endsWith('.js') || entry.endsWith('.d.ts')) continue
-
-      const parts = entry.replace(/\.js$/, '').split('.')
-      const method = parts.length > 1 ? parts.pop()!.toUpperCase() : undefined
-      const name = parts.join('.')
-
-      let routePath: string
-      if (name === 'index') {
-        routePath = routePrefix || '/'
-      } else {
-        const routeName = name.startsWith('[') && name.endsWith(']')
-          ? `:${name.slice(1, -1)}`
-          : name
-        routePath = `${routePrefix}/${routeName}`
-      }
-
-      // Read handler source and strip all imports (auto-imports provide everything)
-      const handlerSource = readFileSync(fullPath, 'utf-8')
-      const cleanedSource = stripAllImports(handlerSource)
-
-      // Generate a virtual file in .nuxt/ via addTemplate
-      const templateFilename = `commerce-api${templatePrefix}/${entry}`
-      const template = addTemplate({
-        filename: templateFilename,
-        write: true,
-        getContents: () => cleanedSource,
-      })
-
-      addServerHandler({
-        route: routePath,
-        method: method as any,
-        handler: template.dst,
-      })
-      count++
-    }
-  }
-
-  scan(apiDir, basePath, '')
-  return count
-}
 
 export interface CommerceModuleOptions {
   /**
@@ -215,18 +121,18 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     // Auto-import composables
     addImportsDir(resolve('./runtime/composables'))
 
-    // Register server utils for auto-imports (defineCommerceHandler, useAdminAPI, etc.)
-    // MUST be registered before API routes so auto-imports work in generated templates
-    addServerImportsDir(resolve('./runtime/server/utils'))
-    addServerImportsDir(resolve('./runtime/server/data'))
-
-    // Register server API routes as virtual template files in .nuxt/
-    // Relative imports are rewritten to @commercejs/nuxt package export paths
-    // so Rollup can resolve them from any location (avoids pnpm symlink issues).
+    // Use addServerScanDir to tell Nitro to treat the package's server/
+    // directory as the app's own server/ directory. This enables:
+    // - Auto-import of utils/ (defineCommerceHandler, useAdminAPI, etc.)
+    // - Auto-import of data/ (citiesByCountry, countryMeta)
+    // - Auto-discovery of api/ route handlers with full auto-import injection
+    // - Auto-import of h3 built-ins (defineEventHandler, createError, etc.)
+    //
+    // Handler source files have NO explicit imports — they rely entirely
+    // on Nitro's auto-import system (the Nuxt server/utils pattern).
     if (options.apiRoutes) {
-      const apiDir = resolve('./runtime/server/api')
-      const routeCount = registerApiRoutes(apiDir, '/api')
-      logger.info(`Registered ${routeCount} server routes under ${options.apiBase}`)
+      addServerScanDir(resolve('./runtime/server'))
+      logger.info(`Registered server scan directory for commerce API routes`)
     }
 
     // Note: WASM handling was removed — Drizzle uses @neondatabase/serverless

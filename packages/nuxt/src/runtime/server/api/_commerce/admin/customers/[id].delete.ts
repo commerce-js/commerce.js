@@ -1,6 +1,4 @@
 // Admin: Delete customer
-import { defineEventHandler } from 'h3'
-import { useAdminAPI } from '../../../../utils/admin'
 
 export default defineEventHandler(async (event) => {
   const admin = useAdminAPI(event)
