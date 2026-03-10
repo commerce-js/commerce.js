@@ -1,5 +1,16 @@
 # @commercejs/nuxt
 
+## 0.6.12
+
+### Patch Changes
+
+- [`9b4de5b`](https://github.com/commerce-js/commerce.js/commit/9b4de5b8ebd0948e11bb8bb9d5680ef0f83572b2) Thanks [@masterde](https://github.com/masterde)! - Fix CF Workers deployment by rewriting route handler imports to use
+  Nitro's `#imports` virtual module instead of explicit package paths.
+
+  Explicit imports caused Rollup to create duplicate module identities
+  for functions like defineCommerceHandler and defineEventHandler,
+  leading to $1 renames and ReferenceError at runtime.
+
 ## 0.6.11
 
 ### Patch Changes
