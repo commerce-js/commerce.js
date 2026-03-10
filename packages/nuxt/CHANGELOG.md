@@ -1,5 +1,15 @@
 # @commercejs/nuxt
 
+## 0.6.8
+
+### Patch Changes
+
+- [`721c842`](https://github.com/commerce-js/commerce.js/commit/721c842b2c701a2ac43c0216349c172f0e128a1a) Thanks [@masterde](https://github.com/masterde)! - Rewrite relative imports to absolute paths in generated route templates
+
+  Fixes CF Workers deploy by combining template generation (addTemplate),
+  absolute import path rewriting, and nitro.externals.inline to ensure
+  all route handler dependencies are properly bundled.
+
 ## 0.6.7
 
 ### Patch Changes
