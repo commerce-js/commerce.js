@@ -1,5 +1,18 @@
 # @commercejs/nuxt
 
+## 0.6.10
+
+### Patch Changes
+
+- [`146c115`](https://github.com/commerce-js/commerce.js/commit/146c115299789907e4248022412bc414bd10690a) Thanks [@masterde](https://github.com/masterde)! - Fix defineCommerceHandler runtime error on Cloudflare Pages by using
+  package export paths (@commercejs/nuxt/runtime/server/...) instead of
+  absolute filesystem paths in generated route handler templates.
+
+  The absolute paths caused Rollup to treat the import as a different
+  module identity from the package's own internal exports, renaming
+  defineCommerceHandler to defineCommerceHandler$1 and causing an
+  Uncaught ReferenceError at Worker runtime.
+
 ## 0.6.9
 
 ### Patch Changes
