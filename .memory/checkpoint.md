@@ -1,21 +1,29 @@
 # Checkpoint
 
 ## Current Phase
-Phase 7 — Cloud Platform (Deploy Pipeline)
+Phase 7 — Cloud Platform (Sprint 1 Complete)
 
 ## Status
-GitHub Actions deploy pipeline implemented and pushed. GH workflow fixes verified (lockfile, cache). Awaiting dashboard CF Pages redeploy for automatic secret-setting to work.
+All 5 sprint tasks (T01-T05) completed. Deploy pipeline functional: Dashboard creates CF Pages + Neon DB, sets GH Actions secrets on user repos, triggers workflow dispatch. Nuxt module route issue on CF Workers was resolved. Ready for next sprint planning.
 
 ## Last Commits
-- `616c947` — fix: remove cache:pnpm from deploy workflow
-- `268e967` — fix: use tweetnacl for GH secrets encryption
-- `7491b39` — feat: add GitHub Actions deploy pipeline for storefronts
+- `1d1162b` — fix(nuxt): replace addServerScanDir with explicit addServerHandler registration
+- `d68c1b5` — fix(nuxt): strip defineRouteMeta from API route files
+- `dfc6264` — fix(nuxt): inject adapter name into server-side runtimeConfig
+
+## Current npm version
+`@commercejs/nuxt@0.6.0`
+
+## What's Working
+- Dashboard at `commercejs-cloud` on CF Pages (GitHub OAuth, project CRUD, deploy trigger)
+- GH Actions deploy pipeline (template repo → user repo → auto-deploy)
+- Cloudflare Queues for async provisioning with DLQ + retry
+- D1 schema with projects, deployments, env vars, domains tables
 
 ## Next Steps
-1. Verify dashboard CF Pages redeployed with tweetnacl fix (commit `268e967`)
-2. Test full end-to-end: create project → secrets auto-set → GH Actions deploys → domain live
-3. Clean up test projects (`demo-shop`, `final-test`)
-4. Continue Phase 7 tasks (T01-T05)
+1. Verify full end-to-end flow works in production (create project → auto-deploy → storefront live)
+2. Plan Phase 7 Sprint 2 (billing, logs viewer, admin features, polish)
+3. Clean up test projects (demo-shop, final-test)
 
 ## Detailed Checkpoint
-See [2026-02-28T0837.md](checkpoints/2026-02-28T0837.md)
+See [2026-03-10T0450.md](checkpoints/2026-03-10T0450.md)

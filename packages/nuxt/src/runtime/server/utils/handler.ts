@@ -13,9 +13,8 @@ import type { H3Event, EventHandler } from 'h3'
 import type { CommerceAdapter } from '@commercejs/types'
 import { isCommerceError } from '@commercejs/types'
 import { ZodError } from 'zod'
-import { useServerAdapter } from './adapter'
-import { createCommerceContext } from './context'
-import type { CommerceContext } from './context'
+import { useServerAdapter, createCommerceContext } from '#imports'
+import type { CommerceContext } from '#imports'
 
 /**
  * Define a commerce API handler with automatic adapter injection,

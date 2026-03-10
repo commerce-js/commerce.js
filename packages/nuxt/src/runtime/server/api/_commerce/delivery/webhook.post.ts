@@ -1,4 +1,4 @@
-import { defineCommerceHandler } from '../../utils/handler'
+import { defineCommerceHandler } from '#imports'
 import { createError, getHeader, readBody, readRawBody } from 'h3'
 
 export default defineCommerceHandler(async (event) => {

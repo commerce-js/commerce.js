@@ -145,3 +145,11 @@ GitHub's Actions secrets API requires NaCl sealed box encryption (`crypto_box_se
 - `pnpm install --frozen-lockfile` also requires lockfile
 - Template-generated repos don't have lockfiles initially
 - Use `--no-frozen-lockfile` and don't use `cache: pnpm` for template repos
+
+## Nuxt Module Server Routes on CF Workers (2026-03-02)
+- **`addServerScanDir` does NOT work for published npm modules** — auto-imports don't resolve in `node_modules`, and compile-time macros like `defineRouteMeta` aren't stripped from pre-compiled dist files
+- **`addServerHandler` with npm dist files also fails** — Nitro can't resolve relative imports (`../utils/handler`) from npm package files when bundling for CF Workers (`externals are not allowed`)
+- **The nuxt-modules skill explicitly says**: "Auto-imports don't work in `node_modules`. Runtime files must explicitly import."
+- **The correct approach**: Either use package export paths (`@commercejs/nuxt/server`) that Nitro can resolve, use Nitro `addServerTemplate` to generate route code at build time, or ship a single catch-all handler
+- **`^0.x.y` semver gotcha**: Caret ranges for 0.x versions only allow patch updates — `^0.5.1` means `>=0.5.1 <0.6.0`, NOT `>=0.5.1 <1.0.0`
+
