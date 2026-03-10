@@ -1,5 +1,15 @@
 # @commercejs/nuxt
 
+## 0.6.2
+
+### Patch Changes
+
+- [`a518dd1`](https://github.com/commerce-js/commerce.js/commit/a518dd1b508d02f636ca057cef856965c54c9c79) Thanks [@masterde](https://github.com/masterde)! - Make handler self-contained for Cloudflare Workers compatibility
+
+  Inline `useServerAdapter` and `createCommerceContext` directly into `handler.ts` to eliminate all cross-file imports. Route files now import `defineCommerceHandler` via the package exports path (`@commercejs/nuxt/runtime/server/utils/handler`) — a real npm-resolvable path that Nitro can always bundle.
+
+  Fixes `defineCommerceHandler is not defined` on CF Workers deploy.
+
 ## 0.6.1
 
 ### Patch Changes
