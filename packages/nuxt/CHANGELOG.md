@@ -1,5 +1,13 @@
 # @commercejs/nuxt
 
+## 0.6.1
+
+### Patch Changes
+
+- [`4b391ad`](https://github.com/commerce-js/commerce.js/commit/4b391ad78cc4986113d37dc9916c518bae97abe7) Thanks [@masterde](https://github.com/masterde)! - Fix route handler imports for Cloudflare Workers compatibility
+
+  Replace relative imports (`../utils/handler`) with `#imports` across all 74 route files and `handler.ts`. This fixes the "Cannot resolve ../utils/handler and externals are not allowed" build error when Nitro bundles the module for Cloudflare Workers.
+
 ## 0.5.3
 
 ### Patch Changes
