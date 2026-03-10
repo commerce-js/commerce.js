@@ -1,5 +1,19 @@
 # @commercejs/nuxt
 
+## 0.6.17
+
+### Patch Changes
+
+- [`f9590f8`](https://github.com/commerce-js/commerce.js/commit/f9590f80bcdc80a3ffa23de71a2407ebbf802a40) Thanks [@masterde](https://github.com/masterde)! - Remove all explicit imports from handler source files and rely on
+  Nuxt's server/utils auto-import pattern. Eliminates the need for
+  template generation and import transformation entirely. Handler files
+  now have zero imports — all functions (defineCommerceHandler, h3 utils,
+  data exports) are provided via addServerImportsDir auto-imports.
+
+- [`7f8f401`](https://github.com/commerce-js/commerce.js/commit/7f8f40189bd127bb01bf4c0380b9f24723b14741) Thanks [@masterde](https://github.com/masterde)! - Fix transformHandler regex to handle single-param delivery handlers
+  that use defineCommerceHandler(async (event) => {}). Previously the
+  regex required 2+ params (event, adapter) and missed 5 delivery handlers.
+
 ## 0.6.16
 
 ### Patch Changes
