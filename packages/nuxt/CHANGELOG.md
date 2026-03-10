@@ -1,5 +1,16 @@
 # @commercejs/nuxt
 
+## 0.6.4
+
+### Patch Changes
+
+- [`9a3bc5b`](https://github.com/commerce-js/commerce.js/commit/9a3bc5bb5ea2f15aaec57b7953a483a9e1bb6444) Thanks [@masterde](https://github.com/masterde)! - Force Nitro to inline @commercejs/nuxt runtime for CF Workers
+
+  Add nitro:config hook that pushes @commercejs/nuxt to
+  nitro.externals.inline. Without this, Nitro externalizes
+  node_modules by default, causing `defineCommerceHandler is not
+defined` on Cloudflare Workers and other edge runtimes.
+
 ## 0.6.3
 
 ### Patch Changes
