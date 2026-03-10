@@ -1,5 +1,17 @@
 # @commercejs/nuxt
 
+## 0.6.14
+
+### Patch Changes
+
+- [`4e1d9b3`](https://github.com/commerce-js/commerce.js/commit/4e1d9b310bfa7fc38fe1d3ba67f203ff4cef41a7) Thanks [@masterde](https://github.com/masterde)! - Fix CF Workers deployment by inlining defineCommerceHandler logic into
+  generated route templates, eliminating ALL external imports.
+
+  Templates are necessary (Rollup can't resolve relative imports in
+  node_modules), but previous template approaches created duplicate module
+  identities causing $1 renames. The inlined approach uses only Nitro
+  auto-imports, breaking the dependency chain entirely.
+
 ## 0.6.13
 
 ### Patch Changes
