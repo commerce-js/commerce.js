@@ -1,5 +1,11 @@
 # @commercejs/ui
 
+## 0.1.5
+
+### Patch Changes
+
+- [`36cf90a`](https://github.com/commerce-js/commerce.js/commit/36cf90a5b4187799182ee72f7243b151da1629a1) Thanks [@masterde](https://github.com/masterde)! - fix(ui): inline and transpile UI module for CF Workers SSR auto-imports
+
 ## 0.1.4
 
 ### Patch Changes
