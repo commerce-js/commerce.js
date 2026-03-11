@@ -99,7 +99,7 @@ export class DeployOrchestrator {
       // Step 5: Deploy to Cloudflare Pages via wrangler
       consola.info('Deploying to Cloudflare Pages...')
       const outputDir = this.resolveOutputDir(projectDir)
-      const deployUrl = await this.deployWithWrangler(projectName, outputDir, deployConfig)
+      const { url: deployUrl, deploymentId } = await this.deployWithWrangler(projectName, outputDir, deployConfig)
       consola.success(`Deployed to ${deployUrl}`)
 
       // Step 6: Set environment variables on Pages project
@@ -107,7 +107,13 @@ export class DeployOrchestrator {
       await this.setProjectEnvVars(projectName, env, deployConfig.envVars)
       consola.success('Environment variables set')
 
-      // Step 7: Health check
+      // Step 7: Poll deployment status until active
+      if (deploymentId) {
+        consola.info('Waiting for deployment to become active...')
+        await this.waitForDeploymentActive(projectName, deploymentId)
+      }
+
+      // Step 8: Health check
       consola.info('Running health check...')
       const healthy = await this.healthCheck(deployUrl)
       if (!healthy) {
@@ -118,7 +124,7 @@ export class DeployOrchestrator {
       }
 
       return {
-        id: `${projectName}-${Date.now()}`,
+        id: deploymentId || `${projectName}-${Date.now()}`,
         status: 'ready',
         url: deployUrl,
         deployedAt: new Date().toISOString(),
@@ -205,7 +211,7 @@ export class DeployOrchestrator {
     projectName: string,
     outputDir: string,
     deployConfig: DeployConfig,
-  ): Promise<string> {
+  ): Promise<{ url: string; deploymentId: string }> {
     const args = [
       'pages', 'deploy', outputDir,
       `--project-name=${projectName}`,
@@ -258,7 +264,13 @@ export class DeployOrchestrator {
     // Parse the deployed URL from wrangler output
     // wrangler outputs like: "✨ Deployment complete! Take a peek over at https://xxx.pages.dev"
     const urlMatch = result.stdout.match(/https:\/\/[\w.-]+\.pages\.dev/)
-    return urlMatch?.[0] ?? `https://${projectName}.pages.dev`
+    const url = urlMatch?.[0] ?? `https://${projectName}.pages.dev`
+
+    // Parse deployment ID from wrangler output (UUID format)
+    const idMatch = result.stdout.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)
+    const deploymentId = idMatch?.[1] ?? ''
+
+    return { url, deploymentId }
   }
 
   /**
@@ -538,6 +550,109 @@ export class DeployOrchestrator {
     ])
 
     consola.success('Project fully torn down')
+  }
+
+  // ---------------------------------------------------------------------------
+  // Deployment Status
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get the current status of a deployment.
+   */
+  async getDeploymentStatus(projectName: string, deploymentId: string): Promise<{
+    id: string
+    url: string
+    environment: string
+    stage: { name: string; status: string }
+  }> {
+    const deployment = await this.cloudflare.getDeployment(projectName, deploymentId)
+    return {
+      id: deployment.id,
+      url: deployment.url,
+      environment: deployment.environment,
+      stage: deployment.latest_stage,
+    }
+  }
+
+  /**
+   * Get deployment build logs.
+   */
+  async getDeploymentLogs(projectName: string, deploymentId: string): Promise<
+    Array<{ timestamp: string; line: string }>
+  > {
+    const logs = await this.cloudflare.getDeploymentLogs(projectName, deploymentId)
+    return logs.data
+  }
+
+  /**
+   * Poll a deployment until it reaches an active state or fails.
+   * Used internally after wrangler deploy to confirm the deployment is live.
+   */
+  private async waitForDeploymentActive(
+    projectName: string,
+    deploymentId: string,
+    maxWaitMs = 120_000,
+  ): Promise<void> {
+    const start = Date.now()
+    while (Date.now() - start < maxWaitMs) {
+      try {
+        const status = await this.cloudflare.getDeployment(projectName, deploymentId)
+        const stage = status.latest_stage
+
+        if (stage.status === 'success') {
+          consola.success(`Deployment ${deploymentId} is active`)
+          return
+        }
+        if (stage.status === 'failure') {
+          consola.error(`Deployment ${deploymentId} failed at stage: ${stage.name}`)
+          return
+        }
+
+        consola.debug(`Deployment stage: ${stage.name} — ${stage.status}`)
+      }
+      catch {
+        // API may not have the deployment indexed yet
+      }
+      await new Promise(r => setTimeout(r, 5000))
+    }
+    consola.warn(`Deployment status poll timed out after ${maxWaitMs / 1000}s`)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Custom Domains
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Add a custom domain to a store's Pages project.
+   *
+   * The merchant must first configure a CNAME record pointing their domain
+   * to `<project-name>.pages.dev`. Cloudflare handles SSL automatically.
+   *
+   * @returns Domain record with status ('active', 'pending', etc.)
+   */
+  async addCustomDomain(projectId: string, domain: string): Promise<{
+    id: string
+    domain: string
+    status: string
+  }> {
+    const projectName = `cjs-${projectId}`
+    consola.info(`Adding custom domain ${domain} to ${projectName}...`)
+
+    const result = await this.cloudflare.addCustomDomain(projectName, domain)
+    consola.success(`Domain ${domain} added (status: ${result.status})`)
+
+    return result
+  }
+
+  /**
+   * Remove a custom domain from a store.
+   */
+  async removeCustomDomain(projectId: string, domainId: string): Promise<void> {
+    const projectName = `cjs-${projectId}`
+    consola.info(`Removing domain ${domainId} from ${projectName}...`)
+
+    await this.cloudflare.removeCustomDomain(projectName, domainId)
+    consola.success('Custom domain removed')
   }
 
   // ---------------------------------------------------------------------------
