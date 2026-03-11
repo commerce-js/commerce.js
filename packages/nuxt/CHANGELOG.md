@@ -1,5 +1,17 @@
 # @commercejs/nuxt
 
+## 0.6.25
+
+### Patch Changes
+
+- [`0fca243`](https://github.com/commerce-js/commerce.js/commit/0fca24318345c46ffab674de6aac6f59cfec0729) Thanks [@masterde](https://github.com/masterde)! - Skip migration & seed when DB is already initialized (CF Workers subrequest fix).
+
+  Cloudflare Workers enforces a 50 subrequest limit per invocation. Previously,
+  the adapter plugin always ran migrateDrizzle() (~31 DDL statements) + seedDrizzle()
+  (~10 INSERTs) on every cold start, exhausting the limit before any actual API
+  queries could run. Now checks `SELECT 1 FROM store_info LIMIT 1` first (1 subrequest)
+  and skips migration/seed if the database is already initialized.
+
 ## 0.6.24
 
 ### Patch Changes
