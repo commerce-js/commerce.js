@@ -16,7 +16,7 @@
 // ---------------------------------------------------------------------------
 
 import { eq } from 'drizzle-orm'
-import sodium from 'libsodium-wrappers-sumo'
+import sealedbox from 'tweetnacl-sealedbox-js'
 import * as schema from '../database/schema'
 import type { DeployJobMessage } from './deploy-queue'
 
@@ -305,16 +305,14 @@ async function setGitHubActionsSecrets(
 
 /**
  * Encrypt a secret value using the repo's public key (NaCl sealed box).
- * Uses libsodium's crypto_box_seal — the exact algorithm GitHub expects.
+ * Uses tweetnacl-sealedbox-js — pure JS, compatible with CF Workers.
  */
-async function encryptSecret(publicKeyBase64: string, secretValue: string): Promise<string> {
-  await sodium.ready
-
+function encryptSecret(publicKeyBase64: string, secretValue: string): string {
   const publicKeyBytes = base64ToUint8Array(publicKeyBase64)
   const encoder = new TextEncoder()
   const messageBytes = encoder.encode(secretValue)
 
-  const encrypted = sodium.crypto_box_seal(messageBytes, publicKeyBytes)
+  const encrypted = sealedbox.seal(messageBytes, publicKeyBytes)
   return uint8ArrayToBase64(encrypted)
 }
 

@@ -44,15 +44,18 @@ importers:
       drizzle-orm:
         specifier: ^0.45.1
         version: 0.45.1(@cloudflare/workers-types@4.20260217.0)(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@prisma/client@7.4.0(prisma@7.4.0(@types/react@19.2.13)(better-sqlite3@12.6.2)(magicast@0.5.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/better-sqlite3@7.6.13)(@types/pg@8.18.0)(better-sqlite3@12.6.2)(gel@2.2.0)(mysql2@3.15.3)(pg@8.18.0)(postgres@3.4.7)(prisma@7.4.0(@types/react@19.2.13)(better-sqlite3@12.6.2)(magicast@0.5.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))
-      libsodium-wrappers-sumo:
-        specifier: ^0.8.2
-        version: 0.8.2
       nuxt:
         specifier: ^4.3.0
         version: 4.3.1(j7glnen2uhkbr4snkfnctlvu2q)
       tailwindcss:
         specifier: ^4.2.1
         version: 4.2.1
+      tweetnacl:
+        specifier: ^1.0.3
+        version: 1.0.3
+      tweetnacl-sealedbox-js:
+        specifier: ^1.2.0
+        version: 1.2.0
     devDependencies:
       '@iconify-json/lucide':
         specifier: ^1.2.89
@@ -4743,6 +4746,9 @@ packages:
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
 
+  blakejs@1.2.1:
+    resolution: {integrity: sha512-QXUSXI3QVc/gJME0dBpXrag1kbzOqCjCX8/b54ntNyW6sjtoqxqRk3LTmXzaJoh71zMsDCjM+47jS7XiwN/+fQ==}
+
   body-parser@2.2.2:
     resolution: {integrity: sha512-oP5VkATKlNwcgvxi0vM0p/D3n2C3EReYVX+DNYs5TjZFn/oQt2j+4sVJtSMr18pdRr8wjTcBl6LoV+FUwzPmNA==}
     engines: {node: '>=18'}
@@ -6862,12 +6868,6 @@ packages:
     resolution: {integrity: sha512-DeXj9X5xDCjgKLU/7RR+/HQEVzuuEUiwldwOGsHK/sfAfELGWEyTcf0x+uOvCvK3O2zPmZePXWL85vtia6GyZw==}
     engines: {node: '>=16'}
     hasBin: true
-
-  libsodium-sumo@0.8.2:
-    resolution: {integrity: sha512-uMgnjphJ717jLN+jFG1HUgNrK/gOVVfaO1DGZ1Ig/fKLKLVhvaH/sM1I1v784JFvmkJDaczDpi7xSYC4Jvdo1Q==}
-
-  libsodium-wrappers-sumo@0.8.2:
-    resolution: {integrity: sha512-wd1xAY++Kr6VMikSaa4EPRAHJmFvNlGWiiwU3Jh3GR1zRYF3/I3vy/wYsr4k3LVsNzwb9sqfEQ4LdVQ6zEebyQ==}
 
   lighthouse-logger@2.0.2:
     resolution: {integrity: sha512-vWl2+u5jgOQuZR55Z1WM0XDdrJT6mzMP8zHUct7xTlWhuQs+eV0g+QL0RQdFjT54zVmbhLCP8vIVpy1wGn/gCg==}
@@ -9189,6 +9189,12 @@ packages:
   turbo@2.8.3:
     resolution: {integrity: sha512-8Osxz5Tu/Dw2kb31EAY+nhq/YZ3wzmQSmYa1nIArqxgCAldxv9TPlrAiaBUDVnKA4aiPn0OFBD1ACcpc5VFOAQ==}
     hasBin: true
+
+  tweetnacl-sealedbox-js@1.2.0:
+    resolution: {integrity: sha512-QoCr8K2hwri+ky7SUa22oSre8g88XaWi0hwwWd16pJMuDyn5gL/UyE0PyR2EOFEMJ70T2trJ9+Sv+Qa18olEmQ==}
+
+  tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -15072,6 +15078,8 @@ snapshots:
 
   blake3-wasm@2.1.5: {}
 
+  blakejs@1.2.1: {}
+
   body-parser@2.2.2:
     dependencies:
       bytes: 3.1.2
@@ -17532,12 +17540,6 @@ snapshots:
   lib0@0.2.117:
     dependencies:
       isomorphic.js: 0.2.5
-
-  libsodium-sumo@0.8.2: {}
-
-  libsodium-wrappers-sumo@0.8.2:
-    dependencies:
-      libsodium-sumo: 0.8.2
 
   lighthouse-logger@2.0.2:
     dependencies:
@@ -21013,6 +21015,13 @@ snapshots:
       turbo-linux-arm64: 2.8.3
       turbo-windows-64: 2.8.3
       turbo-windows-arm64: 2.8.3
+
+  tweetnacl-sealedbox-js@1.2.0:
+    dependencies:
+      blakejs: 1.2.1
+      tweetnacl: 1.0.3
+
+  tweetnacl@1.0.3: {}
 
   type-check@0.4.0:
     dependencies:
