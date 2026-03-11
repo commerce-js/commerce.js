@@ -1,5 +1,15 @@
 # @commercejs/platform
 
+## 0.5.4
+
+### Patch Changes
+
+- [`ad1dfca`](https://github.com/commerce-js/commerce.js/commit/ad1dfca39a7c3a58630cbaff828e14c67c8410be) Thanks [@masterde](https://github.com/masterde)! - Serialize catalog queries for Cloudflare Workers compatibility.
+
+  The Drizzle ORM neon-http driver fails on parallel queries (Promise.all) on
+  Cloudflare Workers with "Failed query" errors. Switched to sequential queries
+  in fetchProductRelations, getProducts, and findProducts.
+
 ## 0.5.3
 
 ### Patch Changes
