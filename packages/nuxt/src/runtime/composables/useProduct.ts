@@ -1,4 +1,4 @@
-import { useFetch, useRuntimeConfig, toValue } from '#imports'
+import { useFetch, useRuntimeConfig, toValue, computed } from '#imports'
 import type { MaybeRef } from 'vue'
 import type { GetProductParams, Product } from '@commercejs/types'
 

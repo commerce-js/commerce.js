@@ -1,4 +1,4 @@
-import { useFetch, useRuntimeConfig } from '#imports'
+import { useFetch, useRuntimeConfig, computed } from '#imports'
 import type { StoreInfo } from '@commercejs/types'
 
 /**
