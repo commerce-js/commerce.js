@@ -1,5 +1,11 @@
 # @commercejs/nuxt
 
+## 0.6.26
+
+### Patch Changes
+
+- [`8c93ac4`](https://github.com/commerce-js/commerce.js/commit/8c93ac4619b3a81c55d3794d78cd857f748f8141) Thanks [@masterde](https://github.com/masterde)! - fix(nuxt): add explicit computed import to composables for CF Workers SSR compatibility
+
 ## 0.6.25
 
 ### Patch Changes
