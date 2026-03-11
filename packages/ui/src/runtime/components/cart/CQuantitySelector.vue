@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAppConfig } from '#imports'
 /**
  * CQuantitySelector — Increment/decrement quantity input.
  * Follows Nuxt UI conventions: ui prop, slot-based theming, semantic tokens.

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAppConfig } from '#imports'
 import type { ProductOption, LocalizedString, Id } from '@commercejs/types'
 
 /**

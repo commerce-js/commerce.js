@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed,ref,watch } from 'vue'
+import { useAppConfig } from '#imports'
 import type { CommandPaletteGroup } from '#ui/types'
 
 /**

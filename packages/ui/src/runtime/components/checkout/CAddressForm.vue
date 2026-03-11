@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useAppConfig } from '#imports'
 import type { Address } from '@commercejs/types'
 
 /**

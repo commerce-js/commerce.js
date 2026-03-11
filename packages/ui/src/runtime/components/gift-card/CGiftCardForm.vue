@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { GiftCard, PurchaseGiftCardInput } from '@commercejs/types'
 import { useFormField } from '@nuxt/ui/runtime/composables/useFormField.js'
-import { ref, computed, nextTick } from 'vue'
+import { computed,ref,nextTick } from 'vue'
+import { useAppConfig } from '#imports'
 
 /**
  * CGiftCardForm — Gift card purchase form.

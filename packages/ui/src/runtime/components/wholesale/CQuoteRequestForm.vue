@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed,ref } from 'vue'
+import { useAppConfig } from '#imports'
 import type { CreateQuoteInput } from '@commercejs/types'
 
 /**

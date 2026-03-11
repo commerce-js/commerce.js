@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAppConfig } from '#imports'
 import type { DiscountablePrice, Price } from '@commercejs/types'
 
 /**

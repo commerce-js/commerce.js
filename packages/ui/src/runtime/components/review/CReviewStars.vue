@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAppConfig } from '#imports'
 /**
  * CReviewStars — Star rating display (read-only or interactive).
  * Uses Heroicons star icons via UIcon.

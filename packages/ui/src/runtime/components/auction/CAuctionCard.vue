@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed,ref,onMounted,onUnmounted } from 'vue'
+import { useAppConfig } from '#imports'
 import type { Product, AuctionProductMeta } from '@commercejs/types'
 
 /**

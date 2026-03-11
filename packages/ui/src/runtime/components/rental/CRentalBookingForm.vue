@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed,ref } from 'vue'
+import { useAppConfig } from '#imports'
 import type { RentalProductMeta, AvailabilitySlot, CreateRentalBookingInput } from '@commercejs/types'
 import { today, getLocalTimeZone } from '@internationalized/date'
 import type { DateValue } from '@internationalized/date'

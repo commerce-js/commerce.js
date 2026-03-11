@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAppConfig } from '#imports'
 /**
  * CCheckoutStepper — Multi-step checkout progress indicator.
  * Wraps Nuxt UI's UStepper with ecommerce-specific defaults.

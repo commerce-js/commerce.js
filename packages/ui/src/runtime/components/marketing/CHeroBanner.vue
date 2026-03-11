@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAppConfig } from '#imports'
 /**
  * CHeroBanner — Full-width marketing hero banner with CTA.
  * Supports image/video backgrounds, overlays, and multiple content slots.

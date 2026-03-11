@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAppConfig } from '#imports'
 /**
  * CEmptyState — Reusable empty state for cart, wishlist, search results, etc.
  */
