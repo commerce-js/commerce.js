@@ -1,8 +1,15 @@
 // @commercejs/ui — Default theme configuration
 // Follows Nuxt UI conventions: slots, variants, defaultVariants
 // Users can override any of these in their own app.config.ts
+//
+// NOTE: We export the raw config object instead of using defineAppConfig()
+// because this file ships via node_modules and the Nuxt auto-import
+// transform that provides defineAppConfig may not apply in all SSR
+// environments (e.g., Cloudflare Workers). defineAppConfig is an identity
+// function used only for type inference, so exporting the object directly
+// is functionally identical.
 
-export default defineAppConfig({
+export default {
   ui: {
     // ---- Product Components ----
 
@@ -389,4 +396,4 @@ export default defineAppConfig({
       },
     },
   },
-})
+}
