@@ -275,9 +275,10 @@ export class DeployOrchestrator {
 
   /**
    * Set environment variables on a Cloudflare Pages project.
+   * Uses the CF REST API via the CloudflareProvider.
    */
   private async setProjectEnvVars(
-    _projectName: string,
+    projectName: string,
     env: CloudEnvironment,
     extraVars?: Record<string, string>,
   ): Promise<void> {
@@ -292,27 +293,31 @@ export class DeployOrchestrator {
       ...(extraVars ?? {}),
     }
 
-    // Use wrangler to set secrets (Pages env vars)
-    for (const [key, value] of Object.entries(vars)) {
-      try {
-        await execa('npx', [
-          'wrangler', 'pages', 'project', 'edit',
-          '--var', `${key}:${value}`,
-        ], {
-          env: {
-            ...process.env,
-            CLOUDFLARE_API_TOKEN: this.config.cloudflare.apiToken,
-            CLOUDFLARE_ACCOUNT_ID: this.config.cloudflare.accountId,
-          },
-          stdout: 'pipe',
-          stderr: 'pipe',
-        })
-      }
-      catch {
-        // Env var setting is best-effort — project may work without it
-        consola.warn(`Failed to set env var: ${key}`)
-      }
-    }
+    await this.cloudflare.setProjectEnvVars(projectName, vars)
+  }
+
+  /**
+   * Get environment variables for a store's Pages project.
+   * Returns the variables configured on production and preview environments.
+   * Note: Secret values are redacted by the CF API.
+   */
+  async getEnvVars(projectId: string): Promise<{
+    production: Record<string, { type: string; value?: string }>
+    preview: Record<string, { type: string; value?: string }>
+  }> {
+    const projectName = `cjs-${projectId}`
+    return this.cloudflare.getProjectEnvVars(projectName)
+  }
+
+  /**
+   * Set/update environment variables on a store's Pages project.
+   * Merges with existing variables (CF PATCH behavior).
+   */
+  async setEnvVars(projectId: string, vars: Record<string, string>): Promise<void> {
+    const projectName = `cjs-${projectId}`
+    consola.info(`Setting ${Object.keys(vars).length} env vars on ${projectName}...`)
+    await this.cloudflare.setProjectEnvVars(projectName, vars)
+    consola.success('Environment variables updated')
   }
 
   /**

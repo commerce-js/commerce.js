@@ -233,6 +233,79 @@ export class CloudflareProvider {
   }
 
   // ---------------------------------------------------------------------------
+  // Environment Variables
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Set environment variables on a Pages project.
+   *
+   * Uses the CF API PATCH endpoint to update deployment_configs.
+   * Variables are set on both production and preview environments.
+   * Secrets (DATABASE_URL, NUXT_SESSION_PASSWORD, etc.) are set as encrypted
+   * "secret_text" type, plain config vars as "plain_text".
+   */
+  async setProjectEnvVars(
+    projectName: string,
+    vars: Record<string, string>,
+    environment: 'production' | 'preview' | 'both' = 'both',
+  ): Promise<void> {
+    // Build env_vars object — treat known sensitive keys as secrets
+    const SENSITIVE_KEYS = [
+      'DATABASE_URL', 'NUXT_SESSION_PASSWORD', 'STRIPE_SECRET_KEY',
+      'TAP_SECRET_KEY', 'API_SECRET', 'JWT_SECRET',
+    ]
+
+    const envVars: Record<string, { type: string; value: string }> = {}
+    for (const [key, value] of Object.entries(vars)) {
+      const isSensitive = SENSITIVE_KEYS.some(sk => key.toUpperCase().includes(sk))
+        || key.toUpperCase().includes('SECRET')
+        || key.toUpperCase().includes('PASSWORD')
+        || key.toUpperCase().includes('TOKEN')
+      envVars[key] = {
+        type: isSensitive ? 'secret_text' : 'plain_text',
+        value,
+      }
+    }
+
+    // Build the deployment_configs update body
+    const body: Record<string, any> = { deployment_configs: {} }
+
+    if (environment === 'production' || environment === 'both') {
+      body.deployment_configs.production = { env_vars: envVars }
+    }
+    if (environment === 'preview' || environment === 'both') {
+      body.deployment_configs.preview = { env_vars: envVars }
+    }
+
+    await this.client(
+      `/accounts/${this.accountId}/pages/projects/${projectName}`,
+      {
+        method: 'PATCH',
+        body,
+      },
+    )
+  }
+
+  /**
+   * Get environment variables for a Pages project.
+   *
+   * Returns the variable names and types (secret values are redacted by CF API).
+   */
+  async getProjectEnvVars(projectName: string): Promise<{
+    production: Record<string, { type: string; value?: string }>
+    preview: Record<string, { type: string; value?: string }>
+  }> {
+    const response = await this.client<{ result: any }>(
+      `/accounts/${this.accountId}/pages/projects/${projectName}`,
+    )
+
+    const prodVars = response.result?.deployment_configs?.production?.env_vars ?? {}
+    const previewVars = response.result?.deployment_configs?.preview?.env_vars ?? {}
+
+    return { production: prodVars, preview: previewVars }
+  }
+
+  // ---------------------------------------------------------------------------
   // Teardown
   // ---------------------------------------------------------------------------
 
