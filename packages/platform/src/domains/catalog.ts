@@ -95,19 +95,25 @@ export function createCatalogDomain(currency: string) {
     }
   }
 
-  /** Fetch full product relations */
+  /**
+   * Fetch full product relations.
+   *
+   * Queries are serialized (not parallel) to work around a Drizzle ORM
+   * neon-http driver bug where Promise.all causes "Failed query" errors
+   * on Cloudflare Workers.
+   */
   async function fetchProductRelations(productId: string) {
-    const [images, variants, attributes, categoryIds, tags] = await Promise.all([
-      findProductImages(productId),
-      findProductVariants(productId),
-      findProductAttributes(productId),
-      findProductCategoryIds(productId),
-      findProductTags(productId),
-    ])
+    const images = await findProductImages(productId)
+    const variants = await findProductVariants(productId)
+    const attributes = await findProductAttributes(productId)
+    const categoryIds = await findProductCategoryIds(productId)
+    const tags = await findProductTags(productId)
 
-    const categories = categoryIds.length > 0
-      ? (await Promise.all(categoryIds.map(id => findCategoryById(id)))).filter(Boolean)
-      : []
+    const categories: any[] = []
+    for (const id of categoryIds) {
+      const cat = await findCategoryById(id)
+      if (cat) categories.push(cat)
+    }
 
     return { images, variants, attributes, categories, tags }
   }
@@ -164,12 +170,13 @@ export function createCatalogDomain(currency: string) {
         offset,
       })
 
-      const products = await Promise.all(
-        rows.map(async (row) => {
-          const related = await fetchProductRelations(row.id)
-          return mapProduct(row, related)
-        })
-      )
+      // Serialize product relation fetching — Drizzle neon-http driver
+      // doesn't support parallel queries on CF Workers.
+      const products: Product[] = []
+      for (const row of rows) {
+        const related = await fetchProductRelations(row.id)
+        products.push(mapProduct(row, related))
+      }
 
       return {
         products: {

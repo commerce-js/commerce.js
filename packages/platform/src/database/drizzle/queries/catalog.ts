@@ -42,16 +42,19 @@ export async function findProducts(opts: {
     : schema.products.createdAt
   const orderFn = opts.orderBy?.direction === 'asc' ? asc : desc
 
-  const [rows, countResult] = await Promise.all([
-    db.select().from(schema.products)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(orderFn(sortCol))
-      .limit(opts.limit)
-      .offset(opts.offset),
-    db.select({ count: sql<number>`count(*)` })
-      .from(schema.products)
-      .where(conditions.length > 0 ? and(...conditions) : undefined),
-  ])
+  // Queries are serialized — Drizzle neon-http driver doesn't support
+  // parallel queries on CF Workers.
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+  const rows = await db.select().from(schema.products)
+    .where(whereClause)
+    .orderBy(orderFn(sortCol))
+    .limit(opts.limit)
+    .offset(opts.offset)
+
+  const countResult = await db.select({ count: sql<number>`count(*)` })
+    .from(schema.products)
+    .where(whereClause)
 
   return { rows, total: countResult[0]?.count ?? 0 }
 }
