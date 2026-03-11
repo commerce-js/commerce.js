@@ -42,6 +42,21 @@ const commerceUIModule: NuxtModule<CommerceUIModuleOptions> = defineNuxtModule<C
       pathPrefix: false,
     })
 
+    // Force Nitro to inline @commercejs/ui runtime files in the SSR bundle.
+    // Without this, Nuxt's auto-import transform (computed, ref, useAppConfig, etc.)
+    // does not apply to files in node_modules, causing ReferenceError on CF Workers.
+    nuxt.hook('nitro:config', (nitroConfig: any) => {
+      nitroConfig.externals = nitroConfig.externals || {}
+      nitroConfig.externals.inline = nitroConfig.externals.inline || []
+      nitroConfig.externals.inline.push('@commercejs/ui')
+    })
+
+    // Also add to Vite's transpile list so Vue SFC auto-imports work
+    nuxt.options.build.transpile = nuxt.options.build.transpile || []
+    if (!nuxt.options.build.transpile.includes('@commercejs/ui')) {
+      nuxt.options.build.transpile.push('@commercejs/ui')
+    }
+
     // Extend app.config with default theme definitions
     nuxt.hook('app:resolve', (app) => {
       app.configs.push(resolve('./runtime/app.config'))
