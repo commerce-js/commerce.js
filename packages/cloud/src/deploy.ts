@@ -269,8 +269,14 @@ export class DeployOrchestrator {
     env: CloudEnvironment,
     extraVars?: Record<string, string>,
   ): Promise<void> {
+    // Auto-generate a session password for nuxt-auth-utils cookie encryption.
+    // Without this, SSR crashes with "Error: Empty password" on first request.
+    // User-provided extraVars override this default if explicitly set.
+    const sessionPassword = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+
     const vars: Record<string, string> = {
       DATABASE_URL: env.dbConnectionString,
+      NUXT_SESSION_PASSWORD: sessionPassword,
       ...(extraVars ?? {}),
     }
 
