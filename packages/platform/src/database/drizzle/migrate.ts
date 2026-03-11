@@ -6,6 +6,7 @@
 //
 // This module exports a helper for programmatic migration during server startup.
 
+import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { sql } from 'drizzle-orm'
 
@@ -19,7 +20,8 @@ export async function migrateDrizzle(connectionString?: string) {
   let db: ReturnType<typeof drizzle>
 
   if (connectionString) {
-    db = drizzle(connectionString)
+    const client = neon(connectionString)
+    db = drizzle({ client })
   } else {
     // Import the existing db instance
     const { getDb } = await import('./client.js')
