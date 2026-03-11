@@ -39,15 +39,29 @@ async function initAdapter(): Promise<CommerceAdapter> {
 
     console.log('[commerce] Database: PostgreSQL (Neon via Drizzle)')
 
-    // 1. Initialize Drizzle connection
-    initDrizzle(connectionString)
+    // 1. Initialize Drizzle connection (no subrequests — just creates client)
+    const db = initDrizzle(connectionString)
 
-    // 2. Run migrations (idempotent — CREATE TABLE IF NOT EXISTS)
-    console.log('[commerce] Running database migrations...')
-    await migrateDrizzle(connectionString)
-    console.log('[commerce] Migrations complete')
+    // 2. Check if DB is already initialized (1 subrequest).
+    //    CF Workers has a 50 subrequest limit per invocation.
+    //    migrateDrizzle() uses ~31 subrequests (CREATE TABLE IF NOT EXISTS),
+    //    seedDrizzle() uses 10+, leaving no budget for actual API queries.
+    let needsMigration = false
+    try {
+      const { sql } = await import('drizzle-orm')
+      await db.execute(sql`SELECT 1 FROM store_info LIMIT 1`)
+      console.log('[commerce] Database already initialized, skipping migration')
+    } catch {
+      needsMigration = true
+      console.log('[commerce] Database not initialized, running migrations...')
+    }
 
-    // 3. Create adapter (seeds initial admin user)
+    if (needsMigration) {
+      await migrateDrizzle(connectionString)
+      console.log('[commerce] Migrations complete')
+    }
+
+    // 3. Create adapter (skips initDatabase since we already initialized)
     console.log('[commerce] Creating platform adapter...')
     const currency = commerceConfig.currency
       || process.env.COMMERCE_CURRENCY
@@ -62,15 +76,17 @@ async function initAdapter(): Promise<CommerceAdapter> {
     _adminApi = result.admin
     console.log('[commerce] Platform adapter created successfully')
 
-    // 4. Seed demo data
-    try {
-      const { seedDrizzle } = await import('@commercejs/platform')
-      await seedDrizzle(getDrizzleDb())
-      console.log('[commerce] Demo data seeded successfully')
-    } catch (err: any) {
-      // 23505 = PostgreSQL unique constraint violation (data already seeded)
-      if (err?.code !== '23505') {
-        console.warn('[commerce] Seed skipped:', err?.message || err)
+    // 4. Seed demo data (only if we just migrated)
+    if (needsMigration) {
+      try {
+        const { seedDrizzle } = await import('@commercejs/platform')
+        await seedDrizzle(getDrizzleDb())
+        console.log('[commerce] Demo data seeded successfully')
+      } catch (err: any) {
+        // 23505 = PostgreSQL unique constraint violation (data already seeded)
+        if (err?.code !== '23505') {
+          console.warn('[commerce] Seed skipped:', err?.message || err)
+        }
       }
     }
   } else {
