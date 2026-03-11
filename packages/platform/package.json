@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/platform",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Native commerce engine — own your data, implement CommerceAdapter without external platforms",
   "repository": {
     "type": "git",
