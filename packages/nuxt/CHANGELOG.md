@@ -1,5 +1,14 @@
 # @commercejs/nuxt
 
+## 0.6.22
+
+### Patch Changes
+
+- [`fcdeba0`](https://github.com/commerce-js/commerce.js/commit/fcdeba0e411512e66cabf13e92cee54129ccb553) Thanks [@masterde](https://github.com/masterde)! - Auto-migrate database on platform adapter startup. Previously, new stores deployed
+  with the platform adapter would get 500 errors because the Neon database had no
+  tables. Now `migrateDrizzle()` runs idempotently on first request, creating all
+  tables via `CREATE TABLE IF NOT EXISTS` before the adapter initializes.
+
 ## 0.6.21
 
 ### Patch Changes
