@@ -157,4 +157,11 @@ GitHub's Actions secrets API requires NaCl sealed box encryption (`crypto_box_se
 - **Key takeaway:** For Nuxt modules providing server API routes, use `addServerScanDir` not `addServerHandler`. This is the only API that participates in Nitro's auto-import injection pipeline. Handler source files should NOT have explicit imports — rely on auto-imports from `server/utils/`.
 - **`^0.x.y` semver gotcha**: Caret ranges for 0.x versions only allow patch updates — `^0.5.1` means `>=0.5.1 <0.6.0`, NOT `>=0.5.1 <1.0.0`
 
+## libsodium-wrappers-sumo Crashes on CF Workers (2026-03-11)
+- `libsodium-wrappers-sumo` uses WASM — crashes on Cloudflare Workers runtime
+- Used in deploy-provisioner for NaCl sealed-box encryption (GitHub Actions secrets API)
+- **✅ Fix:** Replaced with `tweetnacl-sealedbox-js` — pure JS, same algorithm, CF Workers compatible
+- This caused new stores created via dashboard to deploy without CF credentials → failed GH Actions runs
+
+
 
