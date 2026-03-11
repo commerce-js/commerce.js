@@ -1,5 +1,11 @@
 # @commercejs/ui
 
+## 0.1.6
+
+### Patch Changes
+
+- [`018d8f4`](https://github.com/commerce-js/commerce.js/commit/018d8f4d6dd6299218d45678540eef7340fac0d1) Thanks [@masterde](https://github.com/masterde)! - fix(ui): add explicit Vue and Nuxt imports to all components for SSR compatibility
+
 ## 0.1.5
 
 ### Patch Changes
