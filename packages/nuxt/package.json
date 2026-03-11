@@ -1,6 +1,6 @@
 {
   "name": "@commercejs/nuxt",
-  "version": "0.6.23",
+  "version": "0.6.24",
   "description": "CommerceJS Nuxt module — composables, plugin, and auto-generated REST API",
   "repository": {
     "type": "git",
