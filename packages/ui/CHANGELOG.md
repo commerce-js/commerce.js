@@ -1,5 +1,11 @@
 # @commercejs/ui
 
+## 0.1.4
+
+### Patch Changes
+
+- [`019bbbf`](https://github.com/commerce-js/commerce.js/commit/019bbbf42a5dcf52aac979c9f123b0c51dfa2959) Thanks [@masterde](https://github.com/masterde)! - fix(ui): remove defineAppConfig wrapper for CF Workers SSR compatibility
+
 ## 0.1.3
 
 ### Patch Changes
