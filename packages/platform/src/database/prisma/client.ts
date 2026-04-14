@@ -18,14 +18,24 @@
 // ./generated/.
 // ---------------------------------------------------------------------------
 
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { PrismaClient } from './generated/client.js'
 import { PrismaNeon } from '@prisma/adapter-neon'
 
 /** Clients keyed by connection string — one client per merchant DB */
 const clientCache = new Map<string, PrismaClient>()
 
-/** Module-level singleton — set by initPrisma(), read by getDb() */
+/** Module-level singleton — set by initPrisma(), read by getDb() as a fallback */
 let _db: PrismaClient | null = null
+
+/**
+ * Per-request tenant store. Nitro middleware on the fly/eaas branch calls
+ * `bindDb(client)` inside the request's async frame so every downstream
+ * `getDb()` returns that merchant's Prisma client — even though the domain
+ * queries themselves don't accept a `db` parameter. Safe under concurrent
+ * requests because AsyncLocalStorage is scoped to the async context tree.
+ */
+const tenantStore = new AsyncLocalStorage<PrismaClient>()
 
 /**
  * Get or create a PrismaClient for the given Neon connection string.
@@ -52,17 +62,45 @@ export function initPrisma(connectionString: string): PrismaClient {
 }
 
 /**
- * Get the default single-tenant client. Throws if not initialized.
+ * Get the current request's Prisma client. Resolution order:
+ *   1. The tenant-scoped client set by `bindDb()` in middleware.
+ *   2. The module-level singleton set by `initPrisma()`.
+ *   3. Throw.
+ *
  * Matches the Drizzle client's `getDb()` contract so domain queries can
  * swap drivers without being touched.
  */
 export function getDb(): PrismaClient {
-  if (!_db) {
-    throw new Error(
-      'Prisma client not initialized. Call initPrisma(connectionString) first.',
-    )
-  }
-  return _db
+  const scoped = tenantStore.getStore()
+  if (scoped) return scoped
+  if (_db) return _db
+  throw new Error(
+    'Prisma client not initialized. Call initPrisma(connectionString) for '
+    + 'single-tenant use, or bindDb(merchantClient) inside a per-request '
+    + 'async frame for multi-tenant (fly/eaas) use.',
+  )
+}
+
+/**
+ * Bind a Prisma client to the current async context — subsequent `getDb()`
+ * calls in the same async tree return this client. Uses
+ * `AsyncLocalStorage.enterWith` so framework middleware can set the client
+ * without needing to wrap the handler's execution in a callback.
+ *
+ * Safe under concurrent requests: each request has its own async context,
+ * so bindings don't leak between tenants.
+ */
+export function bindDb(client: PrismaClient): void {
+  tenantStore.enterWith(client)
+}
+
+/**
+ * Run a callback with a specific tenant client bound. Use when you control
+ * the callback's execution (e.g. BullMQ job handlers); use `bindDb()` when
+ * the framework drives the async frame (e.g. Nitro middleware).
+ */
+export function runWithDb<T>(client: PrismaClient, fn: () => T): T {
+  return tenantStore.run(client, fn)
 }
 
 /** Reset the default singleton (for tests). Does not touch the URL cache. */

@@ -8,7 +8,7 @@
 // the re-export below and domain code doesn't change.
 
 // Prisma (active)
-export { initPrisma, getDb, getDb as getPrismaDb, resetDb } from './prisma/client.js'
+export { initPrisma, getDb, getDb as getPrismaDb, resetDb, bindDb, runWithDb } from './prisma/client.js'
 export type { PrismaDatabase } from './prisma/client.js'
 export { getPrismaClient, disconnectPrismaClient, disconnectAll } from './prisma/client.js'
 

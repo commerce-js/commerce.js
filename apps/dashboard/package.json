@@ -12,10 +12,13 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@commercejs/platform": "workspace:*",
+    "@commercejs/types": "workspace:*",
     "@nuxt/ui": "^4.4.0",
     "@prisma/adapter-neon": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@vueuse/core": "^14.2.0",
+    "lru-cache": "^11.2.5",
     "nuxt": "^4.3.0",
     "tailwindcss": "^4.2.1"
   },
