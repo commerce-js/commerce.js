@@ -403,6 +403,11 @@ export const ModelName = {
   ProductAttribute: 'ProductAttribute',
   ProductCategory: 'ProductCategory',
   ProductTag: 'ProductTag',
+  Profile: 'Profile',
+  ProfileAddress: 'ProfileAddress',
+  ProfilePaymentMethod: 'ProfilePaymentMethod',
+  ProfileMerchantLink: 'ProfileMerchantLink',
+  ProfileOtpCode: 'ProfileOtpCode',
   Promotion: 'Promotion',
   Coupon: 'Coupon',
   Return: 'Return',
@@ -426,7 +431,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "adminUser" | "brand" | "cart" | "cartItem" | "category" | "country" | "customer" | "customerAddress" | "order" | "orderItem" | "orderHistory" | "product" | "productImage" | "productVariant" | "productOption" | "productOptionValue" | "productAttribute" | "productCategory" | "productTag" | "promotion" | "coupon" | "return" | "returnItem" | "review" | "storeInfo" | "wishlist" | "wishlistItem"
+    modelProps: "adminUser" | "brand" | "cart" | "cartItem" | "category" | "country" | "customer" | "customerAddress" | "order" | "orderItem" | "orderHistory" | "product" | "productImage" | "productVariant" | "productOption" | "productOptionValue" | "productAttribute" | "productCategory" | "productTag" | "profile" | "profileAddress" | "profilePaymentMethod" | "profileMerchantLink" | "profileOtpCode" | "promotion" | "coupon" | "return" | "returnItem" | "review" | "storeInfo" | "wishlist" | "wishlistItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1836,6 +1841,376 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Profile: {
+      payload: Prisma.$ProfilePayload<ExtArgs>
+      fields: Prisma.ProfileFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProfileFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProfileFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>
+        }
+        findFirst: {
+          args: Prisma.ProfileFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProfileFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>
+        }
+        findMany: {
+          args: Prisma.ProfileFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>[]
+        }
+        create: {
+          args: Prisma.ProfileCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>
+        }
+        createMany: {
+          args: Prisma.ProfileCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProfileCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>[]
+        }
+        delete: {
+          args: Prisma.ProfileDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>
+        }
+        update: {
+          args: Prisma.ProfileUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>
+        }
+        deleteMany: {
+          args: Prisma.ProfileDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProfileUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProfileUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>[]
+        }
+        upsert: {
+          args: Prisma.ProfileUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePayload>
+        }
+        aggregate: {
+          args: Prisma.ProfileAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProfile>
+        }
+        groupBy: {
+          args: Prisma.ProfileGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfileGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProfileCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfileCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProfileAddress: {
+      payload: Prisma.$ProfileAddressPayload<ExtArgs>
+      fields: Prisma.ProfileAddressFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProfileAddressFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProfileAddressFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>
+        }
+        findFirst: {
+          args: Prisma.ProfileAddressFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProfileAddressFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>
+        }
+        findMany: {
+          args: Prisma.ProfileAddressFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>[]
+        }
+        create: {
+          args: Prisma.ProfileAddressCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>
+        }
+        createMany: {
+          args: Prisma.ProfileAddressCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProfileAddressCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>[]
+        }
+        delete: {
+          args: Prisma.ProfileAddressDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>
+        }
+        update: {
+          args: Prisma.ProfileAddressUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProfileAddressDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProfileAddressUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProfileAddressUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProfileAddressUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileAddressPayload>
+        }
+        aggregate: {
+          args: Prisma.ProfileAddressAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProfileAddress>
+        }
+        groupBy: {
+          args: Prisma.ProfileAddressGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfileAddressGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProfileAddressCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfileAddressCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProfilePaymentMethod: {
+      payload: Prisma.$ProfilePaymentMethodPayload<ExtArgs>
+      fields: Prisma.ProfilePaymentMethodFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProfilePaymentMethodFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProfilePaymentMethodFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>
+        }
+        findFirst: {
+          args: Prisma.ProfilePaymentMethodFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProfilePaymentMethodFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>
+        }
+        findMany: {
+          args: Prisma.ProfilePaymentMethodFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>[]
+        }
+        create: {
+          args: Prisma.ProfilePaymentMethodCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>
+        }
+        createMany: {
+          args: Prisma.ProfilePaymentMethodCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProfilePaymentMethodCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>[]
+        }
+        delete: {
+          args: Prisma.ProfilePaymentMethodDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>
+        }
+        update: {
+          args: Prisma.ProfilePaymentMethodUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProfilePaymentMethodDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProfilePaymentMethodUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProfilePaymentMethodUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProfilePaymentMethodUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfilePaymentMethodPayload>
+        }
+        aggregate: {
+          args: Prisma.ProfilePaymentMethodAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProfilePaymentMethod>
+        }
+        groupBy: {
+          args: Prisma.ProfilePaymentMethodGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfilePaymentMethodGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProfilePaymentMethodCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfilePaymentMethodCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProfileMerchantLink: {
+      payload: Prisma.$ProfileMerchantLinkPayload<ExtArgs>
+      fields: Prisma.ProfileMerchantLinkFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProfileMerchantLinkFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProfileMerchantLinkFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>
+        }
+        findFirst: {
+          args: Prisma.ProfileMerchantLinkFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProfileMerchantLinkFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>
+        }
+        findMany: {
+          args: Prisma.ProfileMerchantLinkFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>[]
+        }
+        create: {
+          args: Prisma.ProfileMerchantLinkCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>
+        }
+        createMany: {
+          args: Prisma.ProfileMerchantLinkCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProfileMerchantLinkCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>[]
+        }
+        delete: {
+          args: Prisma.ProfileMerchantLinkDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>
+        }
+        update: {
+          args: Prisma.ProfileMerchantLinkUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProfileMerchantLinkDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProfileMerchantLinkUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProfileMerchantLinkUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProfileMerchantLinkUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileMerchantLinkPayload>
+        }
+        aggregate: {
+          args: Prisma.ProfileMerchantLinkAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProfileMerchantLink>
+        }
+        groupBy: {
+          args: Prisma.ProfileMerchantLinkGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfileMerchantLinkGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProfileMerchantLinkCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfileMerchantLinkCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProfileOtpCode: {
+      payload: Prisma.$ProfileOtpCodePayload<ExtArgs>
+      fields: Prisma.ProfileOtpCodeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProfileOtpCodeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProfileOtpCodeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>
+        }
+        findFirst: {
+          args: Prisma.ProfileOtpCodeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProfileOtpCodeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>
+        }
+        findMany: {
+          args: Prisma.ProfileOtpCodeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>[]
+        }
+        create: {
+          args: Prisma.ProfileOtpCodeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>
+        }
+        createMany: {
+          args: Prisma.ProfileOtpCodeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProfileOtpCodeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>[]
+        }
+        delete: {
+          args: Prisma.ProfileOtpCodeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>
+        }
+        update: {
+          args: Prisma.ProfileOtpCodeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>
+        }
+        deleteMany: {
+          args: Prisma.ProfileOtpCodeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProfileOtpCodeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProfileOtpCodeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>[]
+        }
+        upsert: {
+          args: Prisma.ProfileOtpCodeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProfileOtpCodePayload>
+        }
+        aggregate: {
+          args: Prisma.ProfileOtpCodeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProfileOtpCode>
+        }
+        groupBy: {
+          args: Prisma.ProfileOtpCodeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfileOtpCodeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProfileOtpCodeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProfileOtpCodeCountAggregateOutputType> | number
+        }
+      }
+    }
     Promotion: {
       payload: Prisma.$PromotionPayload<ExtArgs>
       fields: Prisma.PromotionFieldRefs
@@ -2755,6 +3130,85 @@ export const ProductTagScalarFieldEnum = {
 export type ProductTagScalarFieldEnum = (typeof ProductTagScalarFieldEnum)[keyof typeof ProductTagScalarFieldEnum]
 
 
+export const ProfileScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  phone: 'phone',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  preferences: 'preferences',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProfileScalarFieldEnum = (typeof ProfileScalarFieldEnum)[keyof typeof ProfileScalarFieldEnum]
+
+
+export const ProfileAddressScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  label: 'label',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  phone: 'phone',
+  street: 'street',
+  street2: 'street2',
+  city: 'city',
+  state: 'state',
+  country: 'country',
+  postalCode: 'postalCode',
+  district: 'district',
+  nationalAddress: 'nationalAddress',
+  additionalNumber: 'additionalNumber',
+  lastUsedAt: 'lastUsedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfileAddressScalarFieldEnum = (typeof ProfileAddressScalarFieldEnum)[keyof typeof ProfileAddressScalarFieldEnum]
+
+
+export const ProfilePaymentMethodScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  provider: 'provider',
+  type: 'type',
+  last4: 'last4',
+  brand: 'brand',
+  expiryMonth: 'expiryMonth',
+  expiryYear: 'expiryYear',
+  providerToken: 'providerToken',
+  billingAddress: 'billingAddress',
+  lastUsedAt: 'lastUsedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfilePaymentMethodScalarFieldEnum = (typeof ProfilePaymentMethodScalarFieldEnum)[keyof typeof ProfilePaymentMethodScalarFieldEnum]
+
+
+export const ProfileMerchantLinkScalarFieldEnum = {
+  profileId: 'profileId',
+  merchantId: 'merchantId',
+  adapterCustomerId: 'adapterCustomerId',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfileMerchantLinkScalarFieldEnum = (typeof ProfileMerchantLinkScalarFieldEnum)[keyof typeof ProfileMerchantLinkScalarFieldEnum]
+
+
+export const ProfileOtpCodeScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  code: 'code',
+  channel: 'channel',
+  expiresAt: 'expiresAt',
+  verified: 'verified',
+  attempts: 'attempts',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfileOtpCodeScalarFieldEnum = (typeof ProfileOtpCodeScalarFieldEnum)[keyof typeof ProfileOtpCodeScalarFieldEnum]
+
+
 export const PromotionScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -3138,6 +3592,11 @@ export type GlobalOmitConfig = {
   productAttribute?: Prisma.ProductAttributeOmit
   productCategory?: Prisma.ProductCategoryOmit
   productTag?: Prisma.ProductTagOmit
+  profile?: Prisma.ProfileOmit
+  profileAddress?: Prisma.ProfileAddressOmit
+  profilePaymentMethod?: Prisma.ProfilePaymentMethodOmit
+  profileMerchantLink?: Prisma.ProfileMerchantLinkOmit
+  profileOtpCode?: Prisma.ProfileOtpCodeOmit
   promotion?: Prisma.PromotionOmit
   coupon?: Prisma.CouponOmit
   return?: Prisma.ReturnOmit

@@ -10,5 +10,8 @@
     "emitDeclarationOnly": false
   },
   "include": ["src"],
-  "exclude": ["src/database/prisma/**", "src/__tests__/**"]
+  "exclude": [
+    "src/database/prisma/generated/**",
+    "src/__tests__/**"
+  ]
 }

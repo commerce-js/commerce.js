@@ -118,7 +118,7 @@ async function fetchProductRelations(productId: string) {
   ])
 
   const categories = categoryIds.length > 0
-    ? (await Promise.all(categoryIds.map(id => findCategoryById(id)))).filter(Boolean)
+    ? (await Promise.all(categoryIds.map((id: string) => findCategoryById(id)))).filter(Boolean)
     : []
 
   return { images, variants, attributes, categories, tags }
@@ -334,7 +334,7 @@ export function createAdminProductsDomain(currency: string) {
       })
 
       const products = await Promise.all(
-        rows.map(async (row) => {
+        rows.map(async (row: any) => {
           const related = await fetchProductRelations(row.id)
           return mapProduct(row, related, currency)
         }),

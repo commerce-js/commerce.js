@@ -55,7 +55,7 @@ export function createCartDomain(currency: string) {
       }
     }))
 
-    const subtotal = cartItems.reduce((sum, item) => sum + item.totalPrice.amount, 0)
+    const subtotal = cartItems.reduce((sum: number, item: any) => sum + item.totalPrice.amount, 0)
 
     // Look up stored shipping method price
     // Shipping rates are defined here to keep cart domain self-contained
@@ -79,7 +79,7 @@ export function createCartDomain(currency: string) {
       paymentMethod: null,
       couponCode: cartRow.couponCode ?? null,
       customerId: cartRow.customerId ?? null,
-      itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+      itemCount: cartItems.reduce((sum: number, item: any) => sum + item.quantity, 0),
       createdAt: cartRow.createdAt instanceof Date ? cartRow.createdAt.toISOString() : cartRow.createdAt,
       updatedAt: cartRow.updatedAt instanceof Date ? cartRow.updatedAt.toISOString() : cartRow.updatedAt,
     }

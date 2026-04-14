@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // Prisma: Profile queries — cross-merchant buyer identity
 // ---------------------------------------------------------------------------
-// Prisma parity — mirrors drizzle/queries/profiles.ts
-// Currently dormant (Prisma is inactive due to WASM edge issues)
+// Mirrors drizzle/queries/profiles.ts. Active driver on the fly/eaas branch
+// once src/database/index.ts swaps the barrel (Step 3).
 
 import { getDb } from '../client.js'
 
@@ -32,7 +32,8 @@ export async function findProfileByEmail(email: string) {
 }
 
 export async function findProfileByPhone(phone: string) {
-  return getDb().profile.findUnique({ where: { phone } })
+  // `phone` is not unique in the schema (Drizzle parity), so use findFirst.
+  return getDb().profile.findFirst({ where: { phone } })
 }
 
 export async function updateProfile(id: string, data: Record<string, any>) {
@@ -136,5 +137,70 @@ export async function upsertProfileMerchantLink(data: {
     },
     create: data,
     update: { adapterCustomerId: data.adapterCustomerId ?? null },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// OTP Codes
+// ---------------------------------------------------------------------------
+
+export async function createOtpCode(data: {
+  profileId: string
+  code: string
+  channel?: string
+  expiresAt: Date
+}) {
+  const id = crypto.randomUUID()
+  await getDb().profileOtpCode.create({
+    data: {
+      id,
+      profileId: data.profileId,
+      code: data.code,
+      channel: data.channel ?? 'email',
+      expiresAt: data.expiresAt,
+    },
+  })
+  return id
+}
+
+export async function findActiveOtpCode(profileId: string) {
+  const now = new Date()
+  const rows = await getDb().profileOtpCode.findMany({
+    where: {
+      profileId,
+      verified: false,
+      expiresAt: { gt: now },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  })
+  return rows[0] ?? null
+}
+
+export async function markOtpVerified(id: string) {
+  await getDb().profileOtpCode.update({
+    where: { id },
+    data: { verified: true },
+  })
+}
+
+export async function incrementOtpAttempts(id: string) {
+  await getDb().profileOtpCode.update({
+    where: { id },
+    data: { attempts: { increment: 1 } },
+  })
+}
+
+export async function deleteExpiredOtpCodes(profileId: string) {
+  const now = new Date()
+  // Delete everything that is expired OR already verified.
+  await getDb().profileOtpCode.deleteMany({
+    where: {
+      profileId,
+      OR: [
+        { expiresAt: { lte: now } },
+        { verified: true },
+      ],
+    },
   })
 }

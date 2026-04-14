@@ -70,6 +70,11 @@ export const ModelName = {
   ProductAttribute: 'ProductAttribute',
   ProductCategory: 'ProductCategory',
   ProductTag: 'ProductTag',
+  Profile: 'Profile',
+  ProfileAddress: 'ProfileAddress',
+  ProfilePaymentMethod: 'ProfilePaymentMethod',
+  ProfileMerchantLink: 'ProfileMerchantLink',
+  ProfileOtpCode: 'ProfileOtpCode',
   Promotion: 'Promotion',
   Coupon: 'Coupon',
   Return: 'Return',
@@ -382,6 +387,85 @@ export const ProductTagScalarFieldEnum = {
 } as const
 
 export type ProductTagScalarFieldEnum = (typeof ProductTagScalarFieldEnum)[keyof typeof ProductTagScalarFieldEnum]
+
+
+export const ProfileScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  phone: 'phone',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  preferences: 'preferences',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProfileScalarFieldEnum = (typeof ProfileScalarFieldEnum)[keyof typeof ProfileScalarFieldEnum]
+
+
+export const ProfileAddressScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  label: 'label',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  phone: 'phone',
+  street: 'street',
+  street2: 'street2',
+  city: 'city',
+  state: 'state',
+  country: 'country',
+  postalCode: 'postalCode',
+  district: 'district',
+  nationalAddress: 'nationalAddress',
+  additionalNumber: 'additionalNumber',
+  lastUsedAt: 'lastUsedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfileAddressScalarFieldEnum = (typeof ProfileAddressScalarFieldEnum)[keyof typeof ProfileAddressScalarFieldEnum]
+
+
+export const ProfilePaymentMethodScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  provider: 'provider',
+  type: 'type',
+  last4: 'last4',
+  brand: 'brand',
+  expiryMonth: 'expiryMonth',
+  expiryYear: 'expiryYear',
+  providerToken: 'providerToken',
+  billingAddress: 'billingAddress',
+  lastUsedAt: 'lastUsedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfilePaymentMethodScalarFieldEnum = (typeof ProfilePaymentMethodScalarFieldEnum)[keyof typeof ProfilePaymentMethodScalarFieldEnum]
+
+
+export const ProfileMerchantLinkScalarFieldEnum = {
+  profileId: 'profileId',
+  merchantId: 'merchantId',
+  adapterCustomerId: 'adapterCustomerId',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfileMerchantLinkScalarFieldEnum = (typeof ProfileMerchantLinkScalarFieldEnum)[keyof typeof ProfileMerchantLinkScalarFieldEnum]
+
+
+export const ProfileOtpCodeScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  code: 'code',
+  channel: 'channel',
+  expiresAt: 'expiresAt',
+  verified: 'verified',
+  attempts: 'attempts',
+  createdAt: 'createdAt'
+} as const
+
+export type ProfileOtpCodeScalarFieldEnum = (typeof ProfileOtpCodeScalarFieldEnum)[keyof typeof ProfileOtpCodeScalarFieldEnum]
 
 
 export const PromotionScalarFieldEnum = {

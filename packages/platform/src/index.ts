@@ -30,17 +30,15 @@ export type {
 // Config
 export type { PlatformConfig } from './types.js'
 
-// Database (Drizzle + Neon serverless — no WASM)
-export { initDrizzle, getDrizzleDb, getDb, migrateDrizzle, seedDrizzle } from './database/index.js'
-export type { DrizzleDatabase } from './database/drizzle/client.js'
+// Database (Prisma + Neon adapter — active driver on fly/eaas)
+export { initPrisma, getPrismaDb, getDb, resetDb } from './database/index.js'
+export type { PrismaDatabase } from './database/prisma/client.js'
+export { getPrismaClient, disconnectPrismaClient, disconnectAll } from './database/index.js'
 
-// Prisma (dormant — commented out to prevent WASM bundling)
-// export { initPrisma, getPrismaDb, migratePrisma } from './database/index.js'
-// export type { PrismaDatabase } from './database/prisma/client.js'
-// export { seedPrisma } from './database/prisma/seed.js'
-
-// Drizzle schema (for raw queries)
-export * as schema from './database/drizzle/schema/index.js'
+// Drizzle (dormant on fly/eaas — active on main)
+// export { initDrizzle, getDrizzleDb, migrateDrizzle, seedDrizzle } from './database/index.js'
+// export type { DrizzleDatabase } from './database/drizzle/client.js'
+// export * as schema from './database/drizzle/schema/index.js'
 
 // Domain factories (for standalone use outside the adapter)
 export { createCartDomain } from './domains/cart.js'

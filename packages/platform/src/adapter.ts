@@ -42,11 +42,16 @@ function resolveConnectionString(config: PlatformConfig): string {
 }
 
 /**
- * Initialize the database — PostgreSQL via Neon serverless (Drizzle).
+ * Initialize the database — PostgreSQL via Neon + Prisma (fly/eaas).
+ *
+ * On the `main` branch this wires to `initDrizzle()` instead; the two
+ * clients expose the same `getDb()` contract so domain code is
+ * driver-agnostic and the src/database/index.ts barrel is the single
+ * switch-point for swapping drivers.
  */
 async function initDatabase(connectionString: string) {
-  const { initDrizzle } = await import('./database/drizzle/client.js')
-  initDrizzle(connectionString)
+  const { initPrisma } = await import('./database/prisma/client.js')
+  initPrisma(connectionString)
 }
 
 /** Result of createPlatformAdapter — storefront adapter + admin API */

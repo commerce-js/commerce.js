@@ -1,0 +1,99 @@
+// ---------------------------------------------------------------------------
+// Profile models — cross-merchant buyer identity
+// ---------------------------------------------------------------------------
+// Profile is distinct from Customer: a Customer belongs to a single merchant
+// (tied to the commerce data in that merchant DB), whereas a Profile is a
+// buyer identity that spans every merchant on the CommerceJS Cloud platform
+// and is linked to per-merchant Customers via ProfileMerchantLink.
+//
+// Mirrors the Drizzle tables in src/database/drizzle/schema/profiles.ts.
+// ---------------------------------------------------------------------------
+
+model Profile {
+  id          String   @id @default(uuid())
+  email       String?  @unique
+  phone       String?
+  firstName   String?  @map("first_name")
+  lastName    String?  @map("last_name")
+  preferences Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  addresses      ProfileAddress[]
+  paymentMethods ProfilePaymentMethod[]
+  merchantLinks  ProfileMerchantLink[]
+  otpCodes       ProfileOtpCode[]
+
+  @@map("profiles")
+}
+
+model ProfileAddress {
+  id               String    @id @default(uuid())
+  profileId        String    @map("profile_id")
+  label            String?
+  firstName        String    @map("first_name")
+  lastName         String    @map("last_name")
+  phone            String?
+  street           String
+  street2          String?
+  city             String
+  state            String?
+  country          String
+  postalCode       String?   @map("postal_code")
+  district         String?
+  nationalAddress  String?   @map("national_address")
+  additionalNumber String?   @map("additional_number")
+  lastUsedAt       DateTime? @map("last_used_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("profile_addresses")
+}
+
+model ProfilePaymentMethod {
+  id             String    @id @default(uuid())
+  profileId      String    @map("profile_id")
+  provider       String
+  type           String
+  last4          String
+  brand          String?
+  expiryMonth    Int?      @map("expiry_month")
+  expiryYear     Int?      @map("expiry_year")
+  /// Encrypted provider token — NEVER exposed via API
+  providerToken  String?   @map("provider_token")
+  billingAddress Json?     @map("billing_address")
+  lastUsedAt     DateTime? @map("last_used_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("profile_payment_methods")
+}
+
+model ProfileMerchantLink {
+  profileId         String   @map("profile_id")
+  merchantId        String   @map("merchant_id")
+  adapterCustomerId String?  @map("adapter_customer_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, merchantId])
+  @@map("profile_merchant_links")
+}
+
+model ProfileOtpCode {
+  id        String   @id @default(uuid())
+  profileId String   @map("profile_id")
+  code      String
+  channel   String   @default("email")
+  expiresAt DateTime @map("expires_at")
+  verified  Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("profile_otp_codes")
+}

@@ -681,10 +681,6 @@ export type PromotionScalarRelationFilter = {
   isNot?: Prisma.PromotionWhereInput
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type PromotionCreateNestedOneWithoutCouponsInput = {
   create?: Prisma.XOR<Prisma.PromotionCreateWithoutCouponsInput, Prisma.PromotionUncheckedCreateWithoutCouponsInput>
   connectOrCreate?: Prisma.PromotionCreateOrConnectWithoutCouponsInput

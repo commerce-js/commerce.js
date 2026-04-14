@@ -213,4 +213,10 @@ export {
   deleteProfilePaymentMethod,
   findProfileMerchantLinks,
   upsertProfileMerchantLink,
+  // OTP codes
+  createOtpCode,
+  findActiveOtpCode,
+  markOtpVerified,
+  incrementOtpAttempts,
+  deleteExpiredOtpCodes,
 } from './profiles.js'

@@ -194,7 +194,7 @@ export function createCatalogDomain(currency: string) {
     async getCategories(params?: GetCategoriesParams): Promise<Category[]> {
       const rows = await findCategories(params?.parentId)
 
-      return rows.map(row => ({
+      return rows.map((row: any) => ({
         id: row.id,
         name: localized(row.name, row.nameAr),
         slug: row.slug,

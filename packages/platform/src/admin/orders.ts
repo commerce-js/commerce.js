@@ -105,7 +105,7 @@ export function createAdminOrdersDomain(currency: string) {
       })
 
       const orders = await Promise.all(
-        rows.map(async (row) => {
+        rows.map(async (row: any) => {
           const items = await findOrderItems(row.id)
           return mapOrder(row, items, currency)
         }),

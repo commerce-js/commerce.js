@@ -137,6 +137,31 @@ export type ProductCategory = Prisma.ProductCategoryModel
  */
 export type ProductTag = Prisma.ProductTagModel
 /**
+ * Model Profile
+ * 
+ */
+export type Profile = Prisma.ProfileModel
+/**
+ * Model ProfileAddress
+ * 
+ */
+export type ProfileAddress = Prisma.ProfileAddressModel
+/**
+ * Model ProfilePaymentMethod
+ * 
+ */
+export type ProfilePaymentMethod = Prisma.ProfilePaymentMethodModel
+/**
+ * Model ProfileMerchantLink
+ * 
+ */
+export type ProfileMerchantLink = Prisma.ProfileMerchantLinkModel
+/**
+ * Model ProfileOtpCode
+ * 
+ */
+export type ProfileOtpCode = Prisma.ProfileOtpCodeModel
+/**
  * Model Promotion
  * 
  */
