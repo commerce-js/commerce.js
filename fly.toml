@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# CommerceJS Cloud — Fly.io app config
+# ---------------------------------------------------------------------------
+# Region: bah (Bahrain) — closest to GCC/MENA primary market.
+# Auto-suspend on idle to keep cost ~$2/mo for the shared-cpu web tier.
+# Worker process is added in Step 5 (BullMQ) — left commented for now.
+# ---------------------------------------------------------------------------
+
+app = "commercejs-cloud"
+primary_region = "bah"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+
+[processes]
+  web = "node .output/server/index.mjs"
+  # worker = "node .output/worker.mjs"   # enabled in Step 5 (BullMQ)
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["web"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/api/_health"
+    timeout = "5s"

@@ -9,32 +9,21 @@ export default defineNuxtConfig({
 
   modules: [
     '@nuxt/ui',
-    '@nuxthub/core',
+    // NO @nuxthub/core — Cloudflare-only, replaced by Prisma + Neon on fly/eaas
   ],
 
   css: ['~/assets/css/main.css'],
 
-  // NuxtHub features — Cloudflare D1, R2, KV
-  hub: {
-    database: true,
-    blob: true,
-    kv: true,
-  },
+  // NO hub config on fly/eaas — control DB is plain Prisma/Postgres
 
-  // Nitro preset for Cloudflare
+  // Nitro preset for Fly.io (standard Node.js)
   nitro: {
-    preset: 'cloudflare-pages',
+    preset: 'node-server',
   },
 
-  // Allow tunnel hosts (e.g. cloudflared) in dev
+  // Allow tunnel hosts in dev
   devServer: {
     host: '0.0.0.0',
-  },
-
-  vite: {
-    server: {
-      allowedHosts: ['.trycloudflare.com'],
-    },
   },
 
   // App metadata
@@ -42,7 +31,7 @@ export default defineNuxtConfig({
     head: {
       title: 'CommerceJS Cloud',
       meta: [
-        { name: 'description', content: 'Deploy and manage commerce stores in the cloud' },
+        { name: 'description', content: 'Ecommerce as a Service — deploy stores instantly' },
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
@@ -53,28 +42,17 @@ export default defineNuxtConfig({
     },
   },
 
-  // Runtime config — populated from env vars
+  // Runtime config — populated from env vars on Fly
   runtimeConfig: {
-    cloudflareApiToken: '',
-    cloudflareAccountId: '',
+    controlDatabaseUrl: '',
     neonApiKey: '',
-    neonProjectId: '',
-    githubAppId: '',
-    githubAppPrivateKey: '',
     sessionPassword: '',
-    // Armada Integration Studio credentials
-    armadaAppId: '',
-    armadaAppSecret: '',
-    databaseUrl: '',
-    oauth: {
-      github: {
-        clientId: '',
-        clientSecret: '',
-      },
-    },
+    redisUrl: '',
+    stripeSecretKey: '',
+    stripeWebhookSecret: '',
     public: {
       appTitle: 'CommerceJS Cloud',
-      // Dashboard base URL (used for Armada callback redirects)
+      // Dashboard base URL
       baseUrl: 'http://localhost:3002',
     },
   },
