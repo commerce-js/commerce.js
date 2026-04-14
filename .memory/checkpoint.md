@@ -2,12 +2,17 @@
 
 ## Current Phase
 
-**Fly.io EaaS Migration — Step 2 (Control DB) Code Complete**
+**Fly.io EaaS Migration — Step 2 (Control DB) Complete & Migrated**
 
-The dashboard now compiles against a Prisma/Neon control DB. Schema is
-written, client is generated, route surface is migrated from `projects/*`
-to `merchants/*`. **Migration has not been run yet** — Neon project + first
-`prisma migrate dev` are user-pause checkpoints (see "Immediate Next Steps").
+The dashboard compiles against a Prisma/Neon control DB and the first
+migration (`20260414090613_init`) has been applied to the live
+`cjs-control` Neon project. 4 tables exist: merchants, api_keys,
+domains, dashboard_users.
+
+⚠️ **Region note:** the Neon project is in `us-east-1` rather than the
+plan's recommended `aws-eu-central-1`. ~150 ms RTT from Fly `bah`. User
+accepted the trade-off for now; revisit if tenant-resolution latency
+becomes a problem in Step 4.
 
 ## Strategic Context
 
@@ -34,8 +39,8 @@ to `merchants/*`. **Migration has not been run yet** — Neon project + first
 | Deploy queue / consumer / DLQ / provisioner | ✅ Deleted |
 | GitHub OAuth + webhook routes | ✅ Deleted |
 | D1 Drizzle schema + migrations dir | ✅ Deleted |
-| Neon `cjs-control` project | ❌ **User-pause** — needs Neon console |
-| `prisma migrate dev --name init` (control DB) | ❌ **User-pause** — autonomous rule blocks this |
+| Neon `cjs-control` project | ✅ Live (`ep-patient-cake-a486kr45-pooler.us-east-1.aws.neon.tech`); URL in monorepo `.secrets` as `NEON_CONTROL_DB_URL` |
+| `prisma migrate dev --name init` (control DB) | ✅ Applied — `20260414090613_init` (commit `c566e50`) |
 | Tenant middleware | ❌ Step 4 |
 | BullMQ worker | ❌ Step 5 |
 | Merchant provisioner | ❌ Step 6 |
@@ -99,22 +104,7 @@ to `merchants/*`. **Migration has not been run yet** — Neon project + first
 
 ## Immediate Next Steps
 
-### Pause checkpoint — needs user input
-
-1. **Create Neon project `cjs-control`** (Neon console or
-   `neonctl projects create cjs-control --region-id aws-eu-central-1`).
-   Capture the connection string into `apps/dashboard/.env`:
-   ```
-   CONTROL_DATABASE_URL="postgresql://..."
-   ```
-2. **Run the first migration** (autonomous rule blocks this — confirm with
-   user before executing):
-   ```bash
-   cd apps/dashboard && npx prisma migrate dev --name init
-   ```
-   This creates the `migrations/` directory and applies the schema.
-
-### Then: Step 3 — Prisma as Primary on Platform (Day 4)
+### Step 3 — Prisma as Primary on Platform (Day 4)
 
 Per `.plans/fly-migration-plan.md` → Step 3:
 - `packages/platform/src/database/prisma/schema/schema.prisma` already has
