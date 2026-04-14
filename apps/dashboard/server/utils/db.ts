@@ -1,32 +1,49 @@
 // ---------------------------------------------------------------------------
-// Control DB — TODO (fly/eaas Step 2)
+// Control DB — Prisma client (singleton)
 // ---------------------------------------------------------------------------
 //
-// On the fly/eaas branch the dashboard's control database is migrating from
-// Cloudflare D1 + Drizzle to Neon Postgres + Prisma. This file is a stub for
-// Phase 1 (branch + preset + Docker + fly.toml) and will be rewritten in
-// Step 2 ("Control DB — D1 to Prisma/Neon").
+// Wraps a single PrismaClient bound to CONTROL_DATABASE_URL via the Neon
+// HTTP/WS adapter. The control DB stores platform metadata (Merchant,
+// ApiKey, Domain, DashboardUser) — see prisma/schema.prisma.
 //
-// See `.plans/fly-migration-plan.md` → Step 2 for the target shape:
+// Per-merchant commerce data lives in separate Neon branches and is
+// accessed through `packages/platform`'s own per-tenant Prisma cache.
 //
-//   import { PrismaClient } from '../generated/prisma'
-//   const prisma = new PrismaClient({
-//     datasources: { db: { url: process.env.CONTROL_DATABASE_URL } },
-//   })
-//   export { prisma }
-//
-// Until then, any caller of `useDB()` will throw at runtime. The legacy
-// Drizzle schema is re-exported so that existing D1-era API routes can still
-// compile — they will be re-implemented against Prisma in Step 2.
+// NOTE: Requires `npx prisma generate` (in apps/dashboard) before this
+// file can be compiled. The generated client lives in
+// ./generated/prisma/.
 // ---------------------------------------------------------------------------
 
-import * as schema from '../database/schema'
+import process from 'node:process'
+import { PrismaNeon } from '@prisma/adapter-neon'
+import { PrismaClient } from '../generated/prisma/client'
 
-export { schema }
+let cached: PrismaClient | null = null
 
-export function useDB(): never {
-  throw new Error(
-    'Control DB not initialized. fly/eaas Step 2 has not been completed yet — '
-    + 'see .plans/fly-migration-plan.md.',
-  )
+/**
+ * Returns the singleton control-DB Prisma client. Lazy-initialized on first
+ * call so build-time imports don't fail when CONTROL_DATABASE_URL is unset.
+ */
+export function useDB(): PrismaClient {
+  if (cached) return cached
+
+  const url = process.env.CONTROL_DATABASE_URL
+  if (!url) {
+    throw new Error(
+      'CONTROL_DATABASE_URL is not set. Configure it in the Fly.io app '
+      + 'environment (or .env locally) before calling useDB().',
+    )
+  }
+
+  const adapter = new PrismaNeon({ connectionString: url })
+  cached = new PrismaClient({ adapter } as never)
+  return cached
+}
+
+/** Disconnect on graceful shutdown (e.g. SIGTERM in a long-running worker). */
+export async function disconnectDB(): Promise<void> {
+  if (cached) {
+    await cached.$disconnect()
+    cached = null
+  }
 }

@@ -13,15 +13,15 @@
   },
   "dependencies": {
     "@nuxt/ui": "^4.4.0",
+    "@prisma/adapter-neon": "^7.6.0",
+    "@prisma/client": "^7.6.0",
     "@vueuse/core": "^14.2.0",
-    "drizzle-orm": "^0.45.1",
     "nuxt": "^4.3.0",
-    "tailwindcss": "^4.2.1",
-    "tweetnacl": "^1.0.3",
-    "tweetnacl-sealedbox-js": "^1.2.0"
+    "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.89",
+    "prisma": "^7.6.0",
     "typescript": "^5.8.3"
   }
 }

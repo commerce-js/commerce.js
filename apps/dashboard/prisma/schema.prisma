@@ -1,0 +1,111 @@
+// ---------------------------------------------------------------------------
+// CommerceJS Cloud — Control DB schema
+// ---------------------------------------------------------------------------
+// Holds platform-level metadata: which merchants exist, their API keys,
+// custom domains, and the dashboard admin users who manage the platform.
+//
+// Per-merchant commerce data (products, orders, carts, customers, etc.)
+// lives in a separate Neon branch DB and is governed by the Prisma schema in
+// packages/platform/src/database/prisma/schema/schema.prisma.
+//
+// Migration source: D1 SQLite tables (users, projects, deployments,
+// envVars, domains). The deployments and envVars tables are intentionally
+// dropped in this migration — see .plans/fly-migration-plan.md → Step 2.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../server/generated/prisma"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  runtime                = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Merchant — a single tenant on the CommerceJS Cloud platform.
+// Replaces the legacy `projects` table; CF-specific fields removed and
+// merchant-config fields (plan, currency, locale, trial, ...) added.
+// ---------------------------------------------------------------------------
+model Merchant {
+  id             String    @id @default(uuid())
+  name           String
+  email          String    @unique
+  passwordHash   String?   @map("password_hash")
+  subdomain      String    @unique
+  plan           String    @default("trial")
+  databaseUrl    String?   @map("database_url")
+  neonProjectId  String?   @map("neon_project_id")
+  neonBranchId   String?   @map("neon_branch_id")
+  status         String    @default("provisioning")
+  dashboardRole  String    @default("owner") @map("dashboard_role")
+  provisionedBy  String?   @map("provisioned_by")
+  stripeCustomer String?   @map("stripe_customer")
+  currency       String    @default("SAR")
+  locale         String    @default("ar-SA")
+  customDomain   String?   @map("custom_domain")
+  trialEndsAt    DateTime? @map("trial_ends_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  apiKeys ApiKey[]
+  domains Domain[]
+
+  @@map("merchants")
+}
+
+// ---------------------------------------------------------------------------
+// ApiKey — a hashed API key bound to a merchant. Used by storefront /
+// integration clients to authenticate against the shared Fly app.
+// ---------------------------------------------------------------------------
+model ApiKey {
+  id         String    @id @default(uuid())
+  merchantId String    @map("merchant_id")
+  keyHash    String    @map("key_hash")
+  keyPrefix  String    @map("key_prefix")
+  name       String
+  lastUsed   DateTime? @map("last_used")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+// ---------------------------------------------------------------------------
+// Domain — custom domains attached to a merchant. Replaces the legacy
+// `domains` table; CF-specific `cf_domain_id` removed, `verified` and
+// `ssl_status` added so the tenant resolver can reject unverified domains.
+// ---------------------------------------------------------------------------
+model Domain {
+  id         String   @id @default(uuid())
+  merchantId String   @map("merchant_id")
+  domain     String   @unique
+  verified   Boolean  @default(false)
+  sslStatus  String   @default("pending") @map("ssl_status")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@map("domains")
+}
+
+// ---------------------------------------------------------------------------
+// DashboardUser — platform admin / support staff. Replaces the legacy
+// GitHub-OAuth `users` table with email/password auth.
+// ---------------------------------------------------------------------------
+model DashboardUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         String   @default("admin") // 'admin' | 'support'
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("dashboard_users")
+}
