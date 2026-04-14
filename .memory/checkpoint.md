@@ -2,17 +2,16 @@
 
 ## Current Phase
 
-**Fly.io EaaS Migration — Step 2 (Control DB) Complete & Migrated**
+**Fly.io EaaS Migration — Step 3 (Platform → Prisma) Complete**
 
-The dashboard compiles against a Prisma/Neon control DB and the first
-migration (`20260414090613_init`) has been applied to the live
-`cjs-control` Neon project. 4 tables exist: merchants, api_keys,
-domains, dashboard_users.
+`packages/platform` now ships Prisma as its active ORM. The control DB
+(Step 2) and the platform (Step 3) both run on Prisma + Neon adapter.
+Drizzle stays in-tree for the `main` branch; a single barrel swap in
+`src/database/index.ts` is the driver switch-point.
 
-⚠️ **Region note:** the Neon project is in `us-east-1` rather than the
-plan's recommended `aws-eu-central-1`. ~150 ms RTT from Fly `bah`. User
-accepted the trade-off for now; revisit if tenant-resolution latency
-becomes a problem in Step 4.
+⚠️ **Region note:** the Neon control project (Step 2) is in `us-east-1`
+rather than the plan's recommended `aws-eu-central-1`. ~150 ms RTT from
+Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 
 ## Strategic Context
 
@@ -41,6 +40,10 @@ becomes a problem in Step 4.
 | D1 Drizzle schema + migrations dir | ✅ Deleted |
 | Neon `cjs-control` project | ✅ Live (`ep-patient-cake-a486kr45-pooler.us-east-1.aws.neon.tech`); URL in monorepo `.secrets` as `NEON_CONTROL_DB_URL` |
 | `prisma migrate dev --name init` (control DB) | ✅ Applied — `20260414090613_init` (commit `c566e50`) |
+| Platform active ORM | ✅ Prisma (+ `@prisma/adapter-neon`); barrel swap in `src/database/index.ts` (commit `c4c649d`) |
+| Prisma Profile models | ✅ Added in `profile.prisma` (Profile, ProfileAddress, ProfilePaymentMethod, ProfileMerchantLink, ProfileOtpCode) |
+| Prisma OTP queries | ✅ createOtpCode, findActiveOtpCode, markOtpVerified, incrementOtpAttempts, deleteExpiredOtpCodes |
+| `check-query-parity.sh` | ✅ In sync — 148 exports on both drivers |
 | Tenant middleware | ❌ Step 4 |
 | BullMQ worker | ❌ Step 5 |
 | Merchant provisioner | ❌ Step 6 |
@@ -102,17 +105,43 @@ becomes a problem in Step 4.
   control-DB rows. Cert/DNS automation lands with the merchant-provisioner
   in Step 6 (`fly_certificates` API).
 
+## What Was Done This Session (2026-04-14, continued)
+
+**Step 3 (commit `c4c649d`):**
+- Added `packages/platform/src/database/prisma/schema/profile.prisma`
+  with 5 models to match the Drizzle Profile family that had been
+  missing from the Prisma schema entirely. Regenerated Prisma client.
+- Extended `prisma/client.ts` with a single-tenant `getDb()`/
+  `initPrisma()` pair (mirrors Drizzle's contract) while keeping the
+  per-merchant `clientCache` / `getPrismaClient(url)` API that Step 4
+  will use via the tenant middleware.
+- Added OTP queries to `prisma/queries/profiles.ts`
+  (`createOtpCode`, `findActiveOtpCode` with expiresAt-gt-now filter,
+  `markOtpVerified`, `incrementOtpAttempts` using Prisma's atomic
+  `{ increment: 1 }`, `deleteExpiredOtpCodes` via `deleteMany` + OR).
+- Flipped `src/database/index.ts` — Prisma lines active, Drizzle
+  commented (single swap point). Updated `src/adapter.ts` to
+  dynamic-import `initPrisma`. Updated `src/index.ts` re-exports.
+- Tightened `tsconfig.json` — excluded only `generated/**` (was
+  `prisma/**`); surfaced 9 pre-existing implicit-any sites in
+  `src/admin/*.ts`, `src/domains/cart.ts`, `src/domains/catalog.ts`
+  and annotated each minimally.
+- `check-query-parity.sh` green. Platform typecheck + build clean.
+
 ## Immediate Next Steps
 
-### Step 3 — Prisma as Primary on Platform (Day 4)
+### Step 4 — Tenant Resolution (Day 5)
 
-Per `.plans/fly-migration-plan.md` → Step 3:
-- `packages/platform/src/database/prisma/schema/schema.prisma` already has
-  `runtime = "nodejs"` (Phase 0 work).
-- Adjust `packages/platform/src/adapter.ts` so `initDatabase()` calls
-  `initPrisma()` instead of `initDrizzle()`.
-- Run `check-query-parity.sh` first to make sure each domain has a Prisma
-  implementation matching the Drizzle one.
+Per `.plans/fly-migration-plan.md` → Step 4:
+- Create `apps/dashboard/server/utils/tenant.ts`:
+  - `resolveMerchant(event)` — subdomain → `X-Commerce-Key` header →
+    custom domain precedence
+  - `getMerchantConfig(merchantId)` — Prisma lookup against control DB,
+    LRU-cached (1000 entries, 60 s TTL)
+- Wire the resolver into Nitro middleware so every storefront / admin
+  API request has a resolved merchant before domain code runs.
+- Tenant middleware returns the merchant's per-branch connection string;
+  the platform's `getPrismaClient(connectionString)` takes it from there.
 
 ## Key Files to Know
 
