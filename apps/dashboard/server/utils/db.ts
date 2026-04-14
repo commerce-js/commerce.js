@@ -2,7 +2,7 @@
 // Control DB — Prisma client (singleton)
 // ---------------------------------------------------------------------------
 //
-// Wraps a single PrismaClient bound to CONTROL_DATABASE_URL via the Neon
+// Wraps a single PrismaClient bound to NEON_CONTROL_DB_URL via the Neon
 // HTTP/WS adapter. The control DB stores platform metadata (Merchant,
 // ApiKey, Domain, DashboardUser) — see prisma/schema.prisma.
 //
@@ -27,11 +27,12 @@ let cached: PrismaClient | null = null
 export function useDB(): PrismaClient {
   if (cached) return cached
 
-  const url = process.env.CONTROL_DATABASE_URL
+  const url = process.env.NEON_CONTROL_DB_URL
   if (!url) {
     throw new Error(
-      'CONTROL_DATABASE_URL is not set. Configure it in the Fly.io app '
-      + 'environment (or .env locally) before calling useDB().',
+      'NEON_CONTROL_DB_URL is not set. Configure it in the Fly.io app '
+      + 'secrets (or the monorepo-root .secrets file locally) before '
+      + 'calling useDB().',
     )
   }
 

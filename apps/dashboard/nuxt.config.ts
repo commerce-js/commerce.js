@@ -42,9 +42,12 @@ export default defineNuxtConfig({
     },
   },
 
-  // Runtime config — populated from env vars on Fly
+  // Runtime config — populated from env vars on Fly.
+  // NOTE: NEON_CONTROL_DB_URL is read directly via process.env in
+  // server/utils/db.ts (the canonical name lives in the monorepo-root
+  // .secrets file). Anything that needs to be exposed to Vue components
+  // belongs under `public:` and follows Nuxt's NUXT_<KEY> convention.
   runtimeConfig: {
-    controlDatabaseUrl: '',
     neonApiKey: '',
     sessionPassword: '',
     redisUrl: '',
@@ -52,7 +55,6 @@ export default defineNuxtConfig({
     stripeWebhookSecret: '',
     public: {
       appTitle: 'CommerceJS Cloud',
-      // Dashboard base URL
       baseUrl: 'http://localhost:3002',
     },
   },
