@@ -8,7 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
-import type * as runtime from "@prisma/client/runtime/wasm-compiler-edge"
+import type * as runtime from "@prisma/client/runtime/client"
 import type * as $Enums from "../enums.js"
 import type * as Prisma from "../internal/prismaNamespace.js"
 
@@ -178,7 +178,7 @@ export type CartGroupByOutputType = {
   _max: CartMaxAggregateOutputType | null
 }
 
-type GetCartGroupByPayload<T extends CartGroupByArgs> = Prisma.PrismaPromise<
+export type GetCartGroupByPayload<T extends CartGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CartGroupByOutputType, T['by']> &
       {
@@ -1379,6 +1379,11 @@ export type CartFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
    * Skip the first `n` Carts.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Carts.
+   */
   distinct?: Prisma.CartScalarFieldEnum | Prisma.CartScalarFieldEnum[]
 }
 

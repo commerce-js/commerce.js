@@ -34,16 +34,20 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:migrate": "node scripts/migrate.mjs",
-    "db:migrate:seed": "node scripts/migrate.mjs --seed"
+    "db:migrate:seed": "node scripts/migrate.mjs --seed",
+    "prisma:generate": "prisma generate --schema=src/database/prisma/schema",
+    "prisma:migrate": "prisma migrate dev --schema=src/database/prisma/schema"
   },
   "dependencies": {
     "@commercejs/types": "workspace:*",
     "@neondatabase/serverless": "^1.0.2",
+    "@prisma/adapter-neon": "^7.6.0",
     "bcrypt-ts": "^5.0.3",
     "drizzle-orm": "^0.45.1"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.9",
+    "prisma": "^7.6.0",
     "typescript": "^5.7.0",
     "vitest": "^4.0.0"
   }

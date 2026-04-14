@@ -8,7 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
-import type * as runtime from "@prisma/client/runtime/wasm-compiler-edge"
+import type * as runtime from "@prisma/client/runtime/client"
 import type * as $Enums from "../enums.js"
 import type * as Prisma from "../internal/prismaNamespace.js"
 
@@ -192,7 +192,7 @@ export type ProductOptionValueGroupByOutputType = {
   _max: ProductOptionValueMaxAggregateOutputType | null
 }
 
-type GetProductOptionValueGroupByPayload<T extends ProductOptionValueGroupByArgs> = Prisma.PrismaPromise<
+export type GetProductOptionValueGroupByPayload<T extends ProductOptionValueGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ProductOptionValueGroupByOutputType, T['by']> &
       {
@@ -1166,6 +1166,11 @@ export type ProductOptionValueFindManyArgs<ExtArgs extends runtime.Types.Extensi
    * Skip the first `n` ProductOptionValues.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of ProductOptionValues.
+   */
   distinct?: Prisma.ProductOptionValueScalarFieldEnum | Prisma.ProductOptionValueScalarFieldEnum[]
 }
 

@@ -42,3 +42,5 @@ pnpm-debug.log*
 .memory/
 
 apps/dashboard/.data
+
+.secrets

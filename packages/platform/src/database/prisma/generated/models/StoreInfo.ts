@@ -8,7 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
-import type * as runtime from "@prisma/client/runtime/wasm-compiler-edge"
+import type * as runtime from "@prisma/client/runtime/client"
 import type * as $Enums from "../enums.js"
 import type * as Prisma from "../internal/prismaNamespace.js"
 
@@ -237,7 +237,7 @@ export type StoreInfoGroupByOutputType = {
   _max: StoreInfoMaxAggregateOutputType | null
 }
 
-type GetStoreInfoGroupByPayload<T extends StoreInfoGroupByArgs> = Prisma.PrismaPromise<
+export type GetStoreInfoGroupByPayload<T extends StoreInfoGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<StoreInfoGroupByOutputType, T['by']> &
       {
@@ -1300,6 +1300,11 @@ export type StoreInfoFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Skip the first `n` StoreInfos.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of StoreInfos.
+   */
   distinct?: Prisma.StoreInfoScalarFieldEnum | Prisma.StoreInfoScalarFieldEnum[]
 }
 

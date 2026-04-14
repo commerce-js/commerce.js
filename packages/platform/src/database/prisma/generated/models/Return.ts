@@ -8,7 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
-import type * as runtime from "@prisma/client/runtime/wasm-compiler-edge"
+import type * as runtime from "@prisma/client/runtime/client"
 import type * as $Enums from "../enums.js"
 import type * as Prisma from "../internal/prismaNamespace.js"
 
@@ -248,7 +248,7 @@ export type ReturnGroupByOutputType = {
   _max: ReturnMaxAggregateOutputType | null
 }
 
-type GetReturnGroupByPayload<T extends ReturnGroupByArgs> = Prisma.PrismaPromise<
+export type GetReturnGroupByPayload<T extends ReturnGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ReturnGroupByOutputType, T['by']> &
       {
@@ -1388,6 +1388,11 @@ export type ReturnFindManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Skip the first `n` Returns.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Returns.
+   */
   distinct?: Prisma.ReturnScalarFieldEnum | Prisma.ReturnScalarFieldEnum[]
 }
 

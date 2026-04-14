@@ -8,7 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
-import type * as runtime from "@prisma/client/runtime/wasm-compiler-edge"
+import type * as runtime from "@prisma/client/runtime/client"
 import type * as $Enums from "../enums.js"
 import type * as Prisma from "../internal/prismaNamespace.js"
 
@@ -172,7 +172,7 @@ export type AdminUserGroupByOutputType = {
   _max: AdminUserMaxAggregateOutputType | null
 }
 
-type GetAdminUserGroupByPayload<T extends AdminUserGroupByArgs> = Prisma.PrismaPromise<
+export type GetAdminUserGroupByPayload<T extends AdminUserGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<AdminUserGroupByOutputType, T['by']> &
       {
@@ -1022,6 +1022,11 @@ export type AdminUserFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Skip the first `n` AdminUsers.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of AdminUsers.
+   */
   distinct?: Prisma.AdminUserScalarFieldEnum | Prisma.AdminUserScalarFieldEnum[]
 }
 

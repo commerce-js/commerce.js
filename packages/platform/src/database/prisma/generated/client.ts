@@ -10,9 +10,12 @@
  * 🟢 You can import this file directly.
  */
 
-globalThis['__dirname'] = '/'
+import * as process from 'node:process'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
+globalThis['__dirname'] = path.dirname(fileURLToPath(import.meta.url))
 
-import * as runtime from "@prisma/client/runtime/wasm-compiler-edge"
+import * as runtime from "@prisma/client/runtime/client"
 import * as $Enums from "./enums.js"
 import * as $Class from "./internal/class.js"
 import * as Prisma from "./internal/prismaNamespace.js"
@@ -25,7 +28,9 @@ export * from "./enums.js"
  * Type-safe database client for TypeScript
  * @example
  * ```
- * const prisma = new PrismaClient()
+ * const prisma = new PrismaClient({
+ *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
+ * })
  * // Fetch zero or more AdminUsers
  * const adminUsers = await prisma.adminUser.findMany()
  * ```

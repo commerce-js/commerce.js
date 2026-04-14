@@ -101,3 +101,30 @@
   - Error classification: retry transient (423/429/5xx), ack permanent (400/401/403/404)
   - Local dev fallback: inline provisioning when Queue binding is unavailable
 - **Key files:** `wrangler.jsonc`, `server/utils/deploy-queue.ts`, `server/utils/deploy-provisioner.ts`, `server/plugins/deploy-consumer.ts`
+
+## 2026-03-12: Fly.io EaaS branch — Prisma as primary ORM
+- **Context:** Pivoting CommerceJS to EaaS on Fly.io. Cloudflare's restricted runtime (WASM, CPU limits, no WebSockets) blocked Prisma. Fly.io runs standard Node.js.
+- **Decision:** On `fly/eaas` branch, Prisma is the primary ORM for both control DB and merchant DBs. Drizzle stays primary on `main` (CF).
+- **Changes:** `schema.prisma` generator `runtime = "node"`, `adapter.ts` calls `initPrisma()`, control DB uses `PrismaClient`.
+- **Rules:**
+  - Run `check-query-parity.sh` before switching to ensure Prisma implementations are up-to-date
+  - `fly/eaas` does NOT import from `packages/cloud/` — new provisioning is in `dashboard/server/utils/`
+  - Keep `packages/platform/` changes backwards-compatible so cherry-picks to `main` don't break Drizzle
+
+## 2026-03-12: Two-database architecture for EaaS
+- **Context:** Multi-tenant EaaS needs cloud metadata separate from merchant commerce data.
+- **Decision:** Two Prisma connections per request:
+  1. **Control DB** (Neon project `cjs-control`): merchants, api_keys, domains, dashboard_users
+  2. **Merchant DB** (Neon branch per merchant): products, orders, carts, customers (existing platform schema)
+- **Connection strategy:** Control DB = singleton PrismaClient. Merchant DB = cached PrismaClient per merchant (Map with idle disconnect).
+
+## 2026-03-12: Branch strategy for Fly.io migration
+- **Context:** Need to develop Fly.io infrastructure without disrupting existing Cloudflare setup on `main`.
+- **Decision:** `fly/eaas` branch diverges from `main`. Cherry-pick shared business logic weekly. If Fly.io validates, `fly/eaas` becomes `main`.
+- **Plan:** See `.plans/fly-migration-plan.md` for locked-down details.
+
+## 2026-03-12: BullMQ replaces Cloudflare Queues on fly/eaas
+- **Context:** CF Queues use `nitro._queue` hook (CF-only). Fly.io needs a portable job queue.
+- **Decision:** BullMQ + Upstash Redis. Standalone `worker.ts` entry point as a separate Fly process.
+- **Job types:** `provision-store`, `send-email`, `dispatch-webhook`
+- **Built-in:** 3 retries with exponential backoff, failed job visibility (replaces DLQ plugin)
