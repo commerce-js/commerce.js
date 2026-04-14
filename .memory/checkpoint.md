@@ -2,12 +2,14 @@
 
 ## Current Phase
 
-**Fly.io EaaS Migration — Step 3 (Platform → Prisma) Complete**
+**Fly.io EaaS Migration — Step 4 (Tenant Resolution) Complete**
 
-`packages/platform` now ships Prisma as its active ORM. The control DB
-(Step 2) and the platform (Step 3) both run on Prisma + Neon adapter.
-Drizzle stays in-tree for the `main` branch; a single barrel swap in
-`src/database/index.ts` is the driver switch-point.
+Every request now maps to a merchant before domain code runs. The
+middleware binds the merchant's Neon-branch Prisma client to the
+platform's AsyncLocalStorage and attaches a cached PlatformAdapter to
+`event.context`. Step 3 (platform on Prisma) and Step 4 combine into a
+multi-tenant-safe request pipeline — one shared Fly process, per-merchant
+DB, zero cross-tenant leakage via the ALS binding.
 
 ⚠️ **Region note:** the Neon control project (Step 2) is in `us-east-1`
 rather than the plan's recommended `aws-eu-central-1`. ~150 ms RTT from
@@ -44,7 +46,11 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 | Prisma Profile models | ✅ Added in `profile.prisma` (Profile, ProfileAddress, ProfilePaymentMethod, ProfileMerchantLink, ProfileOtpCode) |
 | Prisma OTP queries | ✅ createOtpCode, findActiveOtpCode, markOtpVerified, incrementOtpAttempts, deleteExpiredOtpCodes |
 | `check-query-parity.sh` | ✅ In sync — 148 exports on both drivers |
-| Tenant middleware | ❌ Step 4 |
+| Platform AsyncLocalStorage scoping | ✅ `bindDb(client)` / `runWithDb(client, fn)` in `prisma/client.ts`; `getDb()` prefers ALS over module singleton |
+| Tenant resolver (`server/utils/tenant.ts`) | ✅ X-Commerce-Key → custom domain → subdomain precedence; LRU cache (1000/60 s); API-key sha256 verify |
+| Tenant middleware (`server/middleware/tenant.ts`) | ✅ Skip list for control-DB/auth/health; 404/503/403 on resolve failure; cached PlatformAdapter per merchant |
+| Plan-limits middleware | ✅ Trial expiry → 402; PLAN_LIMITS map for products/staff/customDomains; product-cap plumbing stubbed for Step 7 |
+| h3 context augmentation | ✅ `event.context.merchant / adapter / admin` typed |
 | BullMQ worker | ❌ Step 5 |
 | Merchant provisioner | ❌ Step 6 |
 
@@ -128,20 +134,58 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
   and annotated each minimally.
 - `check-query-parity.sh` green. Platform typecheck + build clean.
 
+## Step 4 deliverables (commit `9e67402`)
+
+- Added `AsyncLocalStorage`-backed tenant scoping to
+  `packages/platform/src/database/prisma/client.ts`
+  (`bindDb(client)` via `enterWith` for Nitro middleware; `runWithDb`
+  wrapper for callback-scoped work like BullMQ jobs in Step 5). `getDb()`
+  resolves ALS → module singleton → throw, so the existing domain query
+  layer gets multi-tenancy without touching its call sites.
+- `apps/dashboard/server/utils/tenant.ts` — resolver + LRU cache +
+  `MerchantContext` type. API-key resolution verifies sha256(fullKey)
+  against `keyHash` after a prefix lookup; fire-and-forget `lastUsed`
+  bump.
+- `apps/dashboard/server/middleware/tenant.ts` — skip list for
+  control-DB + auth + health paths; 404/503/403 on failed resolution;
+  `getPrismaClient(merchant.databaseUrl) → bindDb → ensureAdapter`.
+  PlatformAdapter cache keyed on `databaseUrl` so URL rotations rebuild.
+- `apps/dashboard/server/middleware/plan-limits.ts` — trial expiry check
+  (402 once past `trialEndsAt` for plan='trial'); PLAN_LIMITS map +
+  write-method gate with a product-count placeholder that Step 7 wires
+  to `event.context.admin.catalog.countProducts`.
+- `apps/dashboard/server/types/h3-context.d.ts` — module-augments h3's
+  `H3EventContext` with `merchant`, `adapter`, `admin`.
+- Deps: added `@commercejs/platform` + `@commercejs/types` (workspace)
+  and `lru-cache@^11.2.5` to the dashboard.
+
+## Known carry-over (pre-existing, unrelated to Step 4)
+
+- `pnpm --filter dashboard typecheck` fails with "Cannot find module 'h3'"
+  and missing Nitro auto-imports (`useRuntimeConfig`, `useSession`,
+  `defineEventHandler`, etc). Reproduced on the pre-Step-4 tree — this is
+  an h3 type-resolution problem in the pnpm workspace that predates the
+  Fly.io migration. Runtime build path is fine. Revisit during Step 7 UI
+  refactor if it blocks dev ergonomics.
+
 ## Immediate Next Steps
 
-### Step 4 — Tenant Resolution (Day 5)
+### Step 5 — BullMQ Background Jobs (Day 6)
 
-Per `.plans/fly-migration-plan.md` → Step 4:
-- Create `apps/dashboard/server/utils/tenant.ts`:
-  - `resolveMerchant(event)` — subdomain → `X-Commerce-Key` header →
-    custom domain precedence
-  - `getMerchantConfig(merchantId)` — Prisma lookup against control DB,
-    LRU-cached (1000 entries, 60 s TTL)
-- Wire the resolver into Nitro middleware so every storefront / admin
-  API request has a resolved merchant before domain code runs.
-- Tenant middleware returns the merchant's per-branch connection string;
-  the platform's `getPrismaClient(connectionString)` takes it from there.
+Per `.plans/fly-migration-plan.md` → Step 5:
+1. `pnpm --filter dashboard add bullmq ioredis`
+2. `apps/dashboard/server/utils/deploy-queue.ts` (new): `Queue(
+   'merchant-jobs', { connection: redisConfig })` with
+   `enqueueMerchantJob(type, data)` wrapper.
+3. `apps/dashboard/worker.ts` (new standalone entry): `Worker(
+   'merchant-jobs', ...)` handling `provision-store`, `send-email`,
+   `dispatch-webhook`.
+4. Wrap worker job bodies in `runWithDb(getPrismaClient(merchant.databaseUrl), ...)`
+   so they get tenant-scoped Prisma access too.
+5. Add `worker` process to `fly.toml` (already stubbed — uncomment).
+
+Redis URL already in `.secrets` as `UPSTASH_REDIS_REST_URL` +
+`UPSTASH_REDIS_REST_TOKEN`. No user-pause expected.
 
 ## Key Files to Know
 
