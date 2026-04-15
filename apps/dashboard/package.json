@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build && pnpm build:worker",
-    "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node20 --outfile=.output/worker.mjs --banner:js='import { createRequire } from \"node:module\"; const require = createRequire(import.meta.url);' --packages=external",
+    "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node22 --outfile=.output/worker.mjs --banner:js='import { createRequire } from \"node:module\"; const require = createRequire(import.meta.url);' --packages=external",
     "preview": "nuxt preview",
     "generate": "nuxt generate",
     "typecheck": "nuxt typecheck"

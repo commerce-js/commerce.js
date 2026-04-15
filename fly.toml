@@ -1,43 +1,43 @@
-# ---------------------------------------------------------------------------
-# CommerceJS Cloud — Fly.io app config
-# ---------------------------------------------------------------------------
-# Region: bah (Bahrain) — closest to GCC/MENA primary market.
-# Two processes: `web` (Nitro server) + `worker` (BullMQ consumer). They
-# share the same image; fly.toml's [processes] table tells each machine
-# which command to run, overriding the Dockerfile CMD on the worker tier.
-# `web` auto-suspends on idle to keep cost ~$2/mo on shared-cpu; `worker`
-# stays on so the queue is always being drained.
-# ---------------------------------------------------------------------------
+# fly.toml app configuration file generated for commercejs-cloud on 2026-04-15T14:06:44+03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "commercejs-cloud"
-primary_region = "bah"
+app = 'commercejs-cloud'
+primary_region = 'fra'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  NODE_ENV = "production"
+  NODE_ENV = 'production'
 
 [processes]
-  web = "node .output/server/index.mjs"
-  worker = "node .output/worker.mjs"
+  web = 'node .output/server/index.mjs'
+  worker = 'node .output/worker.mjs'
 
 [http_service]
   internal_port = 3000
   force_https = true
-  auto_stop_machines = "suspend"
+  auto_stop_machines = 'suspend'
   auto_start_machines = true
   min_machines_running = 1
-  processes = ["web"]
+  processes = ['web']
 
   [http_service.concurrency]
-    type = "requests"
+    type = 'requests'
     hard_limit = 250
     soft_limit = 200
 
   [[http_service.checks]]
-    grace_period = "10s"
-    interval = "30s"
-    method = "GET"
-    path = "/api/_health"
-    timeout = "5s"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/api/_health'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
