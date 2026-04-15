@@ -2,13 +2,14 @@
 
 ## Current Phase
 
-**Fly.io EaaS Migration — Step 7 (Dashboard UI Refactor) Complete**
+**Fly.io EaaS Migration — Step 8 (Live on Fly.io) Complete**
 
-The dashboard is now a pure cloud-operator console — auth via
-email/password against `dashboard_users`, a merchants list/detail/create
-flow that drives the Step 6 provisioning pipeline, and everything CF-
-or merchant-admin-specific is gone. Bundle shrank from 17.9 MB → 14.4 MB.
-Ready for Step 8 (`fly deploy` to Bahrain) on user confirmation.
+The full Phase 1 → 8 pipeline is running in production at
+`https://commercejs-cloud.fly.dev` (Frankfurt, 2 web + 1 worker + 1
+standby worker, image `commercejs-cloud:deployment-01KP8DYKE4DF8YGHHDT24SQTKP`).
+End-to-end smoke test passed: register admin → create merchant → BullMQ
+worker creates a real Neon project + branch + applies the platform schema
++ flips status to `active` in 5.8 seconds.
 
 ⚠️ **Region note:** the Neon control project (Step 2) is in `us-east-1`
 rather than the plan's recommended `aws-eu-central-1`. ~150 ms RTT from
@@ -69,6 +70,14 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 | `/merchants/:id` detail page | ✅ Overview, infrastructure (Neon IDs + masked URL), domains, retry button, danger-zone delete |
 | Nav + brand mark | ✅ Merchants / Settings / Profile only; CF + store/* tree removed |
 | Pruned surface | ✅ `projects/*`, `deployments`, `usage`, `uptime`, `store/*`, `billing/*`, `/api/admin/*`, `/api/armada/*`, `useDeployStream`, `useAdminClient`, `useFormatCurrency`, `ProjectSwitcher` all deleted |
+| **Fly.io app** | ✅ `commercejs-cloud` in `fra` (Frankfurt) |
+| Fly secrets | ✅ All 10 required vars set (NEON_*, UPSTASH_*, NUXT_SESSION_PASSWORD, SMTP_*) |
+| Web machines | ✅ 2× shared-cpu-1x in fra (auto-suspend on idle, min_machines_running=1) |
+| Worker machines | ✅ 1× active + 1× standby (host-failover) in fra |
+| `/api/_health` probe | ✅ 200 in ~770 ms cold |
+| First-run admin register | ✅ Tested live (`baker@shamlan.sa`, role=admin) |
+| Live provisioning chain | ✅ POST /api/merchants → BullMQ → Neon project create → schema apply → `status='active'` (5.8 s end-to-end) |
+| Merchant Neon DBs | ✅ Created in `aws-eu-central-1` (default region from `server/utils/neon.ts`) |
 
 ## What Was Done This Session (2026-04-14)
 
@@ -286,27 +295,83 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
   profile page as later-phase; a `POST /api/admin/users` invite route
   pairs with it.
 
+## Step 8 deliverables (commits `4c4ad6e`, `219a897`)
+
+- `apps/dashboard/server/api/_health.get.ts` (new) — Fly health probe.
+- `.dockerignore` (new) — keep dev artifacts out of build context.
+- `Dockerfile` final shape (commit `219a897`):
+  - `node:22-slim` base (Node 20's WebSocket support is experimental;
+    Neon's serverless driver needs `globalThis.WebSocket` for the WS
+    connection to the pooler — without Node 22 the dashboard 500s on
+    every DB hop).
+  - `apt-get install openssl ca-certificates` (Prisma engine + outbound
+    TLS).
+  - Copies `tsconfig.base.json` so `prisma generate` can resolve the
+    workspace tsconfig `extends` chain.
+  - Placeholder `NEON_CONTROL_DB_URL` for `prisma generate` only
+    (Prisma 7 strict env at config-load time).
+  - Builds the dashboard's transitive workspace deps (`pnpm --filter
+    '@commercejs/dashboard...' --filter '!@commercejs/dashboard'
+    build`) so Nitro can resolve `@commercejs/{platform,types}` via
+    their `main` fields.
+  - `pnpm --filter @commercejs/dashboard deploy --prod /tmp/worker-deploy`
+    snapshots prod node_modules for the worker bundle's externals.
+  - Two-stage final image: `.output/server/index.mjs` for `web`,
+    `.output/worker.mjs` for `worker`, `node_modules` shared.
+- `fly.toml` — `primary_region = 'fra'` (the migration plan's `bah`
+  doesn't exist as a Fly region; fra paired with the us-east-1 Neon
+  control DB gives ~100 ms RTT vs ~190 ms from bom).
+
+## Smoke-test live state (DO NOT delete unless cleaning up)
+
+- DashboardUser: `baker@shamlan.sa` (id `c7b76467-…`, role `admin`)
+- Merchant: `Smoke Test Coffee` (id `1c7749dd-f3c1-4746-b168-4e8cd4fdadad`)
+  - Subdomain: `smoke.commercejs.cloud`
+  - Neon project: `round-salad-05692607` (eu-central-1)
+  - Neon branch: `br-holy-pond-alo3mn96`
+  - Status: `active` since 2026-04-15T11:39:58Z
+  - Provisioned in 5.8 seconds end-to-end (create→active)
+- Cleanup later via dashboard UI's danger-zone delete (and a separate
+  `neon` API call to drop the project — the merchant DELETE only
+  removes the control-DB row).
+
+## Known carry-over
+
+- **Local cookies** at `/tmp/cjs-cookies` from the curl smoke test —
+  not committed; just stale once macOS reboots.
+- **DNS** — `commercejs-cloud.fly.dev` is live; `commercejs.cloud` apex
+  is not pointed at Fly yet. When ready: CNAME the apex (or wildcard
+  `*.commercejs.cloud` for storefront subdomains) to
+  `commercejs-cloud.fly.dev`, then `fly certs create` for each cert.
+- **Pre-existing dashboard typecheck failure** still unchanged
+  (Nitro auto-import resolution in pnpm workspace; runtime build is
+  fine).
+- **`provision-store` currently uses `aws-eu-central-1` for merchant
+  Neon DBs.** Fine for now (matches the Fly region); revisit if/when
+  storefronts launch in MENA and we want the merchant DB closer to
+  buyers.
+
 ## Immediate Next Steps
 
-### Step 8 — Deploy to Fly.io (Day 13)
+The migration is functionally complete — the platform sells stores. From
+here the work is product, not infrastructure:
 
-Per `.plans/fly-migration-plan.md` → Step 8:
-1. `fly launch --no-deploy --copy-config` to register `commercejs-cloud`
-   in Fly, skipping auto-generated fly.toml.
-2. `fly secrets set` for each var in the monorepo-root `.secrets` file:
-   `NEON_CONTROL_DB_URL`, `NEON_API_KEY`,
-   `UPSTASH_REDIS_REST_URL`/`_TOKEN`, `SMTP_*`, `NUXT_SESSION_PASSWORD`,
-   `STRIPE_*`, `SENTRY_DSN`.
-3. `fly deploy --config fly.toml` — builds the image from the repo
-   Dockerfile and boots both `web` and `worker` processes.
-4. First smoke test:
-   - `fly ssh console` into web → confirm `/api/_health` responds
-   - `curl -X POST` a merchant creation → watch worker logs for the
-     Neon-project-create + migratePrisma + status=active chain.
-5. DNS: CNAME `commercejs.cloud` to the Fly app edge.
-
-**Autonomous rule: `fly deploy` requires explicit user confirmation.**
-Present a deployment checklist before running any `fly` commands.
+- **Storefront request routing.** Tenant middleware resolves merchants
+  but no storefront API surface is wired yet. Next: a `/api/storefront/*`
+  route tree (or subdomain-based routing into a separate Nitro app)
+  backed by the per-merchant adapter on `event.context.adapter`.
+- **Billing.** Stripe customer + subscription (the `stripeCustomer`
+  field on Merchant is plumbed; nothing reads or writes it).
+- **Merchant DB region pairing.** When MENA storefronts launch,
+  consider Neon `aws-ap-south-1` for merchant branches and Fly `bom`
+  paired with control DB also in ap-south-1.
+- **Live `PLAN_LIMITS.products` check.** Wire into the plan-limits
+  middleware (placeholder is already there from Step 4).
+- **Email transport.** `handleSendEmail` in worker.ts is still a stub —
+  pick the SMTP provider package (notification-smtp already in the
+  monorepo) and wire it.
+- **Merge fly/eaas → main** when the team is ready to retire the
+  Cloudflare branch.
 
 ## Key Files to Know
 
