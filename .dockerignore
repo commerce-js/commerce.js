@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------------------
+# .dockerignore — keep build context lean for `docker build` / `fly deploy`
+# ---------------------------------------------------------------------------
+# Without this, every COPY pulls in local node_modules + .nuxt + .output
+# trees (gigabytes), slowing the build and leaking dev artifacts into the
+# image. We deliberately keep ALL workspace package manifests on disk so
+# `pnpm install --frozen-lockfile` matches the lockfile — pruning by
+# package would break the install.
+# ---------------------------------------------------------------------------
+
+# Node + tool caches
+**/node_modules
+**/.pnpm-store
+**/.cache
+
+# Build outputs (Dockerfile re-builds them inside the image)
+**/.nuxt
+**/.output
+**/dist
+**/.turbo
+
+# Generated Prisma client (regenerated inside the image)
+apps/dashboard/server/generated
+packages/platform/src/database/prisma/generated
+
+# Editor / OS / VCS
+.git
+.gitignore
+.github
+.vscode
+.idea
+.DS_Store
+
+# Local-only / never-image-side
+.env
+**/.env.local
+**/.env.*.local
+.secrets
+.tmp-*
+
+# Repo memory / planning / agent context — not runtime artifacts
+.memory
+.research
+.plans
+.agent
+.templates
+.claude
+
+# Documentation
+**/*.md
+LICENSE

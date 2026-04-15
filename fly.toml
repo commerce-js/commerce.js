@@ -2,8 +2,11 @@
 # CommerceJS Cloud — Fly.io app config
 # ---------------------------------------------------------------------------
 # Region: bah (Bahrain) — closest to GCC/MENA primary market.
-# Auto-suspend on idle to keep cost ~$2/mo for the shared-cpu web tier.
-# Worker process is added in Step 5 (BullMQ) — left commented for now.
+# Two processes: `web` (Nitro server) + `worker` (BullMQ consumer). They
+# share the same image; fly.toml's [processes] table tells each machine
+# which command to run, overriding the Dockerfile CMD on the worker tier.
+# `web` auto-suspends on idle to keep cost ~$2/mo on shared-cpu; `worker`
+# stays on so the queue is always being drained.
 # ---------------------------------------------------------------------------
 
 app = "commercejs-cloud"
