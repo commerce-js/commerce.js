@@ -225,10 +225,12 @@
 ### Storefront Layer (`*.commercejs.cloud`)
 > Full detail: `.plans/storefront-eaas/`
 
-- [ ] **T01** — Storefront API routes in dashboard app (`/api/storefront/*`)
-- [ ] **T02** — `@commercejs/nuxt` remote mode (`apiRoutes: false` + built-in proxy)
-- [ ] **T03** — `apps/storefront` Fly.io migration (`node-server` preset + merchant config injection)
-- [ ] **T04** — Hosted SSR as second Fly.io process (hostname proxy middleware, `fly.toml` `store` process)
+- [x] **T01** — Storefront API routes in dashboard app (`/api/storefront/*`) — 19 routes live
+- [x] **T02** — `@commercejs/nuxt` remote mode (`apiRoutes: false` + built-in proxy)
+- [x] **T03** — `apps/storefront` Fly.io migration (`node-server` preset + merchant config injection)
+- [x] **T04** — Hosted SSR co-supervised with dashboard on each web machine; `smoke.commercejs.cloud` serves storefront SSR, `app.commercejs.cloud` still serves the dashboard
+- [x] Post-T04: `app.buildAssetsDir = '/_storefront/'` — avoids dashboard↔storefront `/_nuxt/*` collision; extensible to `/_themes/<name>/` for future template themes
+- [x] Post-T04: composable rewrite (phase 1) — `useCart`, `useCheckout`, `useBrands`, `useLocations` now hit T01's session-based API; `/api/storefront/countries` + `/cities` endpoints added
 
 ### Billing (Tap)
 - [x] `Merchant.tapCustomerId` column plumbed
@@ -242,7 +244,7 @@
 - [x] **Provisioning emails** — stub in worker (SMTP transport pending)
 - [ ] **Transactional emails** — order confirmations, shipping updates, password resets
   (wire `notification-smtp` package into `handleSendEmail` in `worker.ts`)
-- [ ] **Merchant admin** — merchant-facing dashboard (manage products, orders, customers)
+- [ ] **Merchant admin** — merchant-facing dashboard (manage products, orders, customers). Currently blocks the smoke-to-live story: merchants can sign up but have no way to populate a catalog. See `.plans/storefront-eaas/plan.md` "Next Steps" for the recommendation.
 - [ ] **Custom domains** — cert provisioning via `fly certs add` on domain verification
 
 ### Developer / Self-Hosted Path

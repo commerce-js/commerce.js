@@ -19,3 +19,40 @@ This affected `@commercejs/ui` (33 components) and `@commercejs/nuxt` (3 composa
 
 ## nuxt-auth-utils — NUXT_SESSION_PASSWORD Required in Production
 The `nuxt-auth-utils` module requires `NUXT_SESSION_PASSWORD` environment variable to be set in production for session cookie encryption. In dev mode, it auto-generates one. Without it, SSR crashes with `Error: Empty password` when any page triggers the auth session middleware.
+
+## Nuxt in-process `$fetch` Drops Headers AND `event.context` (T04)
+During SSR, `useFetch('/api/...')` with a relative URL dispatches the local handler in-process (no HTTP round-trip). Two surprises:
+- `event.context` from the outer SSR request does NOT flow to the inner handler's event. Even though h3's `fetchWithEvent` sets `context: init?.context || event.context` on the outgoing fetch options, that context doesn't become `event.context` on the new handler's event.
+- The outer request's headers don't reliably flow either. Inner event sees `Host: localhost`, no `x-forwarded-host`.
+
+**Fix**: Use Node's `AsyncLocalStorage` to carry per-request state across the boundary. Enter a store frame on every incoming request via a Nitro `request` hook; the inner handler reads from `store.getStore()`. See `packages/nuxt/src/runtime/server/plugins/proxy-forwarded-host.ts` for the pattern.
+
+## Nitro Public-Asset Handler Runs Before User Middleware (T04)
+Paths registered by Nuxt's build for `app.buildAssetsDir` (default `/_nuxt/`) are served by a handler registered at build time that matches those URL prefixes and 404s if the file isn't in `.output/public/`. User middleware in `server/middleware/` does NOT intercept these paths first. Impact: if the dashboard and storefront are co-deployed on the same origin and both emit `/_nuxt/*`, each 404s the other's bundles.
+
+**Fix**: Give each app a distinct `app.buildAssetsDir`. Storefront now uses `/_storefront/`.
+
+## `wait -n` Is Bash-Only, Not dash
+`node:22-slim`'s `/bin/sh` is dash, which doesn't implement `wait -n` (wait for any child). Caused `scripts/start-web.sh` to die with "Illegal option -n" immediately on boot → crash loop.
+
+**Fix**: Use `#!/bin/bash` explicitly (bash is present on node:22-slim) and invoke as `/bin/bash scripts/start-web.sh` in `fly.toml`.
+
+## Prisma 7 Strict Env Resolution at `prisma generate` (T04)
+`prisma.config.ts` calls `env('DATABASE_URL')` which now hard-errors at config-load time if the env var isn't set, even though `prisma generate` itself doesn't touch a DB. The dashboard step already had a `NEON_CONTROL_DB_URL="postgresql://placeholder..."` workaround; the platform's `prisma generate` needed its own `DATABASE_URL` placeholder.
+
+**Fix**: Always pass a placeholder URL env var at `prisma generate` time in the Dockerfile.
+
+## `nuxt build` Doesn't See Fly `[env]` Runtime Vars (T04)
+Env vars set in `fly.toml [env]` are runtime-only. `nuxt build` runs at Docker build time and sees only what's `ENV`'d in the Dockerfile (or build args). Consequence for mode switches: if module detection keys off `process.env.FOO` at build time, the Fly-scoped FOO won't be visible and the module's build-time branches will take the wrong path.
+
+**Fix**: Expose mode switches as options in `nuxt.config.ts`, not env vars. The env var can override them at runtime but doesn't own the decision. Example: `@commercejs/nuxt`'s remote mode keys off `commerce.apiRoutes: false`, not `NUXT_COMMERCE_REMOTE_API_BASE`.
+
+## Nitro SWR Has No Vary-by-Host (T04)
+`routeRules['/']={swr: 3600}` caches rendered HTML by URL path only. In a multi-tenant deploy where every subdomain hits the same `/` path, the first merchant's SSR'd page is served to every other merchant's subdomain for the entire TTL. `curl nonexistent.commercejs.cloud/` returning merchant A's content is the telltale sign.
+
+**Fix** (interim): disable page-level SWR. Per-tenant cache keys are future work — would require a custom cache handler that includes `x-forwarded-host` in the key.
+
+## `useRuntimeConfig()` Is Frozen at Nitro Runtime (T03)
+Setting `runtime.public.store = { … }` from inside a Nitro `request` hook throws `Cannot assign to read only property 'store' of object`. Public runtime config is sealed after Nitro boot.
+
+**Fix**: For per-request data, use `event.context` or AsyncLocalStorage. For merchant-shared data that needs to flow to the client, fetch via `useFetch` with a key (cached per SSR pass) rather than trying to mutate runtime config.
