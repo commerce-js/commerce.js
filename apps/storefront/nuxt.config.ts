@@ -27,14 +27,22 @@ export default defineNuxtConfig({
     },
   },
 
-  // CommerceJS module options
+  // CommerceJS module options — remote mode (proxies to a hosted
+  // CommerceJS Cloud tenant). The storefront is a pure client of the
+  // hosted API; no local adapter, no DB connection.
+  //
+  // At runtime, point at a merchant via:
+  //   NUXT_COMMERCE_REMOTE_API_BASE=https://{merchant}.commercejs.cloud/api/storefront
+  //   NUXT_COMMERCE_API_KEY=cjs_live_xxx         (optional; for API-key auth)
   commerce: {
-    adapter: 'platform',
-    apiBase: '/api/_commerce',
-    apiRoutes: true,
+    apiRoutes: false,
+    apiBase: '/api/storefront',
   },
 
-  // Runtime config — Google Maps for delivery location
+  // Runtime config — Google Maps key for the delivery-location picker.
+  // Merchant-specific config (name / locale / direction) is resolved
+  // per-render via `useStoreInfo()` in app.vue — runtimeConfig is frozen
+  // at boot on Nitro so we can't cache it there.
   runtimeConfig: {
     public: {
       googleMapsKey: process.env.GOOGLE_MAPS_KEY || '',
@@ -49,12 +57,9 @@ export default defineNuxtConfig({
     '/_nuxt/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },
   },
 
-  // Runtime config is handled by @commercejs/nuxt module
-  // (runtimeConfig.commerce.* auto-mapped from NUXT_COMMERCE_* env vars)
-
-  // Nitro — Cloudflare Pages preset
+  // Nitro — Fly.io / self-hosted node preset (was `cloudflare-pages`).
   nitro: {
-    preset: 'cloudflare-pages',
+    preset: 'node-server',
   },
 
   devtools: { enabled: true },

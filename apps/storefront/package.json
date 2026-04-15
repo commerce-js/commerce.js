@@ -3,10 +3,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter @commercejs/platform db:migrate && nuxt build",
+    "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
     "postinstall": "nuxt prepare || true"
   },
   "dependencies": {

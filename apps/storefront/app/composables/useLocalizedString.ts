@@ -1,13 +1,20 @@
 /**
  * Locale helper composable.
- * Picks the correct string from a LocalizedString based on current locale.
+ * Picks the correct string from a LocalizedString based on the merchant's
+ * default locale (resolved via `useStoreInfo`). The composable's useFetch
+ * is cached per SSR pass, so reading `store.value` here is free after the
+ * first call.
  */
 import type { LocalizedString, Maybe } from '@commercejs/types'
 
 export function useLocalizedString() {
-  // For now, default to 'en'. In the future, this could read from
-  // the route, cookie, or Nuxt i18n module.
-  const locale = ref<'ar' | 'en'>('en')
+  const { store } = useStoreInfo()
+
+  const locale = computed<'ar' | 'en'>(() => {
+    const locs = store.value?.locales
+    const def = locs?.find(l => l.isDefault) || locs?.[0]
+    return def?.code === 'ar' ? 'ar' : 'en'
+  })
 
   /** Pick the best available localized string */
   function t(value: Maybe<LocalizedString> | undefined): string {

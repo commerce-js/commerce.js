@@ -13,7 +13,7 @@
 
 * [x] [**T01**: Storefront API routes in dashboard app](tasks/T01.md) - Status: ✅ Completed (deployed; live smoke test passed 2026-04-15)
 * [x] [**T02**: `@commercejs/nuxt` remote mode](tasks/T02.md) - Status: ✅ Completed (2026-04-15; verified live against `smoke.commercejs.cloud`)
-* [ ] [**T03**: `apps/storefront` — Fly.io migration](tasks/T03.md) - Status: 🟡 Planned
+* [x] [**T03**: `apps/storefront` — Fly.io migration](tasks/T03.md) - Status: ✅ Completed (2026-04-15; built + ran locally against `smoke.commercejs.cloud`)
 * [ ] [**T04**: Hosted SSR as second Fly.io process](tasks/T04.md) - Status: 🟡 Planned
 
 <!-- END PROGRESS SECTION -->
@@ -252,4 +252,5 @@ Row:  Domain { domain: 'shop.acme.com', merchantId: '...', verified: true }
 - **2026-04-15**: T01 code-complete — 19 route chunks, buyer session util, CORS middleware, storefront error hook. Dashboard builds clean.
 - **2026-04-15**: T01 deployed + smoke-tested live. `GET smoke.commercejs.cloud/api/storefront/{products,store}` 200, unknown tenant 404, `/orders` without session 401, `/cart` auto-creates + sets buyer cookie. Commit `4b1207c`. Fly deployment `01KP96D2AT3T63A7JGA19P5SJ5`.
 - **2026-04-15**: T02 shipped — `@commercejs/nuxt` remote mode. `remoteApiBase` + `apiKey` options, mode-aware `apiBase` default, catch-all proxy at `${apiBase}/**`, `cookieDomainRewrite: ''`, skipped adapter plugin / OpenAPI / `addServerScanDir`. Verified against live smoke tenant and a local echo server (path rewrite, apiKey injection, body passthrough, Set-Cookie forwarding).
+- **2026-04-15**: T03 shipped — `apps/storefront` migrated off `cloudflare-pages` to `node-server`. Commerce configured in remote mode, `wrangler.toml` deleted, `merchant-config.ts` Nitro plugin added for boot-time tenant check, `<html lang/dir>` wired via `useStoreInfo` in `app.vue`, `useLocalizedString` now locale-aware. Build green; live verification against `smoke.commercejs.cloud` passed. Known carry-over: `useCart` + 6 `useAdapter()` composables need rework against T01's session-based shape (deferred).
 <!-- META_INFORMATION -->

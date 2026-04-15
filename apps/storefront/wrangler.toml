@@ -1,5 +1,0 @@
-# Cloudflare Pages configuration for the CommerceJS storefront
-# This enables Node.js API compatibility required by Prisma client
-name = "commercejs-storefront"
-compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat"]
