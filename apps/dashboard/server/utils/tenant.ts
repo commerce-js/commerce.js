@@ -28,7 +28,7 @@ import type { Merchant } from '../generated/prisma/client'
 export type MerchantContext = Merchant
 
 /** Host domains that are "the platform itself", not a merchant tenant. */
-const PLATFORM_HOSTS = new Set([
+export const PLATFORM_HOSTS = new Set([
   'commercejs.cloud',
   'www.commercejs.cloud',
   'app.commercejs.cloud',

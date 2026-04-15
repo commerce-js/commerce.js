@@ -31,8 +31,11 @@ packages/platform/src/database/prisma/generated
 .idea
 .DS_Store
 
-# Local-only / never-image-side
+# Local-only / never-image-side. `**/.env` catches apps/*/.env too so dev
+# DB credentials and session passwords don't bake into the image — Fly
+# secrets are the source of truth at runtime.
 .env
+**/.env
 **/.env.local
 **/.env.*.local
 .secrets

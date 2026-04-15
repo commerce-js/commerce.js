@@ -1,7 +1,7 @@
 # fly.toml app configuration file generated for commercejs-cloud on 2026-04-15T14:06:44+03:00
+# (T04 revision — web process now supervises dashboard + storefront together)
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
 
 app = 'commercejs-cloud'
 primary_region = 'fra'
@@ -11,12 +11,26 @@ primary_region = 'fra'
 
 [env]
   NODE_ENV = 'production'
+  # Storefront sidecar port — see scripts/start-web.sh. The dashboard's
+  # 00.storefront-proxy.ts middleware targets localhost:3001.
+  STOREFRONT_PORT = '3001'
+  # Storefront's @commercejs/nuxt module runs in remote mode and proxies
+  # every /api/storefront/* call to the dashboard over localhost. Host-aware
+  # tenant resolution travels across via X-Forwarded-Host (set by the
+  # dashboard's 00.storefront-proxy middleware when it fans out).
+  NUXT_COMMERCE_REMOTE_API_BASE = 'http://localhost:3000/api/storefront'
 
 [processes]
-  web = 'node .output/server/index.mjs'
+  # Web machines run the supervisor that launches the dashboard (:3000) and
+  # the storefront (:3001) together. See scripts/start-web.sh for rationale.
+  web = '/bin/sh scripts/start-web.sh'
+  # Worker stays on its own machine pool — no HTTP, just BullMQ consumers.
   worker = 'node .output/worker.mjs'
 
 [http_service]
+  # Fly's edge terminates TLS and forwards to :3000 on the web machines.
+  # From there the dashboard's hostname proxy routes merchant traffic to
+  # :3001 locally (via scripts/start-web.sh supervising both processes).
   internal_port = 3000
   force_https = true
   auto_stop_machines = 'suspend'
@@ -29,15 +43,21 @@ primary_region = 'fra'
     hard_limit = 250
     soft_limit = 200
 
+  # Dashboard health probe. If it fails, Fly restarts the whole machine —
+  # which also tears down the co-supervised storefront (by design, see
+  # scripts/start-web.sh). Single probe covers the pair.
   [[http_service.checks]]
     interval = '30s'
     timeout = '5s'
-    grace_period = '10s'
+    grace_period = '20s'
     method = 'GET'
     path = '/api/_health'
 
 [[vm]]
-  memory = '1gb'
+  # Two Node processes + sharp's native image pipeline in the storefront
+  # bump memory use vs. the dashboard-only baseline. 2 GB gives headroom
+  # for SSR spikes; shared CPU still fine at 1 vCPU for MVP traffic.
+  memory = '2gb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 1024
+  memory_mb = 2048

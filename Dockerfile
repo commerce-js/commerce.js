@@ -1,22 +1,25 @@
 # syntax=docker/dockerfile:1.7
 # ---------------------------------------------------------------------------
-# CommerceJS Cloud — Fly.io image (apps/dashboard)
+# CommerceJS Cloud — Fly.io image (dashboard + storefront + worker)
 # ---------------------------------------------------------------------------
 # Multi-stage build:
 #   base    → node:22-slim with pnpm via corepack
-#   build   → installs deps, generates Prisma clients, builds dashboard +
-#             the BullMQ worker bundle (.output/worker.mjs)
-#   runtime → minimal layer that runs either the Nitro server or the
-#             worker, depending on the fly.toml process type (see CMD /
-#             [processes] block in fly.toml).
+#   build   → installs deps, generates Prisma clients, builds
+#             dashboard (.output/server + .output/worker.mjs) AND
+#             storefront (apps/storefront/.output/server)
+#   runtime → minimal layer that runs either the web supervisor
+#             (dashboard + storefront side-by-side) or the worker,
+#             depending on the fly.toml process type.
 # ---------------------------------------------------------------------------
 
 FROM node:22-slim AS base
 # OpenSSL is required by Prisma's engine binary (without it, postinstall
 # defaults to openssl-1.1.x which isn't on node:22-slim by default).
 # ca-certificates lets Prisma + ofetch validate Neon / Upstash TLS.
+# tini is our PID 1 — it reaps zombies when the supervisor spawns child
+# node processes and forwards signals cleanly on Fly's stop semantics.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && apt-get install -y --no-install-recommends openssl ca-certificates tini \
     && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -32,6 +35,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
 COPY packages/ packages/
 COPY apps/dashboard/ apps/dashboard/
+COPY apps/storefront/ apps/storefront/
 
 RUN pnpm install --frozen-lockfile
 
@@ -45,22 +49,26 @@ RUN cd apps/dashboard \
     && NEON_CONTROL_DB_URL="postgresql://placeholder@localhost:5432/placeholder" \
        npx prisma generate
 
-# Build the workspace deps the dashboard imports at runtime. Nitro
-# resolves @commercejs/platform / @commercejs/types via their `main`
-# fields (./dist/index.js); without these dist trees the dashboard build
-# fails with "Could not load …/dist/index.js: ENOENT".
-# `--filter @commercejs/dashboard...` builds the dashboard's transitive
-# deps in dependency order (types → platform).
-RUN pnpm --filter '@commercejs/dashboard...' --filter '!@commercejs/dashboard' build
+# Build the workspace deps once — both the dashboard and the storefront
+# import @commercejs/nuxt / @commercejs/platform / @commercejs/types at
+# runtime, and the storefront also needs @commercejs/ui.
+# `--filter '...'` builds a package plus its transitive deps in order.
+RUN pnpm --filter '@commercejs/dashboard...' --filter '!@commercejs/dashboard' \
+         --filter 'storefront...'            --filter '!storefront' \
+         build
 
 # `pnpm --filter dashboard build` runs `nuxt build && pnpm build:worker`,
 # producing .output/server/index.mjs AND .output/worker.mjs.
 RUN pnpm --filter dashboard build
 
+# Storefront's build emits a node-server bundle at
+# apps/storefront/.output/server/index.mjs. No worker involvement.
+RUN pnpm --filter storefront build
+
 # Collect runtime node_modules for the worker process (esbuild bundles the
 # worker with `--packages=external`, so we need node_modules at runtime).
-# Nitro already bundles its deps into .output/server — we only need a
-# separate tree for worker.mjs.
+# Nitro already bundles its deps into both .output/server trees — this
+# tree is for worker.mjs only.
 RUN pnpm --filter @commercejs/dashboard deploy --prod /tmp/worker-deploy
 
 # ---------------------------------------------------------------------------
@@ -68,15 +76,26 @@ RUN pnpm --filter @commercejs/dashboard deploy --prod /tmp/worker-deploy
 # ---------------------------------------------------------------------------
 FROM base AS runtime
 WORKDIR /app
+
+# Dashboard .output lives at the project root so existing CMDs
+# (node .output/server/index.mjs / .output/worker.mjs) keep working.
 COPY --from=build /app/apps/dashboard/.output .output/
+# Storefront .output sits alongside it. The supervisor launches
+# `node apps/storefront/.output/server/index.mjs` on port 3001.
+COPY --from=build /app/apps/storefront/.output apps/storefront/.output/
+# Worker runtime deps.
 COPY --from=build /tmp/worker-deploy/node_modules node_modules/
+# Supervisor script that runs the web + storefront processes together.
+COPY --from=build /app/scripts/start-web.sh scripts/start-web.sh
 
 ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV NODE_ENV=production
 
-EXPOSE 3000
+EXPOSE 3000 3001
 
-# Default CMD is the web server; the fly.toml `[processes]` block
-# overrides this for the `worker` machine to run `node .output/worker.mjs`.
-CMD ["node", ".output/server/index.mjs"]
+# tini acts as PID 1 so child signals and zombies are handled cleanly.
+# Default CMD is the web supervisor (dashboard + storefront). The
+# fly.toml `[processes]` block overrides this for the `worker` machine.
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/bin/sh", "scripts/start-web.sh"]
