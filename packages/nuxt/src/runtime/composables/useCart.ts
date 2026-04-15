@@ -1,13 +1,25 @@
-import { useState, useCookie, computed, readonly, useRuntimeConfig } from '#imports'
+import { computed, readonly, useRuntimeConfig, useState } from '#imports'
 import type { DeepReadonly, Ref } from 'vue'
-import type { Cart, AddToCartInput } from '@commercejs/types'
+import type { AddToCartInput, Cart } from '@commercejs/types'
 import { CommerceError, isCommerceError } from '@commercejs/types'
 import { createEventHook } from '@vueuse/core'
 
 /**
  * Stateful cart composable.
- * Uses server API routes (`/api/_commerce/cart/*`) so it works on both
- * SSR and client-side navigation. Cart ID is persisted in a cookie.
+ *
+ * Hits the session-based storefront API (T01 contract on CommerceJS Cloud,
+ * same shape for self-hosters via `@commercejs/nuxt` remote mode):
+ *
+ *     GET    /api/storefront/cart          → current cart, auto-creates
+ *     POST   /api/storefront/cart/items    → add item
+ *     PATCH  /api/storefront/cart/items/:id → change quantity
+ *     DELETE /api/storefront/cart/items/:id → remove item
+ *
+ * The cart ID lives on the buyer's sealed session cookie server-side —
+ * clients never pass it explicitly. `cartId` here is exposed as a
+ * read-only reactive derived from the cart object for backward
+ * compatibility with code that checks "is a cart established?", but
+ * mutations don't need it.
  *
  * @example
  * ```vue
@@ -20,7 +32,7 @@ import { createEventHook } from '@vueuse/core'
  * ```
  */
 
-// Shared event hooks (module-scoped so all useCart() callers share them)
+// Shared event hooks (module-scoped so all useCart() callers share them).
 const itemAddedHook = createEventHook<Cart>()
 const itemUpdatedHook = createEventHook<Cart>()
 const itemRemovedHook = createEventHook<Cart>()
@@ -28,9 +40,8 @@ const errorHook = createEventHook<Error>()
 
 export function useCart() {
   const config = useRuntimeConfig()
-  const apiBase = config.public.commerce?.apiBase || '/api/_commerce'
+  const apiBase = config.public.commerce?.apiBase || '/api/storefront'
 
-  const cartId = useCookie<string>('commerce_cart_id', { maxAge: 60 * 60 * 24 * 30 }) // 30 days
   const cart = useState<Cart | null>('commerce_cart', () => null)
   const loading = useState<boolean>('commerce_cart_loading', () => false)
   const error = useState<Error | null>('commerce_cart_error', () => null)
@@ -50,82 +61,41 @@ export function useCart() {
   }
 
   /**
-   * Create a new empty cart and persist its ID.
-   */
-  async function createCart() {
-    loading.value = true
-    error.value = null
-    try {
-      const newCart = await $fetch<Cart>(`${apiBase}/cart`, { method: 'POST' })
-      cart.value = newCart
-      cartId.value = newCart.id
-      return newCart
-    } catch (err) {
-      throw handleError(err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  /**
-   * Fetch or refresh the cart from the backend.
+   * Fetch the active cart. GET /cart auto-creates on the server if the
+   * buyer doesn't have one yet, so this doubles as "ensure a cart
+   * exists" and `createCart()` is kept only as a compatibility alias.
    */
   async function refresh() {
-    if (!cartId.value) return
-
     loading.value = true
     error.value = null
     try {
-      cart.value = await $fetch<Cart>(`${apiBase}/cart/${cartId.value}`)
+      cart.value = await $fetch<Cart>(`${apiBase}/cart`)
     }
-    catch (err: any) {
-      // Cart no longer exists — clear stale cookie so a fresh one is created
-      if (err?.statusCode === 500 || err?.statusCode === 404) {
-        console.warn('[commerce] Stale cart cleared:', cartId.value)
-        cartId.value = ''
-        cart.value = null
-      } else {
-        handleError(err)
-      }
+    catch (err) {
+      throw handleError(err)
     }
     finally {
       loading.value = false
     }
   }
 
-  /**
-   * Add an item to the cart.
-   */
-  async function addItem(item: AddToCartInput) {
-    // Auto-create cart if no ID exists
-    if (!cartId.value) {
-      await createCart()
-    }
+  /** Alias for refresh() — the session API auto-creates on first read. */
+  async function createCart() {
+    await refresh()
+    return cart.value!
+  }
 
+  async function addItem(item: AddToCartInput) {
     loading.value = true
     error.value = null
     try {
-      cart.value = await $fetch<Cart>(`${apiBase}/cart/${cartId.value}/items`, {
+      cart.value = await $fetch<Cart>(`${apiBase}/cart/items`, {
         method: 'POST',
         body: item,
       })
       itemAddedHook.trigger(cart.value!)
     }
-    catch (err: any) {
-      // Cart was deleted/expired — create a fresh one and retry once
-      if (err?.statusCode === 500 || err?.statusCode === 404) {
-        try {
-          await createCart()
-          cart.value = await $fetch<Cart>(`${apiBase}/cart/${cartId.value}/items`, {
-            method: 'POST',
-            body: item,
-          })
-          itemAddedHook.trigger(cart.value!)
-          return
-        } catch (retryErr) {
-          throw handleError(retryErr)
-        }
-      }
+    catch (err) {
       throw handleError(err)
     }
     finally {
@@ -133,17 +103,12 @@ export function useCart() {
     }
   }
 
-  /**
-   * Update the quantity of a cart item.
-   */
   async function updateItem(itemId: string, quantity: number) {
-    if (!cartId.value) return
-
     loading.value = true
     error.value = null
     try {
-      cart.value = await $fetch<Cart>(`${apiBase}/cart/${cartId.value}/items/${itemId}`, {
-        method: 'PUT',
+      cart.value = await $fetch<Cart>(`${apiBase}/cart/items/${itemId}`, {
+        method: 'PATCH',
         body: { quantity },
       })
       itemUpdatedHook.trigger(cart.value!)
@@ -156,16 +121,11 @@ export function useCart() {
     }
   }
 
-  /**
-   * Remove an item from the cart.
-   */
   async function removeItem(itemId: string) {
-    if (!cartId.value) return
-
     loading.value = true
     error.value = null
     try {
-      cart.value = await $fetch<Cart>(`${apiBase}/cart/${cartId.value}/items/${itemId}`, {
+      cart.value = await $fetch<Cart>(`${apiBase}/cart/items/${itemId}`, {
         method: 'DELETE',
       })
       itemRemovedHook.trigger(cart.value!)
@@ -179,45 +139,38 @@ export function useCart() {
   }
 
   /**
-   * Apply a coupon code.
+   * Coupon endpoints are deferred (not yet in T01). Throw a clear error
+   * so consumers know what's unsupported rather than silently no-op.
    */
-  async function applyCoupon(code: string) {
-    if (!cartId.value) return
-
-    loading.value = true
-    error.value = null
-    try {
-      cart.value = await $fetch<Cart>(`${apiBase}/promotions/validate`, {
-        method: 'POST',
-        body: { cartId: cartId.value, code },
-      })
-    }
-    catch (err) {
-      throw handleError(err)
-    }
-    finally {
-      loading.value = false
-    }
+  function applyCoupon(_code: string): Promise<void> {
+    throw handleError(new Error(
+      '[@commercejs/nuxt] applyCoupon is not implemented against the storefront API yet — '
+      + 'promotion endpoints are phase-2 work (see .plans/storefront-eaas/).',
+    ))
   }
-
-  /**
-   * Remove the applied coupon.
-   */
-  async function removeCoupon() {
-    // Re-fetch cart to remove coupon effect
-    await refresh()
+  function removeCoupon(): Promise<void> {
+    throw handleError(new Error(
+      '[@commercejs/nuxt] removeCoupon is not implemented against the storefront API yet.',
+    ))
   }
 
   return {
-    /** Reactive cart state (readonly to enforce mutations through methods) */
+    /** Reactive cart state (readonly — mutate through the methods below). */
     cart: readonly(cart) as DeepReadonly<Ref<Cart | null>>,
-    /** Cart ID stored in cookie */
-    cartId,
-    /** Whether a cart operation is in progress */
+
+    /**
+     * Cart ID, derived from the loaded cart. Read-only — the server
+     * owns cart creation (session-based). Consumers that used to guard
+     * with `if (!cartId.value) await createCart()` can keep that shape;
+     * `createCart()` is just `refresh()` under the hood.
+     */
+    cartId: computed(() => cart.value?.id ?? ''),
+
+    /** Whether a cart operation is in progress. */
     loading: readonly(loading),
-    /** Last error from a cart operation */
+    /** Last error from a cart operation. */
     error: readonly(error),
-    /** Number of items in the cart */
+    /** Number of items in the cart. */
     itemCount: computed(() => cart.value?.itemCount ?? 0),
 
     // Event hooks — subscribe: onItemAdded((cart) => { ... })

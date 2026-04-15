@@ -1,54 +1,33 @@
-import { useState, readonly } from '#imports'
-import type { Ref } from 'vue'
+import { useFetch, useRuntimeConfig, computed } from '#imports'
 import type { StoreLocation } from '@commercejs/types'
-import { CommerceError, isCommerceError } from '@commercejs/types'
-import { useAdapter } from './useAdapter'
 
 /**
  * Store locations composable.
- * Fetches physical store locations / branches for store locator
- * and in-store pickup features.
+ *
+ * Hits `GET {apiBase}/locations` (T01 storefront API). For store locator
+ * and in-store pickup UIs. SSR-friendly via `useFetch`.
  *
  * @example
  * ```vue
  * <script setup>
- * const { locations, loading, refresh } = useLocations()
- * onMounted(() => refresh())
+ * const { locations, status, refresh } = useLocations()
  * </script>
  * ```
  */
 export function useLocations() {
-  const adapter = useAdapter()
+  const config = useRuntimeConfig()
+  const apiBase = config.public.commerce?.apiBase || '/api/storefront'
 
-  const locations = useState<StoreLocation[]>('commerce:locations', () => [])
-  const loading = useState<boolean>('commerce:locations:loading', () => false)
-  const error = useState<CommerceError | null>('commerce:locations:error', () => null)
-
-  /** Fetch (or refresh) all store locations */
-  async function refresh() {
-    loading.value = true
-    error.value = null
-    try {
-      locations.value = await adapter.getStoreLocations()
-    } catch (err) {
-      const e = isCommerceError(err)
-        ? err
-        : new CommerceError(
-            err instanceof Error ? err.message : String(err),
-            'UNKNOWN',
-            undefined,
-            err,
-          )
-      error.value = e
-    } finally {
-      loading.value = false
-    }
-  }
+  const { data, status, error, refresh } = useFetch<StoreLocation[]>(
+    `${apiBase}/locations`,
+    { key: 'commerce:locations' },
+  )
 
   return {
-    locations: readonly(locations) as Readonly<Ref<StoreLocation[]>>,
-    loading: readonly(loading),
-    error: readonly(error),
+    locations: computed(() => data.value ?? []),
+    status,
+    loading: computed(() => status.value === 'pending'),
+    error,
     refresh,
   }
 }

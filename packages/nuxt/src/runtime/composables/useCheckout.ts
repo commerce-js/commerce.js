@@ -1,10 +1,10 @@
-import { useState, readonly, useRuntimeConfig } from '#imports'
+import { readonly, useRuntimeConfig, useState } from '#imports'
 import type {
   Address,
   Cart,
   Order,
-  ShippingMethod,
   PaymentMethod,
+  ShippingMethod,
 } from '@commercejs/types'
 import { CommerceError, isCommerceError } from '@commercejs/types'
 import { createEventHook } from '@vueuse/core'
@@ -12,31 +12,33 @@ import { useCart } from './useCart'
 
 /**
  * Checkout flow composable.
- * Manages the checkout process step by step.
  *
- * Uses server API routes (`/api/_commerce/checkout/*`) so it works on both
- * SSR and client-side navigation — same pattern as `useCart`.
+ * Hits the session-based storefront API (T01 contract):
+ *
+ *     GET   /api/storefront/checkout          → { cart, shippingMethods, paymentMethods }
+ *     POST  /api/storefront/checkout          → set shipping + billing addresses
+ *     PATCH /api/storefront/checkout          → select shipping or payment method
+ *     POST  /api/storefront/checkout/complete → finalize order
+ *
+ * Cart ID lives on the buyer session cookie — no need to pass it.
  *
  * @example
  * ```vue
  * <script setup>
  * const {
- *   shippingMethods,
- *   paymentMethods,
- *   setShippingAddress,
- *   setShippingMethod,
- *   setPaymentMethod,
- *   placeOrder,
- *   onOrderPlaced,
+ *   cart, shippingMethods, paymentMethods,
+ *   refreshCheckout,
+ *   setAddresses, setShippingMethod, setPaymentMethod,
+ *   placeOrder, onOrderPlaced,
  * } = useCheckout()
  *
- * onOrderPlaced((order) => navigateTo(`/order/${order.id}/confirmation`))
+ * onOrderPlaced((order) => navigateTo(`/orders/${order.id}`))
  * </script>
  * ```
  */
 export function useCheckout() {
   const config = useRuntimeConfig()
-  const apiBase = config.public.commerce?.apiBase || '/api/_commerce'
+  const apiBase = config.public.commerce?.apiBase || '/api/storefront'
   const { cart, cartId } = useCart()
 
   const shippingMethods = useState<ShippingMethod[]>('commerce_shipping_methods', () => [])
@@ -44,7 +46,6 @@ export function useCheckout() {
   const loading = useState<boolean>('commerce_checkout_loading', () => false)
   const error = useState<Error | null>('commerce_checkout_error', () => null)
 
-  // Event hooks
   const orderPlacedHook = createEventHook<Order>()
   const errorHook = createEventHook<Error>()
 
@@ -62,22 +63,26 @@ export function useCheckout() {
     return e
   }
 
-  function requireCartId(): string {
-    if (!cartId.value) {
-      throw new Error('[@commercejs/nuxt] No cart ID found. Add items to cart first.')
-    }
-    return cartId.value
+  type CheckoutPayload = {
+    cart: Cart
+    shippingMethods: ShippingMethod[]
+    paymentMethods: PaymentMethod[]
   }
 
   /**
-   * Fetch available shipping methods for the current cart.
+   * Load (or refresh) the full checkout snapshot — cart + both method
+   * lists — in a single request. Call after setting addresses so the
+   * consumer can render the shipping/payment pickers.
    */
-  async function loadShippingMethods() {
-    const id = requireCartId()
+  async function refreshCheckout() {
     loading.value = true
     error.value = null
     try {
-      shippingMethods.value = await $fetch<ShippingMethod[]>(`${apiBase}/checkout/shipping-methods/${id}`)
+      const data = await $fetch<CheckoutPayload>(`${apiBase}/checkout`)
+      // Share cart state with useCart's useState key.
+      useState<Cart | null>('commerce_cart').value = data.cart
+      shippingMethods.value = data.shippingMethods
+      paymentMethods.value = data.paymentMethods
     }
     catch (err) {
       throw handleError(err)
@@ -88,36 +93,31 @@ export function useCheckout() {
   }
 
   /**
-   * Fetch available payment methods for the current cart.
+   * Back-compat aliases for the split T0 API. Both trigger the single
+   * T01 GET /checkout. If both are called in sequence they coalesce
+   * cheaply (the second call re-hydrates the same state).
    */
-  async function loadPaymentMethods() {
-    const id = requireCartId()
-    loading.value = true
-    error.value = null
-    try {
-      paymentMethods.value = await $fetch<PaymentMethod[]>(`${apiBase}/checkout/payment-methods/${id}`)
-    }
-    catch (err) {
-      throw handleError(err)
-    }
-    finally {
-      loading.value = false
-    }
-  }
+  async function loadShippingMethods() { await refreshCheckout() }
+  async function loadPaymentMethods() { await refreshCheckout() }
+
+  type AddressInput = Omit<Address, 'id' | 'isDefault'>
 
   /**
-   * Set the shipping address for the current cart.
+   * Set shipping + billing addresses in one POST. If `billingAddress`
+   * is omitted, the server uses the shipping address for both.
+   * Automatically refreshes methods so the caller can move straight
+   * to picking a shipping option.
    */
-  async function setShippingAddress(address: Omit<Address, 'id' | 'isDefault'>) {
-    const id = requireCartId()
+  async function setAddresses(input: { shippingAddress: AddressInput, billingAddress?: AddressInput }) {
     loading.value = true
     error.value = null
     try {
-      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout/set-shipping-address`, {
+      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout`, {
         method: 'POST',
-        body: { cartId: id, address },
+        body: input,
       })
-      useState<typeof updatedCart>('commerce_cart').value = updatedCart
+      useState<Cart | null>('commerce_cart').value = updatedCart
+      await refreshCheckout()
     }
     catch (err) {
       throw handleError(err)
@@ -127,19 +127,15 @@ export function useCheckout() {
     }
   }
 
-  /**
-   * Set the billing address for the current cart.
-   */
-  async function setBillingAddress(address: Omit<Address, 'id' | 'isDefault'>) {
-    const id = requireCartId()
+  async function setShippingMethod(shippingMethodId: string) {
     loading.value = true
     error.value = null
     try {
-      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout/set-billing-address`, {
-        method: 'POST',
-        body: { cartId: id, address },
+      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout`, {
+        method: 'PATCH',
+        body: { shippingMethodId },
       })
-      useState<typeof updatedCart>('commerce_cart').value = updatedCart
+      useState<Cart | null>('commerce_cart').value = updatedCart
     }
     catch (err) {
       throw handleError(err)
@@ -149,19 +145,15 @@ export function useCheckout() {
     }
   }
 
-  /**
-   * Select a shipping method.
-   */
-  async function setShippingMethod(methodId: string) {
-    const id = requireCartId()
+  async function setPaymentMethod(paymentMethodId: string) {
     loading.value = true
     error.value = null
     try {
-      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout/set-shipping-method`, {
-        method: 'POST',
-        body: { cartId: id, methodId },
+      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout`, {
+        method: 'PATCH',
+        body: { paymentMethodId },
       })
-      useState<typeof updatedCart>('commerce_cart').value = updatedCart
+      useState<Cart | null>('commerce_cart').value = updatedCart
     }
     catch (err) {
       throw handleError(err)
@@ -172,43 +164,20 @@ export function useCheckout() {
   }
 
   /**
-   * Select a payment method.
-   */
-  async function setPaymentMethod(methodId: string) {
-    const id = requireCartId()
-    loading.value = true
-    error.value = null
-    try {
-      const updatedCart = await $fetch<Cart>(`${apiBase}/checkout/set-payment-method`, {
-        method: 'POST',
-        body: { cartId: id, methodId },
-      })
-      useState<typeof updatedCart>('commerce_cart').value = updatedCart
-    }
-    catch (err) {
-      throw handleError(err)
-    }
-    finally {
-      loading.value = false
-    }
-  }
-
-  /**
-   * Place the order — finalizes checkout.
-   * Returns the created Order and clears the cart state.
+   * Place the order. On success the server clears the cart ID from
+   * the buyer session; we reset the local cart state to match so the
+   * layout's cart drawer / counter immediately reflect the empty cart.
    */
   async function placeOrder(): Promise<Order> {
-    const id = requireCartId()
     loading.value = true
     error.value = null
     try {
-      const order = await $fetch<Order>(`${apiBase}/checkout/place-order`, {
+      const order = await $fetch<Order>(`${apiBase}/checkout/complete`, {
         method: 'POST',
-        body: { cartId: id },
       })
-      // Clear cart state after successful order
-      useState('commerce_cart').value = null
-      cartId.value = ''
+      useState<Cart | null>('commerce_cart').value = null
+      shippingMethods.value = []
+      paymentMethods.value = []
       orderPlacedHook.trigger(order)
       return order
     }
@@ -222,20 +191,19 @@ export function useCheckout() {
 
   return {
     cart,
+    cartId,
     shippingMethods: readonly(shippingMethods),
     paymentMethods: readonly(paymentMethods),
     loading: readonly(loading),
     error: readonly(error),
 
-    // Event hooks
     onOrderPlaced: orderPlacedHook.on,
     onError: errorHook.on,
 
-    // Methods
+    refreshCheckout,
     loadShippingMethods,
     loadPaymentMethods,
-    setShippingAddress,
-    setBillingAddress,
+    setAddresses,
     setShippingMethod,
     setPaymentMethod,
     placeOrder,

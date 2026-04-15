@@ -10,17 +10,15 @@ const {
   paymentMethods,
   loading,
   error,
-  loadShippingMethods,
-  loadPaymentMethods,
-  setShippingAddress,
-  setBillingAddress,
+  refreshCheckout,
+  setAddresses,
   setShippingMethod,
   setPaymentMethod,
   placeOrder,
 } = useCheckout()
 // ── Fetch countries (lazy, with flags) ──
 type CountryApi = { id: string; code: string; name: { en?: string; ar?: string } | string; flag?: string; iso3?: string }
-const { data: countriesData, status: countriesStatus, execute: loadCountries } = await useLazyFetch<CountryApi[]>('/api/_commerce/countries', { immediate: false })
+const { data: countriesData, status: countriesStatus, execute: loadCountries } = await useLazyFetch<CountryApi[]>('/api/storefront/countries', { immediate: false })
 
 // ── Redirect if no cart ──
 const router = useRouter()
@@ -198,7 +196,7 @@ const countryItems = computed(() =>
 // ── Dependent city fetch ──
 const selectedCountryCode = computed(() => addressForm.value.country || '')
 const { data: citiesData, status: citiesStatus, execute: loadCities } = await useLazyFetch<string[]>(
-  '/api/_commerce/cities',
+  '/api/storefront/cities',
   { immediate: false, query: { country: selectedCountryCode }, transform: d => d ?? [] },
 )
 watch(selectedCountryCode, (code) => {
@@ -219,16 +217,21 @@ async function handleAddressSubmit() {
           ? { lat: deliveryLat.value, lng: deliveryLng.value }
           : {}),
       },
-    }
-    await setShippingAddress(addressWithMeta as Omit<Address, 'id' | 'isDefault'>)
-    // Save billing address — either same as shipping or separate
-    const billing = billingSameAsShipping.value
+    } as Omit<Address, 'id' | 'isDefault'>
+
+    // Billing address — either same as shipping or the separate form
+    const billing = (billingSameAsShipping.value
       ? { ...addressForm.value }
-      : { ...billingForm.value }
+      : { ...billingForm.value }) as Omit<Address, 'id' | 'isDefault'>
     // Attach email to billing so hosted checkout can pre-fill it
     ;(billing as any).email = customerEmail.value
-    await setBillingAddress(billing as Omit<Address, 'id' | 'isDefault'>)
-    await loadShippingMethods()
+
+    // Send both addresses in one POST — T01 /checkout accepts both and
+    // also re-fetches methods internally (setAddresses awaits refresh).
+    await setAddresses({
+      shippingAddress: addressWithMeta,
+      billingAddress: billing,
+    })
     currentStep.value = 1
   }
   catch {}
@@ -242,7 +245,8 @@ async function handleShippingContinue() {
   if (!selectedShippingId.value) return
   try {
     await setShippingMethod(selectedShippingId.value)
-    await loadPaymentMethods()
+    // Payment methods came down with the same GET /checkout that
+    // setAddresses triggered; no extra fetch needed.
     currentStep.value = 2
   }
   catch {}
