@@ -47,6 +47,9 @@ importers:
       '@vueuse/core':
         specifier: ^14.2.0
         version: 14.2.0(vue@3.5.28(typescript@5.9.3))
+      bcrypt-ts:
+        specifier: ^5.0.3
+        version: 5.0.3
       bullmq:
         specifier: ^5.40.0
         version: 5.74.1

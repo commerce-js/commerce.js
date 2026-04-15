@@ -7,39 +7,33 @@ defineProps<{
 
 const colorMode = useColorMode()
 
-// Fetch real user data from session
 const { data: sessionData } = await useFetch<{
-  authenticated: boolean
-  userId?: string
-  githubUsername?: string
+  user: { id: string, email: string, name: string, role: string } | null
 }>('/api/auth/session')
 
-const user = computed(() => ({
-  name: sessionData.value?.githubUsername || 'User',
-  avatar: {
-    src: sessionData.value?.githubUsername
-      ? `https://github.com/${sessionData.value.githubUsername}.png`
-      : '',
-    alt: sessionData.value?.githubUsername || 'User',
-  },
-}))
+const user = computed(() => {
+  const u = sessionData.value?.user
+  return {
+    name: u?.name || u?.email || 'Operator',
+    email: u?.email ?? '',
+    role: u?.role ?? '',
+    // No avatar service wired yet — fall back to a Gravatar-free plain icon.
+    avatar: { src: '', alt: u?.name ?? 'Operator' },
+  }
+})
 
 const items = computed<DropdownMenuItem[][]>(() => [[{
   type: 'label',
   label: user.value.name,
-  avatar: user.value.avatar
+  avatar: user.value.avatar,
 }], [{
   label: 'Profile',
   icon: 'i-lucide-user',
-  to: '/profile'
-}, {
-  label: 'Billing',
-  icon: 'i-lucide-credit-card',
-  to: '/billing'
+  to: '/profile',
 }, {
   label: 'Settings',
   icon: 'i-lucide-settings',
-  to: '/settings'
+  to: '/settings',
 }], [{
   label: 'Appearance',
   icon: 'i-lucide-sun-moon',
@@ -51,7 +45,7 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
     onSelect(e: Event) {
       e.preventDefault()
       colorMode.preference = 'light'
-    }
+    },
   }, {
     label: 'Dark',
     icon: 'i-lucide-moon',
@@ -60,7 +54,7 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
     onSelect(e: Event) {
       e.preventDefault()
       colorMode.preference = 'dark'
-    }
+    },
   }, {
     label: 'System',
     icon: 'i-lucide-monitor',
@@ -69,15 +63,15 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
     onSelect(e: Event) {
       e.preventDefault()
       colorMode.preference = 'system'
-    }
-  }]
+    },
+  }],
 }], [{
   label: 'Log out',
   icon: 'i-lucide-log-out',
   async onSelect() {
     await $fetch('/api/auth/logout', { method: 'POST' })
     await navigateTo('/login')
-  }
+  },
 }]])
 </script>
 
@@ -91,7 +85,7 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
       v-bind="{
         ...user,
         label: collapsed ? undefined : user?.name,
-        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
+        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down',
       }"
       color="neutral"
       variant="ghost"
@@ -99,7 +93,7 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
       :square="collapsed"
       class="data-[state=open]:bg-elevated"
       :ui="{
-        trailingIcon: 'text-dimmed'
+        trailingIcon: 'text-dimmed',
       }"
     />
   </UDropdownMenu>

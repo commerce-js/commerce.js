@@ -1,10 +1,11 @@
 // ---------------------------------------------------------------------------
-// POST /api/auth/logout — clear session
+// POST /api/auth/logout — clear the operator session
 // ---------------------------------------------------------------------------
 
-import { clearUserSession } from '../../utils/session'
+import { defineEventHandler } from 'h3'
+import { clearDashboardSession } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
-  await clearUserSession(event)
+  await clearDashboardSession(event)
   return { ok: true }
 })
