@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-**Fly.io EaaS Migration — Step 4 (Tenant Resolution) Complete**
+**Fly.io EaaS Migration — Step 5 (BullMQ Worker) Complete**
 
-Every request now maps to a merchant before domain code runs. The
-middleware binds the merchant's Neon-branch Prisma client to the
-platform's AsyncLocalStorage and attaches a cached PlatformAdapter to
-`event.context`. Step 3 (platform on Prisma) and Step 4 combine into a
-multi-tenant-safe request pipeline — one shared Fly process, per-merchant
-DB, zero cross-tenant leakage via the ALS binding.
+The async side of the platform is now wired: a `merchant-jobs` BullMQ
+queue (producer in the web process) is consumed by a standalone worker
+bundle (`.output/worker.mjs`, ~28 KB) deployed as a second Fly machine
+type. Three job types plumbed — `provision-store` (stubbed for Step 6),
+`send-email` (SMTP stub), `dispatch-webhook` (live, HMAC-signed,
+runs in a `runWithDb(...)` scope for tenant-safe merchant-DB access).
 
 ⚠️ **Region note:** the Neon control project (Step 2) is in `us-east-1`
 rather than the plan's recommended `aws-eu-central-1`. ~150 ms RTT from
@@ -51,8 +51,14 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 | Tenant middleware (`server/middleware/tenant.ts`) | ✅ Skip list for control-DB/auth/health; 404/503/403 on resolve failure; cached PlatformAdapter per merchant |
 | Plan-limits middleware | ✅ Trial expiry → 402; PLAN_LIMITS map for products/staff/customDomains; product-cap plumbing stubbed for Step 7 |
 | h3 context augmentation | ✅ `event.context.merchant / adapter / admin` typed |
-| BullMQ worker | ❌ Step 5 |
-| Merchant provisioner | ❌ Step 6 |
+| BullMQ queue producer | ✅ `server/utils/queue.ts` — typed `enqueueMerchantJob()` for 3 job types |
+| BullMQ Redis helper | ✅ `server/utils/redis.ts` — resolves `REDIS_URL` → else builds `rediss://` from Upstash REST creds |
+| Standalone worker bundle | ✅ `worker.ts` → `.output/worker.mjs` (esbuild, `--packages=external`, 27.9 KB) |
+| `build:worker` pipeline | ✅ `nuxt build && pnpm build:worker` wired into `build` |
+| Dockerfile (multi-process) | ✅ Generates both Prisma clients, builds web + worker, snapshots prod `node_modules` via `pnpm deploy` for worker externals |
+| `fly.toml` worker process | ✅ Uncommented (`worker = "node .output/worker.mjs"`) |
+| `provision-store` real impl | ❌ Step 6 (Neon branch + migrations) |
+| Merchant provisioner util | ❌ Step 6 |
 
 ## What Was Done This Session (2026-04-14)
 
@@ -168,24 +174,64 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
   Fly.io migration. Runtime build path is fine. Revisit during Step 7 UI
   refactor if it blocks dev ergonomics.
 
+## Step 5 deliverables (commit `d51fe4d`)
+
+- `server/utils/redis.ts` — connection resolver + `createRedisConnection()`
+  with BullMQ-required `maxRetriesPerRequest: null` + Upstash-friendly
+  `lazyConnect: true`.
+- `server/utils/queue.ts` — `MerchantJob` discriminated union
+  (`provision-store | send-email | dispatch-webhook`), typed
+  `enqueueMerchantJob()` overloads, Queue singleton with sensible retry
+  (5 attempts, exponential backoff 5 s base) + cleanup defaults.
+- `apps/dashboard/worker.ts` — standalone `Worker('merchant-jobs',
+  dispatch, { concurrency: 5 })`. Dispatch switches on `job.name` with
+  an exhaustiveness guard; handlers:
+  - `handleProvisionStore` — idempotent stub (Step 6).
+  - `handleSendEmail` — SMTP env-var check; transport deferred to Step 7.
+  - `handleDispatchWebhook` — live. Resolves merchant DB URL, binds via
+    `runWithDb`, POSTs payload with sha256 HMAC when the webhook row has
+    a secret.
+  - Graceful SIGINT/SIGTERM handling.
+- `Dockerfile` — now runs both `prisma generate` calls, builds web +
+  worker in one `pnpm --filter dashboard build`, and snapshots a
+  production `node_modules` tree into `/tmp/worker-deploy` which gets
+  copied into the runtime stage (worker bundle resolves externals from
+  it).
+- `fly.toml` — `worker = "node .output/worker.mjs"` process
+  uncommented.
+- package.json — `build` is now `nuxt build && pnpm build:worker`;
+  `build:worker` runs esbuild with `--packages=external` → 27.9 KB output.
+
+## Known carry-over (from Steps 1–5)
+
+- `pnpm --filter dashboard typecheck` fails due to pre-existing Nitro
+  auto-import resolution issues in the pnpm workspace (documented after
+  Step 4). Runtime build path is fine.
+- `handleSendEmail` is a stub — real SMTP transport ships in Step 7 with
+  the dashboard UI.
+- `handleProvisionStore` is a stub — real Neon branch/migration pipeline
+  ships in Step 6.
+- Legacy UI (`app/pages/projects/*.vue`, etc.) still calls `/api/projects/*`
+  — Step 7 dashboard refactor.
+
 ## Immediate Next Steps
 
-### Step 5 — BullMQ Background Jobs (Day 6)
+### Step 6 — Merchant Provisioning (Days 7–8)
 
-Per `.plans/fly-migration-plan.md` → Step 5:
-1. `pnpm --filter dashboard add bullmq ioredis`
-2. `apps/dashboard/server/utils/deploy-queue.ts` (new): `Queue(
-   'merchant-jobs', { connection: redisConfig })` with
-   `enqueueMerchantJob(type, data)` wrapper.
-3. `apps/dashboard/worker.ts` (new standalone entry): `Worker(
-   'merchant-jobs', ...)` handling `provision-store`, `send-email`,
-   `dispatch-webhook`.
-4. Wrap worker job bodies in `runWithDb(getPrismaClient(merchant.databaseUrl), ...)`
-   so they get tenant-scoped Prisma access too.
-5. Add `worker` process to `fly.toml` (already stubbed — uncomment).
+Per `.plans/fly-migration-plan.md` → Step 6:
+1. `apps/dashboard/server/utils/merchant-provisioner.ts` — Neon branch
+   creation against `NEON_API_KEY` + parent project, with retry-with-
+   backoff for the `423 Locked` window (≈3 s post-create).
+2. Apply `packages/platform/src/database/prisma/migrations/` against the
+   new branch URL (or a seed script if migrations don't exist yet).
+3. Flip `merchant.status` from `'provisioning'` → `'active'` and write
+   `databaseUrl`, `neonProjectId`, `neonBranchId`.
+4. Call this from the `handleProvisionStore` worker handler (Step 5
+   stub).
+5. Expose a trigger — `POST /api/merchants/:id/provision` or auto-queue
+   on `POST /api/merchants` create.
 
-Redis URL already in `.secrets` as `UPSTASH_REDIS_REST_URL` +
-`UPSTASH_REDIS_REST_TOKEN`. No user-pause expected.
+Neon API token already lives in `.secrets` as `NEON_API_KEY`.
 
 ## Key Files to Know
 
