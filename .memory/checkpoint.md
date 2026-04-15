@@ -2,14 +2,16 @@
 
 ## Current Phase
 
-**Fly.io EaaS Migration — Step 5 (BullMQ Worker) Complete**
+**Fly.io EaaS Migration — Step 6 (Merchant Provisioning) Complete**
 
-The async side of the platform is now wired: a `merchant-jobs` BullMQ
-queue (producer in the web process) is consumed by a standalone worker
-bundle (`.output/worker.mjs`, ~28 KB) deployed as a second Fly machine
-type. Three job types plumbed — `provision-store` (stubbed for Step 6),
-`send-email` (SMTP stub), `dispatch-webhook` (live, HMAC-signed,
-runs in a `runWithDb(...)` scope for tenant-safe merchant-DB access).
+End-to-end merchant lifecycle is live: `POST /api/merchants` creates
+the control-DB row and enqueues a `provision-store` job; the BullMQ
+worker creates a dedicated Neon project, applies the platform schema
+via `migratePrisma()` bound into the new client through AsyncLocalStorage,
+then flips status='active'. A manual retry endpoint
+(`POST /api/merchants/:id/provision`) is available for stuck rows.
+The full Phase 1 → 6 chain compiles; live Neon provisioning is ready to
+be exercised against a QA merchant.
 
 ⚠️ **Region note:** the Neon control project (Step 2) is in `us-east-1`
 rather than the plan's recommended `aws-eu-central-1`. ~150 ms RTT from
@@ -57,8 +59,14 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 | `build:worker` pipeline | ✅ `nuxt build && pnpm build:worker` wired into `build` |
 | Dockerfile (multi-process) | ✅ Generates both Prisma clients, builds web + worker, snapshots prod `node_modules` via `pnpm deploy` for worker externals |
 | `fly.toml` worker process | ✅ Uncommented (`worker = "node .output/worker.mjs"`) |
-| `provision-store` real impl | ❌ Step 6 (Neon branch + migrations) |
-| Merchant provisioner util | ❌ Step 6 |
+| Neon API helper (`server/utils/neon.ts`) | ✅ `createMerchantProject` / `deleteMerchantProject` with 2 s-base retry for 423/429/5xx |
+| `server/utils/merchant-provisioner.ts` | ✅ Orchestrator — idempotent (resumes from partial), `runWithDb(client, migratePrisma)` for schema apply, invalidates tenant cache on activate |
+| `migratePrisma()` Profile tables | ✅ Added (profiles + addresses + payment_methods + merchant_links + otp_codes) and exported |
+| `worker.ts` provision-store handler | ✅ Calls `provisionMerchant()`, logs projectId / branchId on success |
+| `POST /api/merchants` auto-enqueue | ✅ Enqueues `provision-store` immediately after row create |
+| `POST /api/merchants/:id/provision` | ✅ Manual retry endpoint — short-circuits if already active |
+| Dashboard UI (merchants list/detail) | ❌ Step 7 |
+| Email/password auth | ❌ Step 7 |
 
 ## What Was Done This Session (2026-04-14)
 
@@ -214,24 +222,59 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 - Legacy UI (`app/pages/projects/*.vue`, etc.) still calls `/api/projects/*`
   — Step 7 dashboard refactor.
 
+## Step 6 deliverables (commit `657f53b`)
+
+- `packages/platform/src/database/prisma/migrate.ts` — added Profile
+  family (5 tables) so freshly-provisioned merchant DBs have buyer-
+  identity tables; exported `migratePrisma` from the package barrel and
+  `src/index.ts`.
+- `server/utils/neon.ts` — Neon Control API wrapper, retry-with-backoff
+  on 423/429/5xx (2 s base, 5 attempts). One project per merchant;
+  region defaults to `aws-eu-central-1`.
+- `server/utils/merchant-provisioner.ts` — orchestrator with idempotency
+  (re-uses `merchant.neonProjectId` from a partial previous attempt),
+  calls `runWithDb(getPrismaClient(newUrl), migratePrisma)` to apply the
+  schema through the ALS binding, flips `status='active'` and invalidates
+  the tenant resolver cache. Exports `PermanentError` for fail-fast on
+  bad input.
+- `worker.ts` handleProvisionStore → `provisionMerchant()`. Logs
+  `projectId/branchId` on success; BullMQ retries on transient throws.
+- `POST /api/merchants` now calls `enqueueMerchantJob` with
+  `provision-store` right after the row insert.
+- `POST /api/merchants/:id/provision` — manual retry route
+  (short-circuits if already active).
+
+## Known carry-over
+
+- Live end-to-end Neon provisioning has NOT been exercised yet; will
+  create a real Neon project + run the full pipeline on first QA use.
+- `handleSendEmail` still a stub — real SMTP transport ships in Step 7.
+- Legacy UI (`app/pages/projects/*.vue`) still references `/api/projects/*`
+  — Step 7 dashboard refactor.
+- `pnpm --filter dashboard typecheck` still pre-existing-broken (h3
+  auto-import resolution); build path is clean.
+
 ## Immediate Next Steps
 
-### Step 6 — Merchant Provisioning (Days 7–8)
+### Step 7 — Dashboard UI Refactor (Days 9–12)
 
-Per `.plans/fly-migration-plan.md` → Step 6:
-1. `apps/dashboard/server/utils/merchant-provisioner.ts` — Neon branch
-   creation against `NEON_API_KEY` + parent project, with retry-with-
-   backoff for the `423 Locked` window (≈3 s post-create).
-2. Apply `packages/platform/src/database/prisma/migrations/` against the
-   new branch URL (or a seed script if migrations don't exist yet).
-3. Flip `merchant.status` from `'provisioning'` → `'active'` and write
-   `databaseUrl`, `neonProjectId`, `neonBranchId`.
-4. Call this from the `handleProvisionStore` worker handler (Step 5
-   stub).
-5. Expose a trigger — `POST /api/merchants/:id/provision` or auto-queue
-   on `POST /api/merchants` create.
+Per `.plans/fly-migration-plan.md` → Step 7:
+1. Replace "projects" terminology with "merchants" throughout the UI
+   (`app/pages/projects/` → `app/pages/merchants/`).
+2. Merchant list + detail pages with status badges (provisioning /
+   active / suspended), showing `neon_project_id`, plan, trial state.
+3. Remove CF-specific UI: Pages status, wrangler logs, GH repo linking,
+   per-project env var CRUD.
+4. Role-based sidebar (`owner` vs `client` views).
+5. Email/password auth (drops remaining GitHub-OAuth hooks in
+   `server/utils/session.ts` + `server/api/auth/session.get.ts`).
+6. Wire `PLAN_LIMITS.products` live check in plan-limits middleware.
 
-Neon API token already lives in `.secrets` as `NEON_API_KEY`.
+Likely to hit the ≥10-file scope rule — will pause and present a plan
+before executing.
+
+### Step 8 — `fly deploy` (Day 13) — requires explicit user confirmation
+per autonomous rules.
 
 ## Key Files to Know
 
