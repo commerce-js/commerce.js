@@ -1,8 +1,8 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
 
-// Redirect to projects
-navigateTo('/projects')
+// Redirect to merchants list — the operator's primary view.
+navigateTo('/merchants')
 </script>
 
 <template>

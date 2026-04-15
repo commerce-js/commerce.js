@@ -2,112 +2,53 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const { isNotificationsSlideOverOpen } = useDashboard()
-const route = useRoute()
 
 const links = ref<NavigationMenuItem[][]>([
   [
     {
-      label: 'Projects',
-      icon: 'i-lucide-folder-kanban',
-      to: '/projects'
+      label: 'Merchants',
+      icon: 'i-lucide-building-2',
+      to: '/merchants',
     },
-    {
-      label: 'Deployments',
-      icon: 'i-lucide-rocket',
-      to: '/deployments'
-    },
-    {
-      label: 'Usage',
-      icon: 'i-lucide-bar-chart-3',
-      to: '/usage'
-    },
-    {
-      label: 'Uptime',
-      icon: 'i-lucide-activity',
-      to: '/uptime'
-    }
   ],
   [
-    {
-      label: 'Store',
-      icon: 'i-lucide-shopping-bag',
-      defaultOpen: false,
-      children: [
-        {
-          label: 'Overview',
-          icon: 'i-lucide-layout-dashboard',
-          to: '/store'
-        },
-        {
-          label: 'Orders',
-          icon: 'i-lucide-shopping-cart',
-          to: '/store/orders'
-        },
-        {
-          label: 'Products',
-          icon: 'i-lucide-package',
-          to: '/store/products'
-        },
-        {
-          label: 'Customers',
-          icon: 'i-lucide-users',
-          to: '/store/customers'
-        },
-        {
-          label: 'Analytics',
-          icon: 'i-lucide-trending-up',
-          to: '/store/analytics'
-        },
-        {
-          label: 'Integrations',
-          icon: 'i-lucide-plug',
-          to: '/store/integrations'
-        }
-      ]
-    }
-  ],
-  [
-    {
-      label: 'Billing',
-      icon: 'i-lucide-credit-card',
-      to: '/billing'
-    },
     {
       label: 'Settings',
       icon: 'i-lucide-settings',
-      to: '/settings'
-    }
-  ]
+      to: '/settings',
+    },
+    {
+      label: 'Profile',
+      icon: 'i-lucide-user',
+      to: '/profile',
+    },
+  ],
 ])
 
 const groups = computed(() => [
   {
     id: 'links',
     label: 'Go to',
-    items: links.value.flat().flatMap(item =>
-      item.children
-        ? [item, ...item.children]
-        : [item]
-    ).filter(item => item.to)
+    items: links.value.flat().filter(item => item.to),
   },
   {
     id: 'actions',
     label: 'Actions',
     items: [
       {
-        label: 'New Project',
+        label: 'New merchant',
         icon: 'i-lucide-plus',
-        to: '/projects'
+        to: '/merchants/new',
       },
       {
-        label: 'View Notifications',
+        label: 'View notifications',
         icon: 'i-lucide-bell',
         click: () => {
           isNotificationsSlideOverOpen.value = true
-        }
-      }
-    ]
-  }
+        },
+      },
+    ],
+  },
 ])
 </script>
 
@@ -122,7 +63,15 @@ const groups = computed(() => [
       :max-size="18"
     >
       <template #header="{ collapsed }">
-        <ProjectSwitcher :collapsed="collapsed" />
+        <NuxtLink
+          to="/merchants"
+          class="flex items-center gap-2 px-2 py-3 text-default hover:opacity-80"
+        >
+          <UIcon name="i-lucide-box" class="w-6 h-6 text-primary-400" />
+          <span v-if="!collapsed" class="font-semibold tracking-tight">
+            CommerceJS <span class="text-primary-400">Cloud</span>
+          </span>
+        </NuxtLink>
       </template>
 
       <template #default="{ collapsed }">
@@ -134,29 +83,19 @@ const groups = computed(() => [
           variant="outline"
         />
 
-        <!-- Platform navigation -->
+        <!-- Primary navigation -->
         <UNavigationMenu
           :collapsed="collapsed"
           :items="links[0]"
           orientation="vertical"
         />
 
-        <USeparator />
-
-        <!-- Store navigation -->
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links[1]"
-          orientation="vertical"
-        />
-
         <!-- Bottom links -->
         <div class="mt-auto">
           <USeparator />
-
           <UNavigationMenu
             :collapsed="collapsed"
-            :items="links[2]"
+            :items="links[1]"
             orientation="vertical"
           />
         </div>
