@@ -49,11 +49,13 @@ export default defineNuxtConfig({
     },
   },
 
-  // Route caching — CDN performance
+  // Route caching — static assets only. Page-level SWR is disabled
+  // because Nitro's SWR keys by URL path only (no vary-by-host), which
+  // would serve merchant A's rendered HTML to merchant B on the
+  // multi-tenant CommerceJS Cloud deploy (every subdomain hits the same
+  // process). Revisit with a cache key that includes the merchant host
+  // when needed.
   routeRules: {
-    '/': { swr: 3600 },
-    '/products/**': { swr: 600 },
-    '/categories/**': { swr: 600 },
     '/_nuxt/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },
   },
 

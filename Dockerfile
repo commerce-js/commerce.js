@@ -36,15 +36,20 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json .
 COPY packages/ packages/
 COPY apps/dashboard/ apps/dashboard/
 COPY apps/storefront/ apps/storefront/
+# start-web.sh lives in scripts/ — copied here so the runtime stage can
+# promote it without re-copying the whole repo.
+COPY scripts/ scripts/
 
 RUN pnpm install --frozen-lockfile
 
 # Generate Prisma clients (platform merchant DB + dashboard control DB).
-# The dashboard's prisma.config.ts reads NEON_CONTROL_DB_URL at load time
-# (Prisma 7 strict env resolution); `prisma generate` itself doesn't need
-# a live DB — provide a placeholder so the config loads, and the real
-# secret is injected at runtime via Fly secrets.
-RUN cd packages/platform && npx prisma generate
+# Both prisma.config.ts files read their respective URL env var at load
+# time (Prisma 7 strict env resolution); `prisma generate` itself doesn't
+# need a live DB — provide placeholders so the config loads, and the real
+# secrets are injected at runtime via Fly secrets.
+RUN cd packages/platform \
+    && DATABASE_URL="postgresql://placeholder@localhost:5432/placeholder" \
+       npx prisma generate
 RUN cd apps/dashboard \
     && NEON_CONTROL_DB_URL="postgresql://placeholder@localhost:5432/placeholder" \
        npx prisma generate
@@ -98,4 +103,6 @@ EXPOSE 3000 3001
 # Default CMD is the web supervisor (dashboard + storefront). The
 # fly.toml `[processes]` block overrides this for the `worker` machine.
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/bin/sh", "scripts/start-web.sh"]
+# bash, not /bin/sh: the supervisor uses `wait -n` which dash doesn't
+# implement. node:22-slim ships bash at /bin/bash.
+CMD ["/bin/bash", "scripts/start-web.sh"]

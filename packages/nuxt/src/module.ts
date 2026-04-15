@@ -86,26 +86,40 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     // ------------------------------------------------------------------
     // Remote-mode detection
     // ------------------------------------------------------------------
-    // If remoteApiBase is configured (either via module options or the
-    // NUXT_COMMERCE_REMOTE_API_BASE env var), switch into pure-client
-    // mode: no local routes, no adapter init, just a local proxy
-    // handler that forwards every request to the remote host.
+    // Remote mode = "this app does not own the commerce data locally;
+    // forward /api/${apiBase}/** to a hosted CommerceJS tenant instead."
+    //
+    // Two ways to opt in:
+    //   1. Set commerce.apiRoutes: false in nuxt.config.ts (the build-
+    //      time signal — used by apps/storefront in the EaaS deploy).
+    //   2. Leave apiRoutes at the default and set commerce.remoteApiBase
+    //      (or the NUXT_COMMERCE_REMOTE_API_BASE env var) — the module
+    //      then forces apiRoutes: false for you.
+    //
+    // We key every mode-dependent decision on the final `apiRoutes`
+    // value after resolution, NOT on whether remoteApiBase is visible
+    // at build time — because in the T04 flow the env var is set
+    // in fly.toml and isn't present when `nuxt build` runs. If we
+    // keyed on remoteApiBase alone, the adapter server plugin would
+    // still register at build time and crash at runtime trying to
+    // initialise from missing Salla/Platform credentials.
     const envRemoteApiBase = process.env.NUXT_COMMERCE_REMOTE_API_BASE
-    const isRemote = !!(options.remoteApiBase || envRemoteApiBase)
+    if (options.remoteApiBase || envRemoteApiBase) {
+      options.apiRoutes = false
+    }
+    const remoteMode = options.apiRoutes === false
 
     // Resolve mode-aware default for apiBase (the module's `defaults`
     // intentionally omits this key — see the defineNuxtModule block).
     if (!options.apiBase) {
-      options.apiBase = isRemote ? '/api/storefront' : '/api/_commerce'
+      options.apiBase = remoteMode ? '/api/storefront' : '/api/_commerce'
     }
 
-    if (isRemote) {
-      // Remote mode overrides — local routes would serve stale/empty
-      // data and the adapter plugin would fail without DB credentials.
-      options.apiRoutes = false
-      logger.info(
-        `Remote mode — proxying ${options.apiBase}/** → ${options.remoteApiBase || envRemoteApiBase}`,
-      )
+    if (remoteMode) {
+      const remoteHint = options.remoteApiBase
+        || envRemoteApiBase
+        || '(set NUXT_COMMERCE_REMOTE_API_BASE at runtime)'
+      logger.info(`Remote mode — proxying ${options.apiBase}/** → ${remoteHint}`)
     }
 
     // Force Nitro to bundle @commercejs/nuxt runtime files instead of
@@ -175,9 +189,13 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
     addPlugin(resolve('./runtime/plugin'))
 
     // The adapter server plugin initialises a CommerceAdapter from env
-    // vars (Salla token / Platform DB URL). In remote mode the whole
-    // point is that no adapter lives in this process, so skip it.
-    if (!isRemote) {
+    // vars (Salla token / Platform DB URL). It only makes sense when
+    // this app owns the commerce data (apiRoutes: true). In remote mode
+    // — including the T04 flow where remoteApiBase is set from a runtime
+    // env var the module didn't see at build time — apiRoutes is false
+    // and the adapter would just fail to initialise. Key off apiRoutes
+    // here so we get it right regardless of when remoteApiBase is set.
+    if (options.apiRoutes) {
       addServerPlugin(resolve('./runtime/server/plugins/commerce-adapter'))
     }
 
@@ -200,11 +218,17 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
 
     // Remote mode — install a single catch-all proxy at apiBase/**
     // that forwards every request to remoteApiBase with the API key.
-    if (isRemote) {
+    // Same apiRoutes-keyed condition as the adapter plugin above so
+    // the two stay mutually exclusive.
+    if (remoteMode) {
       addServerHandler({
         route: `${options.apiBase}/**`,
         handler: resolve('./runtime/server/proxy'),
       })
+      // Pair of plugins the proxy depends on (see those files for
+      // detail). Split across two files so the remote-mode code path
+      // stays self-contained.
+      addServerPlugin(resolve('./runtime/server/plugins/proxy-forwarded-host'))
     }
 
     // Note: WASM handling was removed — Drizzle uses @neondatabase/serverless
@@ -214,7 +238,7 @@ const commerceModule: NuxtModule<CommerceModuleOptions> = defineNuxtModule<Comme
 
     // Enable OpenAPI spec generation (/_openapi.json, /_scalar, /_swagger)
     // No routes to document in remote mode — skip.
-    if (options.openAPI && !isRemote) {
+    if (options.openAPI && !remoteMode) {
       nuxt.options.nitro.experimental = {
         ...nuxt.options.nitro.experimental,
         openAPI: {

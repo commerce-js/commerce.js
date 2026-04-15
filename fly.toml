@@ -23,7 +23,8 @@ primary_region = 'fra'
 [processes]
   # Web machines run the supervisor that launches the dashboard (:3000) and
   # the storefront (:3001) together. See scripts/start-web.sh for rationale.
-  web = '/bin/sh scripts/start-web.sh'
+  # bash (not /bin/sh) because the supervisor uses `wait -n`.
+  web = '/bin/bash scripts/start-web.sh'
   # Worker stays on its own machine pool — no HTTP, just BullMQ consumers.
   worker = 'node .output/worker.mjs'
 

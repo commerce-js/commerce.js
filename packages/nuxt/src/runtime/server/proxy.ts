@@ -24,12 +24,14 @@
 //      buyer session cookie becomes host-only on the local origin, so the
 //      browser stores and returns it on subsequent same-origin calls.
 //
-// This handler is only registered when `remoteApiBase` is configured
-// (see `module.ts` — `isRemote` branch). Local-route mode never hits it.
+// This handler is only registered when the module is in remote mode
+// (see `module.ts` — the `remoteMode` branch). Local-route mode doesn't
+// register it, so its bundle impact is zero when unused.
 // ---------------------------------------------------------------------------
 
-import { defineEventHandler, proxyRequest, createError, getRequestURL } from 'h3'
+import { defineEventHandler, proxyRequest, createError, getRequestURL, getRequestHost, getHeader } from 'h3'
 import { useRuntimeConfig } from 'nitropack/runtime'
+import { getForwardedHost } from './plugins/proxy-forwarded-host'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event) as any
@@ -54,10 +56,39 @@ export default defineEventHandler(async (event) => {
     : url.pathname
   const target = `${remoteApiBase}${relativePath}${url.search}`
 
-  // Inject X-Commerce-Key only when we have one. Forward all other
-  // incoming headers as-is (h3 handles cookie + content-type + body).
+  // Inject X-Commerce-Key only when we have one. h3's proxyRequest
+  // forwards the incoming event's headers automatically (minus a small
+  // ignored set that doesn't include x-forwarded-host).
   const headers: Record<string, string> = {}
   if (apiKey) headers['x-commerce-key'] = apiKey
+
+  // Preserve merchant host across Nuxt's in-process $fetch hop.
+  //
+  // During SSR Nuxt dispatches `useFetch('/api/storefront/*')` through
+  // this local handler without going over real HTTP. The inner event
+  // it hands us has Host=localhost and no x-forwarded-host — Nuxt
+  // doesn't forward either across the boundary. If we sent that to the
+  // hosted `remoteApiBase`, tenant resolution on the far side would
+  // lose the merchant identity and 404.
+  //
+  // Priority, from most to least trusted:
+  //   - AsyncLocalStorage set by proxy-forwarded-host on the OUTER
+  //     request (survives the $fetch dispatch — the only channel that
+  //     actually does).
+  //   - x-forwarded-host on the current event (direct HTTP callers —
+  //     e.g. the standalone self-hosted path, or a curl hitting
+  //     /api/storefront/* on this process).
+  //   - Host header (the caller is already on the merchant origin).
+  // Localhost drops out so we don't poison upstream resolution with
+  // the in-process dispatch's own noise.
+  const fromAls = getForwardedHost()
+  const fromHeader = getHeader(event, 'x-forwarded-host')
+  const fromHost = getRequestHost(event, { xForwardedHost: true })
+  const rawForwarded = fromAls || fromHeader || fromHost
+  const forwardedHost = rawForwarded && !/^localhost(:\d+)?$/i.test(rawForwarded)
+    ? rawForwarded
+    : undefined
+  if (forwardedHost) headers['x-forwarded-host'] = forwardedHost
 
   return proxyRequest(event, target, {
     headers,
