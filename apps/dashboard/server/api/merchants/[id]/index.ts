@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
       plan: string
       status: string
       dashboardRole: string
-      stripeCustomer: string
+      tapCustomerId: string
       currency: string
       locale: string
       customDomain: string | null

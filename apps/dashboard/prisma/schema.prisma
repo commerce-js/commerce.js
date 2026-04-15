@@ -43,7 +43,11 @@ model Merchant {
   status         String    @default("provisioning")
   dashboardRole  String    @default("owner") @map("dashboard_role")
   provisionedBy  String?   @map("provisioned_by")
-  stripeCustomer String?   @map("stripe_customer")
+  // Tap is the platform's billing provider for merchant subscriptions
+  // (and the dominant MENA payment provider — used by stores to charge
+  // their buyers via @commercejs/payment-tap as well). One Tap customer
+  // record per merchant tracks the SaaS subscription state.
+  tapCustomerId  String?   @map("tap_customer_id")
   currency       String    @default("SAR")
   locale         String    @default("ar-SA")
   customDomain   String?   @map("custom_domain")

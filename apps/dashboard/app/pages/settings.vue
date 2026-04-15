@@ -73,7 +73,7 @@ definePageMeta({ layout: 'dashboard' })
           </template>
 
           <p class="text-sm text-muted">
-            Secrets (Neon API key, Redis, Stripe, SMTP) are managed via
+            Secrets (Neon API key, Redis, Tap, SMTP) are managed via
             <code class="font-mono">flyctl secrets set</code> or the
             monorepo-root <code class="font-mono">.secrets</code> file in
             development. A UI to rotate them without a redeploy is planned.

@@ -51,11 +51,17 @@ export default defineNuxtConfig({
     neonApiKey: '',
     sessionPassword: '',
     redisUrl: '',
-    stripeSecretKey: '',
-    stripeWebhookSecret: '',
+    // Tap (https://tap.company) — MENA-first payment provider used both
+    // for billing merchants for their platform subscription AND by stores
+    // to charge buyers (via @commercejs/payment-tap; fully wired in
+    // apps/hosted-checkout). Env-var names match the .secrets canonical
+    // layer so the dashboard + hosted-checkout share one Tap account.
+    tapSecretKey: process.env.TAP_SECRET_KEY || '',
+    tapWebhookSecret: process.env.TAP_WEBHOOK_SECRET || '',
     public: {
       appTitle: 'CommerceJS Cloud',
       baseUrl: 'http://localhost:3002',
+      tapPublicKey: process.env.TAP_PUBLIC_KEY || '',
     },
   },
 })
