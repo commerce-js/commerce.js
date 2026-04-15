@@ -78,6 +78,11 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 | First-run admin register | ✅ Tested live (`baker@shamlan.sa`, role=admin) |
 | Live provisioning chain | ✅ POST /api/merchants → BullMQ → Neon project create → schema apply → `status='active'` (5.8 s end-to-end) |
 | Merchant Neon DBs | ✅ Created in `aws-eu-central-1` (default region from `server/utils/neon.ts`) |
+| Billing provider | ✅ **Tap** (not Stripe) — matches hosted-checkout + payment-tap. `Merchant.tapCustomerId` column, `TAP_SECRET_KEY` / `TAP_PUBLIC_KEY` / `TAP_MERCHANT_ID` on Fly |
+| Dedicated IPv4 | ✅ `149.248.222.30` ($2/mo, required for apex A record) |
+| Dedicated IPv6 | ✅ `2a09:8280:1::102:787c:1` |
+| TLS cert `commercejs.cloud` | ✅ Issued; awaiting apex A/AAAA records to validate |
+| TLS cert `*.commercejs.cloud` | ✅ Issued; awaiting `_acme-challenge` CNAME to `commercejs.cloud.nyw2do9.flydns.net` |
 
 ## What Was Done This Session (2026-04-14)
 
@@ -339,10 +344,16 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 
 - **Local cookies** at `/tmp/cjs-cookies` from the curl smoke test —
   not committed; just stale once macOS reboots.
-- **DNS** — `commercejs-cloud.fly.dev` is live; `commercejs.cloud` apex
-  is not pointed at Fly yet. When ready: CNAME the apex (or wildcard
-  `*.commercejs.cloud` for storefront subdomains) to
-  `commercejs-cloud.fly.dev`, then `fly certs create` for each cert.
+- **DNS** — IPs + certs allocated (IPv4 `149.248.222.30`, IPv6
+  `2a09:8280:1::102:787c:1`, certs for `commercejs.cloud` +
+  `*.commercejs.cloud`). User needs to add 5 records at their registrar:
+  - `A @ → 149.248.222.30`
+  - `AAAA @ → 2a09:8280:1::102:787c:1`
+  - `A * → 149.248.222.30`
+  - `AAAA * → 2a09:8280:1::102:787c:1`
+  - `CNAME _acme-challenge → commercejs.cloud.nyw2do9.flydns.net` (DNS-01
+    challenge for the wildcard cert)
+  Then `fly certs check` confirms both certs have validated.
 - **Pre-existing dashboard typecheck failure** still unchanged
   (Nitro auto-import resolution in pnpm workspace; runtime build is
   fine).
@@ -357,11 +368,17 @@ The migration is functionally complete — the platform sells stores. From
 here the work is product, not infrastructure:
 
 - **Storefront request routing.** Tenant middleware resolves merchants
-  but no storefront API surface is wired yet. Next: a `/api/storefront/*`
-  route tree (or subdomain-based routing into a separate Nitro app)
-  backed by the per-merchant adapter on `event.context.adapter`.
-- **Billing.** Stripe customer + subscription (the `stripeCustomer`
-  field on Merchant is plumbed; nothing reads or writes it).
+  but no storefront API surface or UI is wired yet — so `smoke.commercejs.cloud`
+  currently serves the dashboard UI, which is wrong. Next: either
+  (a) split by hostname in the same app (dashboard vs storefront route
+  trees), or (b) serve storefront at a separate Fly app that also reads
+  the control DB for tenant resolution. Thin `/api/storefront/*`
+  wrappers over `event.context.adapter` in either case.
+- **Tap billing (platform side).** `Merchant.tapCustomerId` is plumbed,
+  nothing reads/writes it yet. Subscription creation on merchant signup,
+  plan-change webhooks, failed-payment → `status='suspended'` wiring.
+  Can borrow a lot from `apps/hosted-checkout/server/utils/tap.ts` which
+  already wraps the Tap API for buyer payments.
 - **Merchant DB region pairing.** When MENA storefronts launch,
   consider Neon `aws-ap-south-1` for merchant branches and Fly `bom`
   paired with control DB also in ap-south-1.
