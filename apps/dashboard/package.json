@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "nuxt dev",
-    "build": "nuxt build",
+    "build": "nuxt build && pnpm build:worker",
+    "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node20 --outfile=.output/worker.mjs --banner:js='import { createRequire } from \"node:module\"; const require = createRequire(import.meta.url);' --packages=external",
     "preview": "nuxt preview",
     "generate": "nuxt generate",
     "typecheck": "nuxt typecheck"
@@ -18,12 +19,15 @@
     "@prisma/adapter-neon": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@vueuse/core": "^14.2.0",
+    "bullmq": "^5.40.0",
+    "ioredis": "^5.4.2",
     "lru-cache": "^11.2.5",
     "nuxt": "^4.3.0",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.89",
+    "esbuild": "^0.24.0",
     "prisma": "^7.6.0",
     "typescript": "^5.8.3"
   }

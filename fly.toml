@@ -17,7 +17,7 @@ primary_region = "bah"
 
 [processes]
   web = "node .output/server/index.mjs"
-  # worker = "node .output/worker.mjs"   # enabled in Step 5 (BullMQ)
+  worker = "node .output/worker.mjs"
 
 [http_service]
   internal_port = 3000
