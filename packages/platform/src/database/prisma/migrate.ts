@@ -353,6 +353,76 @@ export async function migratePrisma() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`,
+
+    // -------------------------------------------------------------------
+    // Profile family — cross-merchant buyer identity (mirrors
+    // src/database/prisma/schema/profile.prisma)
+    // -------------------------------------------------------------------
+
+    `CREATE TABLE IF NOT EXISTS profiles (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT UNIQUE,
+      phone TEXT,
+      first_name TEXT,
+      last_name TEXT,
+      preferences JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS profile_addresses (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      label TEXT,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      phone TEXT,
+      street TEXT NOT NULL,
+      street2 TEXT,
+      city TEXT NOT NULL,
+      state TEXT,
+      country TEXT NOT NULL,
+      postal_code TEXT,
+      district TEXT,
+      national_address TEXT,
+      additional_number TEXT,
+      last_used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS profile_payment_methods (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL,
+      type TEXT NOT NULL,
+      last4 TEXT NOT NULL,
+      brand TEXT,
+      expiry_month INTEGER,
+      expiry_year INTEGER,
+      provider_token TEXT,
+      billing_address JSONB,
+      last_used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS profile_merchant_links (
+      profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      merchant_id TEXT NOT NULL,
+      adapter_customer_id TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (profile_id, merchant_id)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS profile_otp_codes (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      channel TEXT NOT NULL DEFAULT 'email',
+      expires_at TIMESTAMPTZ NOT NULL,
+      verified BOOLEAN NOT NULL DEFAULT false,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`,
   ]
 
   for (const stmt of statements) {

@@ -7,6 +7,7 @@
 
 import { defineEventHandler, readBody, createError } from 'h3'
 import { useDB } from '../../utils/db'
+import { enqueueMerchantJob } from '../../utils/queue'
 
 export default defineEventHandler(async (event) => {
   const db = useDB()
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    return await db.merchant.create({
+    const merchant = await db.merchant.create({
       data: {
         name: body.name,
         email: body.email,
@@ -48,10 +49,21 @@ export default defineEventHandler(async (event) => {
         plan: body.plan ?? 'trial',
         currency: body.currency ?? 'SAR',
         locale: body.locale ?? 'ar-SA',
-        // status defaults to 'provisioning' until the BullMQ worker (Step 6)
-        // creates a Neon branch and runs migrations against it.
+        // status defaults to 'provisioning' — the `provision-store` BullMQ
+        // job (worker.ts → merchant-provisioner.ts) flips it to 'active'
+        // once the Neon branch is ready and the platform schema is applied.
       },
     })
+
+    // Kick off async provisioning. The job is retryable (5 attempts,
+    // exp backoff); a failure here doesn't roll back the merchant row —
+    // the operator can re-trigger via POST /api/merchants/:id/provision.
+    await enqueueMerchantJob({
+      type: 'provision-store',
+      data: { merchantId: merchant.id },
+    })
+
+    return merchant
   }
   catch (error: any) {
     if (error?.code === 'P2002') {

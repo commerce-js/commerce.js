@@ -11,6 +11,7 @@
 export { initPrisma, getDb, getDb as getPrismaDb, resetDb, bindDb, runWithDb } from './prisma/client.js'
 export type { PrismaDatabase } from './prisma/client.js'
 export { getPrismaClient, disconnectPrismaClient, disconnectAll } from './prisma/client.js'
+export { migratePrisma } from './prisma/migrate.js'
 
 // Drizzle (dormant on fly/eaas — active on main)
 // export { initDrizzle, getDb as getDrizzleDb } from './drizzle/client.js'

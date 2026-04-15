@@ -35,33 +35,23 @@ import type {
   SendEmailJob,
 } from './server/utils/queue'
 import { useDB } from './server/utils/db'
+import { provisionMerchant } from './server/utils/merchant-provisioner'
 
 // ---------------------------------------------------------------------------
 // Handlers — each one owns a single job type.
 // ---------------------------------------------------------------------------
 
 async function handleProvisionStore(data: ProvisionStoreJob['data']): Promise<void> {
-  const db = useDB()
-
-  const merchant = await db.merchant.findUnique({ where: { id: data.merchantId } })
-  if (!merchant) {
-    throw new Error(`provision-store: merchant ${data.merchantId} not found`)
-  }
-  if (merchant.status === 'active' && merchant.databaseUrl) {
-    // Idempotency guard — already provisioned, nothing to do.
-    return
-  }
-
-  // Step 6 implements the real provisioning pipeline:
-  //   1. Create Neon project / branch for this merchant.
-  //   2. Apply packages/platform migrations to the new branch.
-  //   3. await db.merchant.update({ where: { id }, data: {
-  //        databaseUrl, neonProjectId, neonBranchId, status: 'active',
-  //      } })
-  //
-  // For Step 5 we only wire the queue + worker plumbing. Mark the job as
-  // a no-op so the queue stays testable end-to-end.
-  console.log('[worker] provision-store stub for merchant %s — Step 6 will fill this in', data.merchantId)
+  // Delegates to the pipeline in merchant-provisioner.ts — create Neon
+  // project, apply platform schema, flip status='active'. Idempotent:
+  // rerunning after a partial failure picks up from where it left off.
+  const result = await provisionMerchant(data.merchantId)
+  console.log(
+    '[worker] provision-store OK merchant=%s neonProjectId=%s neonBranchId=%s',
+    result.merchantId,
+    result.neonProjectId,
+    result.neonBranchId,
+  )
 }
 
 async function handleSendEmail(data: SendEmailJob['data']): Promise<void> {
