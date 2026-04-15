@@ -12,6 +12,16 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   app: {
+    // Storefront assets live under `/_storefront/` instead of the
+    // default `/_nuxt/`. Rationale: on the hosted EaaS deploy the
+    // dashboard and storefront share a single Fly machine; the
+    // dashboard's Nitro serves its own `/_nuxt/*` bundles and 404s
+    // anything it doesn't own. Giving the storefront a distinct
+    // asset prefix makes the dashboard's 00.storefront-proxy
+    // middleware route these requests to the storefront process
+    // cleanly. Extends naturally to per-theme namespaces
+    // (`/_themes/<name>/`) when we add template themes.
+    buildAssetsDir: '/_storefront/',
     head: {
       htmlAttrs: { lang: 'en' },
       link: [
@@ -56,7 +66,7 @@ export default defineNuxtConfig({
   // process). Revisit with a cache key that includes the merchant host
   // when needed.
   routeRules: {
-    '/_nuxt/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },
+    '/_storefront/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },
   },
 
   // Nitro — Fly.io / self-hosted node preset (was `cloudflare-pages`).
