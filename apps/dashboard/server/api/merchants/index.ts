@@ -8,6 +8,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { useDB } from '../../utils/db'
 import { enqueueMerchantJob } from '../../utils/queue'
+import { isReservedSubdomain } from '../../../shared/utils/reservedSubdomains'
 
 export default defineEventHandler(async (event) => {
   const db = useDB()
@@ -38,6 +39,10 @@ export default defineEventHandler(async (event) => {
 
   if (!subdomain) {
     throw createError({ statusCode: 400, message: 'subdomain could not be derived from name' })
+  }
+
+  if (isReservedSubdomain(subdomain)) {
+    throw createError({ statusCode: 422, message: `'${subdomain}' is a reserved subdomain and cannot be used` })
   }
 
   try {

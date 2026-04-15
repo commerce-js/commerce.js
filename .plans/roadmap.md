@@ -196,50 +196,60 @@
 
 ---
 
-## 🎯 Phase 7: CommerceJS Cloud
+## 🎯 Phase 7: CommerceJS Cloud (EaaS)
 
-> Hosted commerce platform — get merchants from zero to production in minutes.
-> Inspired by Medusa Cloud but built around CommerceJS's composable architecture.
+> Hosted eCommerce-as-a-Service platform on Fly.io. Merchants sign up and get a storefront +
+> admin + API + dedicated Neon Postgres DB in under 60 seconds.
+>
+> **Architecture**: See `.plans/storefront-eaas/plan.md` for the full strategy.
+> **Implementation**: `fly/eaas` branch — live at `commercejs-cloud.fly.dev`.
 
-### Pricing Model
-- **No GMV fees** — pay only for infrastructure
-- Unlimited orders, products, sales channels
-- Three tiers: **Starter** / **Pro** / **Enterprise**
+### Hosting & Positioning
+- **No GitHub push-to-deploy** — this is EaaS, not a deploy platform (that vision was retired)
+- **No GMV fees** — flat monthly billing via Tap
+- **MENA-first** — Bahrain/GCC market, Arabic RTL, Tap/stcpay/Mada/Tabby/Tamara
+- Three tiers: **Trial** / **Starter** / **Pro** / **Enterprise**
 
-### Cloud Dashboard (`commercejs.cloud`)
-- [ ] Project management UI (create, configure, monitor)
-- [ ] GitHub integration — push-to-deploy from any branch
-- [ ] Environment management (production, staging, preview)
-- [ ] Preview environments for every PR (sandboxed app + branched DB)
-- [ ] Environment variables management
-- [ ] Real-time logs and application health monitoring
-- [ ] Usage metrics and billing dashboard
+### Platform Foundation (`app.commercejs.cloud`)
+- [x] Fly.io deployment — `commercejs-cloud` app, Frankfurt (`fra`), 2 web + 1 worker + 1 standby
+- [x] Dedicated Neon Postgres per merchant — provisioned async via BullMQ worker in 5–10 s
+- [x] Control DB (singleton) + Merchant DB (cached Prisma per tenant) — two-DB model
+- [x] Tenant middleware — subdomain / API key / custom domain resolution, LRU cache
+- [x] Plan-limits middleware — trial expiry (402), product/staff caps
+- [x] BullMQ + Upstash Redis — background job queue for provisioning and webhooks
+- [x] Email/password auth — bcrypt, cookie session, first-run register
+- [x] Merchant management UI — list, new, detail, retry-provision, danger-zone delete
+- [x] TLS certs — `commercejs.cloud` + `*.commercejs.cloud` (Let's Encrypt via Fly)
+- [x] DNS — `A`/`AAAA` apex + wildcard + `_acme-challenge` CNAME — live
 
-### Managed Infrastructure
-- [ ] One-click deploy of CommerceJS backend + storefront
-- [ ] Auto-provisioned Postgres database per environment
-- [ ] Auto-provisioned Redis / key-value cache
-- [x] S3 object storage per environment (media, assets) — `@commercejs/storage-s3` provider
-- [ ] Automatic database migrations on deploy
-- [ ] Auto-scaling based on traffic (dynamic compute)
-- [ ] Global CDN / edge network for storefront hosting
-- [ ] SSL/TLS certificates (auto-provisioned)
-- [ ] Zero-downtime deployments
-- [ ] Automatic backups with point-in-time recovery
+### Storefront Layer (`*.commercejs.cloud`)
+> Full detail: `.plans/storefront-eaas/`
+
+- [ ] **T01** — Storefront API routes in dashboard app (`/api/storefront/*`)
+- [ ] **T02** — `@commercejs/nuxt` remote mode (`apiRoutes: false` + built-in proxy)
+- [ ] **T03** — `apps/storefront` Fly.io migration (`node-server` preset + merchant config injection)
+- [ ] **T04** — Hosted SSR as second Fly.io process (hostname proxy middleware, `fly.toml` `store` process)
+
+### Billing (Tap)
+- [x] `Merchant.tapCustomerId` column plumbed
+- [ ] Subscription creation on merchant signup
+- [ ] Plan-change webhooks
+- [ ] Failed-payment → `status='suspended'` wiring
+- [ ] Billing portal page in dashboard
 
 ### Built-in Services
-- [ ] **CommerceJS Cache** — integrated caching layer for API responses (cart, catalog)
-- [ ] **CommerceJS Emails** — built-in transactional emails (order confirmations, shipping updates, password resets) with custom domain support and delivery tracking
-- [x] **CommerceJS Admin Auth** — DB-backed admin users with bcrypt, session auth, env-var seeding
-- [ ] **CommerceJS Admin** — hosted admin dashboard (unlimited users, no per-seat fees)
-- [ ] Data import/export tooling (DB dumps, seed data for previews)
+- [x] **Admin auth** — DB-backed, bcrypt, session cookie
+- [x] **Provisioning emails** — stub in worker (SMTP transport pending)
+- [ ] **Transactional emails** — order confirmations, shipping updates, password resets
+  (wire `notification-smtp` package into `handleSendEmail` in `worker.ts`)
+- [ ] **Merchant admin** — merchant-facing dashboard (manage products, orders, customers)
+- [ ] **Custom domains** — cert provisioning via `fly certs add` on domain verification
 
-### Developer Experience
-- [ ] `commercejs deploy` CLI command
-- [ ] Monorepo support (backend + storefront in one repo)
-- [ ] Build logs and deploy history
-- [ ] Seamless adapter configuration (connect any adapter via env vars)
-- [ ] Pre-configured commerce stack (app, admin, storefront, DB, cache, storage)
+### Developer / Self-Hosted Path
+- [ ] `@commercejs/nuxt` remote mode — point any Nuxt app at `acme.commercejs.cloud/api/storefront`
+- [ ] API key management in dashboard (create, revoke, scope)
+- [ ] CORS configuration per merchant (allowed origins)
+- [ ] OpenAPI spec surfaced at `acme.commercejs.cloud/api/storefront/_scalar`
 
 ---
 
@@ -300,4 +310,5 @@
 - **2026-02-17**: Phase 5 OpenAPI — enabled Nitro `experimental.openAPI` in `@commercejs/nuxt` module, added `defineRouteMeta` to all 46 server routes across 13 tags (Store, Catalog, Geography, Auth, Cart, Checkout, Customer, Addresses, Orders, Reviews, Wishlist, Returns, Promotions). Scalar UI at `/_scalar`, raw spec at `/_openapi.json`. Build verified, browser tested.
 - **2026-02-18**: Built `@commercejs/storage-s3` — S3-compatible storage provider for the native platform (Commerce.js Cloud). `StorageProvider` interface in `@commercejs/types` (5 methods: upload, delete, getUrl, getPresignedUploadUrl, getPresignedDownloadUrl). Uses `aws4fetch` (2.5KB). Wired into `@commercejs/core` CommerceConfig. 20 tests, all passing.
 - **2026-02-23**: Integrated delivery providers into core + nuxt + hosted-checkout. Added `delivery`/`defaultDelivery`/`autoDispatch` to `CommerceConfig`, 5 delivery methods to `CommerceInstance`, 4 delivery events to `CommerceEvents` (8 new tests, 59 total passing). Created `useServerDeliveryProvider()` utility and 5 API routes in `@commercejs/nuxt` (`_commerce/delivery/`). Added `delivery-estimate.post.ts` and `delivery-dispatch.post.ts` to hosted-checkout. Separate admin action with optional auto-dispatch.
+- **2026-04-15**: Phase 7 rewritten — CF/GitHub push-to-deploy vision retired; replaced with Fly.io EaaS architecture (Steps 1–8 complete, live at commercejs-cloud.fly.dev). Storefront strategy documented in `.plans/storefront-eaas/`. T01–T04 planned.
 - **2026-02-24**: Storefront search & polish — built `SearchPalette.vue` component (UModal + UCommandPalette, ⌘K shortcut, ClientOnly SSR fix). Added case-insensitive `search` operator to platform (Drizzle ILIKE + Prisma insensitive mode) searching both name and description. Fixed currency display (`price.formatted`). Cleaned ~65 verbose Tailwind classes across 5 storefront files (semantic shorthands, aspect-ratio syntax, gradient syntax).

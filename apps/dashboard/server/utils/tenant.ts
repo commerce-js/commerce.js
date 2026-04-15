@@ -31,6 +31,7 @@ export type MerchantContext = Merchant
 const PLATFORM_HOSTS = new Set([
   'commercejs.cloud',
   'www.commercejs.cloud',
+  'app.commercejs.cloud',
   'admin.commercejs.cloud',
   'dashboard.commercejs.cloud',
 ])

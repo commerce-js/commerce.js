@@ -18,6 +18,15 @@ watch(name, (v) => {
   }
 })
 
+const subdomainError = computed(() => {
+  const s = subdomain.value
+  if (!s) return null
+  if (isReservedSubdomain(s)) return `'${s}' is a reserved subdomain`
+  if (s.length < 2) return 'Subdomain must be at least 2 characters'
+  if (s.length > 63) return 'Subdomain must be 63 characters or fewer'
+  return null
+})
+
 async function submit() {
   error.value = null
   submitting.value = true
@@ -67,13 +76,15 @@ async function submit() {
               <UFormField
                 label="Subdomain"
                 required
-                :hint="`Storefront will be at https://${subdomain || '<subdomain>'}.commercejs.cloud`"
+                :hint="subdomainError ? undefined : `Storefront will be at https://${subdomain || '<subdomain>'}.commercejs.cloud`"
+                :error="subdomainError ?? undefined"
               >
                 <UInput
                   v-model="subdomain"
                   placeholder="acme"
                   size="lg"
                   required
+                  :color="subdomainError ? 'error' : undefined"
                   @input="subdomainDirty = true"
                 />
               </UFormField>
@@ -113,6 +124,7 @@ async function submit() {
               size="lg"
               color="primary"
               :loading="submitting"
+              :disabled="!!subdomainError"
               label="Create merchant"
             />
             <UButton
