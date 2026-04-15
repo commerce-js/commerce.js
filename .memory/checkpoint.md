@@ -2,16 +2,13 @@
 
 ## Current Phase
 
-**Fly.io EaaS Migration — Step 6 (Merchant Provisioning) Complete**
+**Fly.io EaaS Migration — Step 7 (Dashboard UI Refactor) Complete**
 
-End-to-end merchant lifecycle is live: `POST /api/merchants` creates
-the control-DB row and enqueues a `provision-store` job; the BullMQ
-worker creates a dedicated Neon project, applies the platform schema
-via `migratePrisma()` bound into the new client through AsyncLocalStorage,
-then flips status='active'. A manual retry endpoint
-(`POST /api/merchants/:id/provision`) is available for stuck rows.
-The full Phase 1 → 6 chain compiles; live Neon provisioning is ready to
-be exercised against a QA merchant.
+The dashboard is now a pure cloud-operator console — auth via
+email/password against `dashboard_users`, a merchants list/detail/create
+flow that drives the Step 6 provisioning pipeline, and everything CF-
+or merchant-admin-specific is gone. Bundle shrank from 17.9 MB → 14.4 MB.
+Ready for Step 8 (`fly deploy` to Bahrain) on user confirmation.
 
 ⚠️ **Region note:** the Neon control project (Step 2) is in `us-east-1`
 rather than the plan's recommended `aws-eu-central-1`. ~150 ms RTT from
@@ -65,8 +62,13 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 | `worker.ts` provision-store handler | ✅ Calls `provisionMerchant()`, logs projectId / branchId on success |
 | `POST /api/merchants` auto-enqueue | ✅ Enqueues `provision-store` immediately after row create |
 | `POST /api/merchants/:id/provision` | ✅ Manual retry endpoint — short-circuits if already active |
-| Dashboard UI (merchants list/detail) | ❌ Step 7 |
-| Email/password auth | ❌ Step 7 |
+| Email/password auth | ✅ bcrypt-ts against `dashboard_users`; login + first-run register routes |
+| `DashboardSession` + gating middleware | ✅ Cookie-sealed session, `auth: false` page meta to opt out |
+| `/merchants` list page | ✅ Status badges, polls every 5 s while any row is `provisioning` |
+| `/merchants/new` page | ✅ Auto-derived subdomain, async-provisioning explainer, POSTs to `/api/merchants` |
+| `/merchants/:id` detail page | ✅ Overview, infrastructure (Neon IDs + masked URL), domains, retry button, danger-zone delete |
+| Nav + brand mark | ✅ Merchants / Settings / Profile only; CF + store/* tree removed |
+| Pruned surface | ✅ `projects/*`, `deployments`, `usage`, `uptime`, `store/*`, `billing/*`, `/api/admin/*`, `/api/armada/*`, `useDeployStream`, `useAdminClient`, `useFormatCurrency`, `ProjectSwitcher` all deleted |
 
 ## What Was Done This Session (2026-04-14)
 
@@ -254,27 +256,57 @@ Fly `bah`. Revisit if tenant-resolution latency in Step 4 hurts.
 - `pnpm --filter dashboard typecheck` still pre-existing-broken (h3
   auto-import resolution); build path is clean.
 
+## Step 7 deliverables (commits `14a77b4`, `a9fedb7`, `efd7d4b`)
+
+- **7a — auth rewrite:** bcrypt-ts email/password login; first-run
+  register route (self-closes when `dashboard_users` is non-empty);
+  new session shape; cookie renamed to `cjs-dashboard-session`; login
+  page dynamically switches between sign-in / first-run register UX.
+- **7b — merchants UI:** list / new / detail pages wired to Step 2 + 6
+  control-DB routes; polling on provisioning rows; masked databaseUrl;
+  retry-provision button; danger-zone delete. Layout reduced to
+  Merchants + Settings + Profile; brand mark replaces ProjectSwitcher.
+- **7c — prune:** 33-file sweep: deleted `projects/*`, `deployments`,
+  `usage`, `uptime`, the `store/*` merchant-admin subtree, `billing/*`,
+  `/api/admin/*`, `/api/armada/*`, 3 orphan composables, 1 component.
+  `settings.vue` + `profile.vue` simplified to read-only status cards.
+
+## Known carry-over (from Step 7, deferred deliberately)
+
+- **Role-based sidebar (owner vs support)** — `DashboardUser.role` is
+  in the schema and carried in the session, but the two-role UX doesn't
+  pay for itself yet. Add when there's an actual support team.
+- **Live plan-limits `products` count** — middleware plumbing is in
+  place (Step 4); the live count query is commented out, waiting for
+  a stable admin catalog surface. Unblock as part of Step 8+ post-deploy
+  work.
+- **Billing / Stripe** — deferred to its own phase; removed from the
+  dashboard entirely for now.
+- **Password change / 2FA / admin-invite flow** — documented in the
+  profile page as later-phase; a `POST /api/admin/users` invite route
+  pairs with it.
+
 ## Immediate Next Steps
 
-### Step 7 — Dashboard UI Refactor (Days 9–12)
+### Step 8 — Deploy to Fly.io (Day 13)
 
-Per `.plans/fly-migration-plan.md` → Step 7:
-1. Replace "projects" terminology with "merchants" throughout the UI
-   (`app/pages/projects/` → `app/pages/merchants/`).
-2. Merchant list + detail pages with status badges (provisioning /
-   active / suspended), showing `neon_project_id`, plan, trial state.
-3. Remove CF-specific UI: Pages status, wrangler logs, GH repo linking,
-   per-project env var CRUD.
-4. Role-based sidebar (`owner` vs `client` views).
-5. Email/password auth (drops remaining GitHub-OAuth hooks in
-   `server/utils/session.ts` + `server/api/auth/session.get.ts`).
-6. Wire `PLAN_LIMITS.products` live check in plan-limits middleware.
+Per `.plans/fly-migration-plan.md` → Step 8:
+1. `fly launch --no-deploy --copy-config` to register `commercejs-cloud`
+   in Fly, skipping auto-generated fly.toml.
+2. `fly secrets set` for each var in the monorepo-root `.secrets` file:
+   `NEON_CONTROL_DB_URL`, `NEON_API_KEY`,
+   `UPSTASH_REDIS_REST_URL`/`_TOKEN`, `SMTP_*`, `NUXT_SESSION_PASSWORD`,
+   `STRIPE_*`, `SENTRY_DSN`.
+3. `fly deploy --config fly.toml` — builds the image from the repo
+   Dockerfile and boots both `web` and `worker` processes.
+4. First smoke test:
+   - `fly ssh console` into web → confirm `/api/_health` responds
+   - `curl -X POST` a merchant creation → watch worker logs for the
+     Neon-project-create + migratePrisma + status=active chain.
+5. DNS: CNAME `commercejs.cloud` to the Fly app edge.
 
-Likely to hit the ≥10-file scope rule — will pause and present a plan
-before executing.
-
-### Step 8 — `fly deploy` (Day 13) — requires explicit user confirmation
-per autonomous rules.
+**Autonomous rule: `fly deploy` requires explicit user confirmation.**
+Present a deployment checklist before running any `fly` commands.
 
 ## Key Files to Know
 
