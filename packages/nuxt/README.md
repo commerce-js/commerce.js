@@ -75,18 +75,67 @@ When `apiRoutes` is enabled, the module registers 40+ REST endpoints:
 | `/api/_commerce/reviews/:productId` | GET | Get product reviews |
 | ... | ... | 30+ more routes |
 
+## Remote mode (CommerceJS Cloud)
+
+Self-hosted storefronts can point `@commercejs/nuxt` at a hosted CommerceJS API instead of
+running their own adapter locally. In **remote mode** the module skips all local route handlers,
+skips adapter initialisation, and installs a single catch-all proxy at your `apiBase` that
+forwards every request to the remote host with your API key attached.
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@commercejs/nuxt'],
+  commerce: {
+    // Local proxy path — composables call this (same-origin, no CORS)
+    apiBase: '/api/storefront',
+    // remoteApiBase and apiKey are typically set via env vars — see below
+  },
+})
+```
+
+```bash
+# .env
+NUXT_COMMERCE_REMOTE_API_BASE=https://acme.commercejs.cloud/api/storefront
+NUXT_COMMERCE_API_KEY=cjs_live_xxxxxxxxxxxx
+```
+
+That's the whole config. When `NUXT_COMMERCE_REMOTE_API_BASE` (or `commerce.remoteApiBase`)
+is set, the module automatically:
+
+- forces `apiRoutes: false` (no local route handlers registered)
+- defaults `apiBase` to `/api/storefront` if you haven't set one
+- skips the adapter Nitro plugin (no DB / platform credentials needed)
+- mounts a catch-all proxy at `${apiBase}/**` that:
+  - forwards method, body, query, and cookies to the remote URL
+  - injects `X-Commerce-Key` from `NUXT_COMMERCE_API_KEY` (server-side only)
+  - rewrites upstream `Set-Cookie` `Domain=…` to empty so the buyer session
+    cookie lands on the self-hosted origin
+
+Browser traffic always goes to the self-hosted origin → no CORS preflight, no cookie-domain
+friction. Only the server↔server hop pays the network cost.
+
 ## Configuration
 
 ```typescript
 interface CommerceModuleOptions {
-  /** Adapter name: 'salla', 'shopify', 'medusa', etc. */
+  /** Adapter name: 'salla', 'shopify', 'medusa', etc. (ignored in remote mode) */
   adapter?: string
 
-  /** REST API base path (default: '/api/_commerce') */
+  /** Local API path. Default: '/api/_commerce' (local mode) or '/api/storefront' (remote mode) */
   apiBase?: string
 
-  /** Auto-generate REST API routes (default: true) */
+  /** Auto-generate REST API routes (default: true; forced false in remote mode) */
   apiRoutes?: boolean
+
+  /** Remote API URL. Setting this switches the module into remote mode. */
+  remoteApiBase?: string
+
+  /** API key sent as X-Commerce-Key on proxied requests (remote mode only). */
+  apiKey?: string
+
+  /** OpenAPI spec generation (default: true; skipped in remote mode). */
+  openAPI?: boolean
 }
 ```
 
