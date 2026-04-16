@@ -32,6 +32,7 @@ export type { PlatformConfig } from './types.js'
 
 // Database (Prisma + Neon adapter — active driver on fly/eaas)
 export { initPrisma, getPrismaDb, getDb, resetDb, bindDb, runWithDb } from './database/index.js'
+export { registerEventResolver } from './database/prisma/client.js'
 export type { PrismaDatabase } from './database/prisma/client.js'
 export { getPrismaClient, disconnectPrismaClient, disconnectAll } from './database/index.js'
 export { migratePrisma } from './database/index.js'

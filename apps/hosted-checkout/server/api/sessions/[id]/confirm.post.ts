@@ -6,7 +6,6 @@
 // ---------------------------------------------------------------------------
 
 import { sessions } from '../index.post'
-import { ensureDb } from '../../../utils/db'
 import { createProfileDomain } from '@commercejs/platform'
 
 export default defineEventHandler(async (event) => {
@@ -29,7 +28,6 @@ export default defineEventHandler(async (event) => {
     // (Client state is lost after 3DS redirect, so we must save here)
     if (tapCustomerId && session.customerInfo?.email) {
       try {
-        ensureDb()
         const profileDomain = createProfileDomain()
         const profile = await profileDomain.lookupByEmail(session.customerInfo.email)
         if (profile) {

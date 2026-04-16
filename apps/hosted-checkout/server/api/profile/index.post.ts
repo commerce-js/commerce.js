@@ -5,7 +5,6 @@
 // Returns: { profile: Profile }
 // ---------------------------------------------------------------------------
 
-import { ensureDb } from '../../utils/db'
 import { createProfileDomain } from '@commercejs/platform'
 
 export default defineEventHandler(async (event) => {
@@ -14,8 +13,6 @@ export default defineEventHandler(async (event) => {
   if (!body?.profileId) {
     throw createError({ statusCode: 400, message: 'profileId is required' })
   }
-
-  ensureDb()
 
   const profileDomain = createProfileDomain()
 

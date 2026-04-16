@@ -5,7 +5,6 @@
 // Returns: { cards: TapSavedCard[] }
 // ---------------------------------------------------------------------------
 
-import { ensureDb } from '../../utils/db'
 import { createProfileDomain } from '@commercejs/platform'
 import { TapPaymentProvider } from '@commercejs/payment-tap'
 
@@ -16,8 +15,6 @@ export default defineEventHandler(async (event) => {
   if (!profileId) {
     throw createError({ statusCode: 400, message: 'profileId is required' })
   }
-
-  ensureDb()
 
   const profileDomain = createProfileDomain()
   const profile = await profileDomain.getProfile(profileId)

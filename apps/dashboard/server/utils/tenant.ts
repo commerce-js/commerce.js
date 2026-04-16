@@ -34,6 +34,16 @@ export const PLATFORM_HOSTS = new Set([
   'app.commercejs.cloud',
   'admin.commercejs.cloud',
   'dashboard.commercejs.cloud',
+  'checkout.commercejs.cloud',
+])
+
+/**
+ * Host domains served by the hosted-checkout process (:3002).
+ * The proxy middleware routes ALL traffic (including /api/*) to the checkout
+ * origin so the checkout's own API routes run in its tenant-scoped context.
+ */
+export const CHECKOUT_HOSTS = new Set([
+  'checkout.commercejs.cloud',
 ])
 
 /** Root host from which subdomains are derived. Override via env. */

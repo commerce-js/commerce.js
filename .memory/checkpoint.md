@@ -1,7 +1,7 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-16T1000.md`](checkpoints/2026-04-16T1000.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-16T0200.md`](checkpoints/2026-04-16T0200.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-16T1900.md`](checkpoints/2026-04-16T1900.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-16T1000.md`](checkpoints/2026-04-16T1000.md)
 
 ## Current Phase
 
@@ -20,7 +20,7 @@ Branch: `fly/eaas` · Latest commit lands after this session
 
 ## What's Blocking "Real Merchant Onboarding"
 
-1. **Credit-card checkout route 404s** — `checkout.commercejs.cloud/pay/cart` is the old Cloudflare hosted-checkout, DNS now caught by Fly wildcard and routed to commercejs-cloud which has no such route. COD works; card path needs `apps/hosted-checkout` re-deployed as its own Fly app (or merged into commercejs-cloud).
+1. ~~**Credit-card checkout route 404s**~~ ✅ Fixed 2026-04-16 (this session) — `apps/hosted-checkout` now runs as a third co-supervised Fly process on `:3002`. Full card-payment path works end-to-end via Tap.
 2. **No merchant admin UI** → merchants have no way to CRUD products / view orders. The existing `apps/dashboard` is platform-operator-facing (manages merchants), not merchant-facing.
 
 ## Next Step (Recommended)

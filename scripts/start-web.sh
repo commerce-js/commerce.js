@@ -35,6 +35,7 @@ set -eu
 
 : "${PORT:=3000}"                            # dashboard
 : "${STOREFRONT_PORT:=3001}"                 # storefront
+: "${CHECKOUT_PORT:=3002}"                   # hosted checkout
 : "${NUXT_COMMERCE_REMOTE_API_BASE:=http://localhost:${PORT}/api/storefront}"
 
 # Dashboard listens on $HOST:$PORT = 0.0.0.0:3000 by default.
@@ -52,19 +53,27 @@ NUXT_COMMERCE_REMOTE_API_BASE="${NUXT_COMMERCE_REMOTE_API_BASE}" \
   node apps/storefront/.output/server/index.mjs &
 STORE_PID=$!
 
+# Hosted checkout — card payments via Tap. Runs on :3002. The dashboard's
+# proxy routes checkout.commercejs.cloud traffic here.
+echo "[start-web] launching hosted-checkout on :${CHECKOUT_PORT}"
+PORT="${CHECKOUT_PORT}" \
+NITRO_PORT="${CHECKOUT_PORT}" \
+  node apps/hosted-checkout/.output/server/index.mjs &
+CHECKOUT_PID=$!
+
 shutdown() {
   echo "[start-web] shutdown signal received — stopping children"
-  kill -TERM "${WEB_PID}" "${STORE_PID}" 2>/dev/null || true
-  wait "${WEB_PID}" "${STORE_PID}" 2>/dev/null || true
+  kill -TERM "${WEB_PID}" "${STORE_PID}" "${CHECKOUT_PID}" 2>/dev/null || true
+  wait "${WEB_PID}" "${STORE_PID}" "${CHECKOUT_PID}" 2>/dev/null || true
   exit 0
 }
 trap shutdown TERM INT HUP
 
-# Block until whichever child exits first. Teardown the peer so Fly
+# Block until whichever child exits first. Teardown the peers so Fly
 # restarts the whole machine and we don't limp along half-alive.
-wait -n "${WEB_PID}" "${STORE_PID}"
+wait -n "${WEB_PID}" "${STORE_PID}" "${CHECKOUT_PID}"
 EXIT_CODE=$?
-echo "[start-web] a child exited (code=${EXIT_CODE}) — tearing down peer"
-kill -TERM "${WEB_PID}" "${STORE_PID}" 2>/dev/null || true
-wait "${WEB_PID}" "${STORE_PID}" 2>/dev/null || true
+echo "[start-web] a child exited (code=${EXIT_CODE}) — tearing down peers"
+kill -TERM "${WEB_PID}" "${STORE_PID}" "${CHECKOUT_PID}" 2>/dev/null || true
+wait "${WEB_PID}" "${STORE_PID}" "${CHECKOUT_PID}" 2>/dev/null || true
 exit "${EXIT_CODE}"

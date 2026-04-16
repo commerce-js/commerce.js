@@ -38,24 +38,41 @@
 // defineEventHandler, getRequestHost, getRequestURL, proxyRequest are
 // Nitro auto-imports.
 import process from 'node:process'
-import { PLATFORM_HOSTS } from '../utils/tenant'
+import { PLATFORM_HOSTS, CHECKOUT_HOSTS } from '../utils/tenant'
 
 const STOREFRONT_ORIGIN = (process.env.STOREFRONT_ORIGIN || 'http://localhost:3001').replace(/\/$/, '')
+const CHECKOUT_ORIGIN = (process.env.CHECKOUT_ORIGIN || 'http://localhost:3002').replace(/\/$/, '')
 
 export default defineEventHandler(async (event) => {
   const url = getRequestURL(event)
   const path = url.pathname
 
-  // API traffic — never proxied. Dashboard handlers answer directly.
-  if (path.startsWith('/api/') || path === '/api') return
-
   const host = (getRequestHost(event, { xForwardedHost: true }) || '')
     .split(':')[0]
     .toLowerCase()
 
-  // Empty or reserved host → dashboard handles (UI, health, etc.)
+  // ── Hosted checkout ──────────────────────────────────────────────────
+  // Checkout hosts get ALL traffic (pages AND /api/*) proxied to :3002.
+  // This diverges from the storefront pattern where /api/* stays on the
+  // dashboard: the checkout has its own API routes (cart, cart-pay,
+  // profile, OTP) that need its own tenant-scoped DB context.
+  if (CHECKOUT_HOSTS.has(host)) {
+    const target = `${CHECKOUT_ORIGIN}${path}${url.search}`
+    return proxyRequest(event, target, {
+      headers: { 'x-forwarded-host': host },
+    })
+  }
+
+  // ── Dashboard API ────────────────────────────────────────────────────
+  // API traffic for non-checkout hosts stays on the dashboard. The
+  // dashboard owns /api/storefront/* (T01 handlers) and /api/merchants/*.
+  if (path.startsWith('/api/') || path === '/api') return
+
+  // ── Platform hosts ───────────────────────────────────────────────────
+  // Empty or reserved host → dashboard handles (admin UI, health, etc.)
   if (!host || PLATFORM_HOSTS.has(host)) return
 
+  // ── Merchant storefront ──────────────────────────────────────────────
   // Merchant host on a non-API path → storefront renders the page.
   const target = `${STOREFRONT_ORIGIN}${path}${url.search}`
   return proxyRequest(event, target, {

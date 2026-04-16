@@ -274,9 +274,16 @@ async function handlePlaceOrder() {
     if (selectedPaymentId.value === 'card') {
       const checkoutUrl = 'https://checkout.commercejs.cloud'
       const returnUrl = encodeURIComponent(window.location.origin)
+      // Extract merchant subdomain from the current host so the hosted
+      // checkout knows which merchant's DB to connect to.
+      const host = window.location.hostname
+      const base = 'commercejs.cloud'
+      const merchant = host.endsWith(`.${base}`)
+        ? host.slice(0, -(base.length + 1))
+        : host // custom domain — pass as-is for now
       isNavigatingToConfirmation.value = true
       await navigateTo(
-        `${checkoutUrl}/pay/cart?id=${cartId.value}&return=${returnUrl}`,
+        `${checkoutUrl}/pay/cart?id=${cartId.value}&return=${returnUrl}&merchant=${merchant}`,
         { external: true },
       )
       return

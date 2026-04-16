@@ -73,6 +73,22 @@ Nuxt UI v3 supported `<UButton :badge="…" :badge-color="…">` for overlaid co
 
 **Fix**: Wrap the button in `<UChip :text="…" :show="…" color="primary">`. UChip v4 has `inset`, `position`, and `standalone` props for fine-tuning placement.
 
+## Nitro `AsyncLocalStorage.enterWith()` Doesn't Propagate Middleware→Handler
+`AsyncLocalStorage.enterWith(store)` sets the store for the *current* async resource. When Nitro awaits a middleware's returned promise, it resumes in its own async context — the store is attached to the middleware's async frame, not the dispatcher's continuation. By the time the handler runs, `getStore()` returns `undefined`.
+
+This means `bindDb(client)` called from a Nitro middleware does NOT reliably make `getDb()` work in the subsequent handler. The dashboard's `tenant.ts` middleware looked like it worked only because `createPlatformAdapter()` internally also calls `initPrisma()`, which sets the module-level `_db` singleton — and `getDb()` falls back to `_db`. That fallback is **racy under concurrent different-merchant traffic** (last caller wins).
+
+**Fix**: Use the framework-native per-event context instead. `@commercejs/platform` exports `registerEventResolver((): EventLike => event)`. Consumers (Nitro apps) register once in a plugin, then the middleware sets `event.context.db = getPrismaClient(url)`. `getDb()` reads from there via the resolver. Scalable, concurrency-safe, framework-agnostic.
+
+For Nitro specifically: requires `nitro.experimental.asyncContext: true` in `nuxt.config.ts`, because `useEvent()` is gated behind that flag (it throws "Enable the experimental flag using `experimental.asyncContext: true`" otherwise — caught silently by the resolver's try/catch unless you check logs).
+
+The pattern lives in `apps/hosted-checkout/server/plugins/platform-event-resolver.ts`. Dashboard still uses the legacy bindDb+initPrisma path; migrate next time the file is touched.
+
+## `useEvent()` from `nitropack/runtime` Requires `experimental.asyncContext: true`
+Silent failure: `useEvent()` throws a readable error, but if you try/catch it (as is normal for "am I in request context?" probing) the error message gets swallowed. The try/catch is necessary for non-Nitro consumers but hides the root cause. Check Fly / console logs if `event.context.db` resolution never works.
+
+**Fix**: Always enable `nitro.experimental.asyncContext: true` in `nuxt.config.ts` when any code path relies on `useEvent()` for cross-boundary event lookup. Nitro 2.13+ — the flag has been stable for a while but isn't default.
+
 ## Static Nitro SSR Handler Pins the `NUXT_PUBLIC_*` Env Var to Build-Time Value
 When `runtimeConfig.public.googleMapsKey = process.env.GOOGLE_MAPS_KEY || ''` is evaluated at `nuxt build`, the default gets baked into the Nitro output. At runtime the default can still be overridden by the prefixed env var `NUXT_PUBLIC_GOOGLE_MAPS_KEY` — Nuxt re-reads those on boot. But if you only set the unprefixed name (`GOOGLE_MAPS_KEY`) as a Fly secret, Nuxt doesn't pick it up because the convention is the `NUXT_PUBLIC_` prefix for public config keys.
 

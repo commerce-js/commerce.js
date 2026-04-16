@@ -9,7 +9,6 @@
 
 import { createOrdersDomain, createCartDomain, createProfileDomain } from '@commercejs/platform'
 import { useTapProviderFromEnv } from '../utils/tap'
-import { ensureDb } from '../utils/db'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -23,7 +22,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'orderId is required' })
   }
 
-  ensureDb()
   const config = useRuntimeConfig()
   const currency = config.commerceCurrency || 'BHD'
 

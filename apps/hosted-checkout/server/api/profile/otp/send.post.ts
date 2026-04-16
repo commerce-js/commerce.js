@@ -6,7 +6,6 @@
 // ---------------------------------------------------------------------------
 
 import { findProfileById } from '@commercejs/platform'
-import { ensureDb } from '../../../utils/db'
 import { generateOtp, sendOtp } from '../../../utils/otp'
 
 export default defineEventHandler(async (event) => {
@@ -15,8 +14,6 @@ export default defineEventHandler(async (event) => {
   if (!body?.profileId) {
     throw createError({ statusCode: 400, message: 'profileId is required' })
   }
-
-  ensureDb()
 
   const channel = body.channel === 'sms' ? 'sms' : 'email' as const
   const profile = await findProfileById(body.profileId)

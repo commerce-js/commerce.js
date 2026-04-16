@@ -62,22 +62,71 @@ export function initPrisma(connectionString: string): PrismaClient {
 }
 
 /**
+ * Framework event resolver — set by consumers to return the current
+ * request's event. Lets `getDb()` read a per-request PrismaClient off
+ * `event.context.db` without the platform package hard-depending on a
+ * specific framework (Nitro, Hono, Express, etc.).
+ *
+ * Register once at app startup (e.g. in a Nitro plugin):
+ * ```ts
+ * import { useEvent } from 'nitropack/runtime'
+ * import { registerEventResolver } from '@commercejs/platform'
+ * registerEventResolver(() => { try { return useEvent() } catch { return null } })
+ * ```
+ *
+ * Consumers that don't register a resolver (CLI tools, seed scripts,
+ * BullMQ workers) fall through to the ALS / singleton resolution path.
+ */
+type EventLike = { context?: { db?: PrismaClient } } | null | undefined
+let eventResolver: (() => EventLike) | null = null
+
+export function registerEventResolver(fn: () => EventLike): void {
+  eventResolver = fn
+}
+
+/**
  * Get the current request's Prisma client. Resolution order:
- *   1. The tenant-scoped client set by `bindDb()` in middleware.
- *   2. The module-level singleton set by `initPrisma()`.
- *   3. Throw.
+ *   1. `event.context.db` — per-request client set by a framework
+ *      middleware. This is the ONLY path that's safe under concurrent
+ *      multi-tenant traffic because it's scoped to the event, not to
+ *      module state or a fragile AsyncLocalStorage frame. Requires the
+ *      consumer to have registered an event resolver (see
+ *      `registerEventResolver`).
+ *   2. The tenant-scoped client set by `bindDb()` — works when the
+ *      caller controls async-context propagation (e.g. wrapping code in
+ *      `runWithDb()`). Brittle across some framework middleware
+ *      boundaries because `AsyncLocalStorage.enterWith()` doesn't always
+ *      propagate from a middleware's resolved promise into the
+ *      subsequent handler's continuation.
+ *   3. The module-level singleton set by `initPrisma()` — fine for
+ *      single-tenant consumers (CLI, tests, seed scripts). RACY for
+ *      multi-tenant under concurrent traffic — the last caller wins.
+ *   4. Throw.
  *
  * Matches the Drizzle client's `getDb()` contract so domain queries can
  * swap drivers without being touched.
  */
 export function getDb(): PrismaClient {
+  // 1. Per-event context — scalable, concurrency-safe.
+  if (eventResolver) {
+    const event = eventResolver()
+    const fromEvent = event?.context?.db
+    if (fromEvent) return fromEvent
+  }
+
+  // 2. AsyncLocalStorage-scoped binding (runWithDb / bindDb path).
   const scoped = tenantStore.getStore()
   if (scoped) return scoped
+
+  // 3. Module-level fallback — single-tenant only.
   if (_db) return _db
+
   throw new Error(
-    'Prisma client not initialized. Call initPrisma(connectionString) for '
-    + 'single-tenant use, or bindDb(merchantClient) inside a per-request '
-    + 'async frame for multi-tenant (fly/eaas) use.',
+    'Prisma client not initialized. In request context, set '
+    + '`event.context.db = getPrismaClient(url)` in middleware and register '
+    + 'an event resolver via `registerEventResolver()`. Outside request '
+    + 'context (CLI / tests), call `initPrisma(connectionString)` or wrap '
+    + 'execution in `runWithDb(client, fn)`.',
   )
 }
 

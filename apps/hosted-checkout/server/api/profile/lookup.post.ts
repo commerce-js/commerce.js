@@ -6,7 +6,6 @@
 // ---------------------------------------------------------------------------
 
 import { findProfileByEmail, findProfileByPhone, createProfile } from '@commercejs/platform'
-import { ensureDb } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -14,8 +13,6 @@ export default defineEventHandler(async (event) => {
   if (!body?.email && !body?.phone) {
     throw createError({ statusCode: 400, message: 'email or phone is required' })
   }
-
-  ensureDb()
 
   // Look up by email first, then phone
   let profile = null

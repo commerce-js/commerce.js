@@ -12,7 +12,6 @@
 import { createOrdersDomain, createCartDomain } from '@commercejs/platform'
 import { WebhookVerifier } from '@commercejs/webhook-verifier'
 import { tap as tapConfig } from '@commercejs/webhook-verifier/configs'
-import { ensureDb } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   const rawBody = await readRawBody(event)
@@ -56,7 +55,6 @@ export default defineEventHandler(async (event) => {
     return { received: true, chargeId, status: chargeStatus, action: 'no_order_id' }
   }
 
-  ensureDb()
   const config = useRuntimeConfig()
   const currency = config.commerceCurrency || 'BHD'
 

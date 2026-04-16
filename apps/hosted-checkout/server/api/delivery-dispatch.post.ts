@@ -12,7 +12,6 @@
 
 import { z } from 'zod'
 import { createOrdersDomain } from '@commercejs/platform'
-import { ensureDb } from '../utils/db'
 import { resolveDeliveryProvider } from '../utils/delivery'
 
 const addressSchema = z.object({
@@ -40,7 +39,6 @@ export default defineEventHandler(async (event) => {
   const body = dispatchSchema.parse(await readBody(event))
   const { orderId, providerId, ...deliveryInput } = body
 
-  ensureDb()
   const config = useRuntimeConfig()
   const currency = (config as any).commerceCurrency || 'BHD'
 

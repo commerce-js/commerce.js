@@ -5,7 +5,6 @@
 // Returns: { verified: boolean, profile?: Profile, error?: string }
 // ---------------------------------------------------------------------------
 
-import { ensureDb } from '../../../utils/db'
 import { verifyOtp } from '../../../utils/otp'
 import { createProfileDomain } from '@commercejs/platform'
 
@@ -15,8 +14,6 @@ export default defineEventHandler(async (event) => {
   if (!body?.profileId || !body?.code) {
     throw createError({ statusCode: 400, message: 'profileId and code are required' })
   }
-
-  ensureDb()
 
   const result = await verifyOtp(body.profileId, body.code)
 

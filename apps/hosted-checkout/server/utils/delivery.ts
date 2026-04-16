@@ -12,6 +12,10 @@ import { neon } from '@neondatabase/serverless'
 /**
  * Fetch the Armada access token from the integrations table.
  * Returns null if not found or DB not configured.
+ *
+ * TODO: Refactor to accept `event` (H3Event) and read the database URL from
+ * `event.context.merchant.database_url` instead of process.env. This requires
+ * updating the call site in resolveDeliveryProvider() to pass event through.
  */
 async function getArmadaTokenFromDb(): Promise<string | null> {
   const dbUrl = process.env.DATABASE_URL

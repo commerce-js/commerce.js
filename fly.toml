@@ -14,6 +14,10 @@ primary_region = 'fra'
   # Storefront sidecar port — see scripts/start-web.sh. The dashboard's
   # 00.storefront-proxy.ts middleware targets localhost:3001.
   STOREFRONT_PORT = '3001'
+  # Hosted checkout sidecar port — card payments via Tap. The dashboard's
+  # proxy routes checkout.commercejs.cloud traffic here.
+  CHECKOUT_PORT = '3002'
+  CHECKOUT_ORIGIN = 'http://localhost:3002'
   # Storefront's @commercejs/nuxt module runs in remote mode and proxies
   # every /api/storefront/* call to the dashboard over localhost. Host-aware
   # tenant resolution travels across via X-Forwarded-Host (set by the
@@ -55,9 +59,10 @@ primary_region = 'fra'
     path = '/api/_health'
 
 [[vm]]
-  # Two Node processes + sharp's native image pipeline in the storefront
-  # bump memory use vs. the dashboard-only baseline. 2 GB gives headroom
-  # for SSR spikes; shared CPU still fine at 1 vCPU for MVP traffic.
+  # Three Node processes (dashboard + storefront + hosted-checkout) +
+  # sharp's native image pipeline share a single VM. 2 GB is the plan
+  # max — the checkout app is lightweight (~50 MB RSS idle) so this
+  # should have headroom. Monitor and upgrade plan if SSR spikes hit.
   memory = '2gb'
   cpu_kind = 'shared'
   cpus = 1

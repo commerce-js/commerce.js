@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # ---------------------------------------------------------------------------
-# CommerceJS Cloud — Fly.io image (dashboard + storefront + worker)
+# CommerceJS Cloud — Fly.io image (dashboard + storefront + hosted-checkout + worker)
 # ---------------------------------------------------------------------------
 # Multi-stage build:
 #   base    → node:22-slim with pnpm via corepack
@@ -36,6 +36,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json .
 COPY packages/ packages/
 COPY apps/dashboard/ apps/dashboard/
 COPY apps/storefront/ apps/storefront/
+COPY apps/hosted-checkout/ apps/hosted-checkout/
 # start-web.sh lives in scripts/ — copied here so the runtime stage can
 # promote it without re-copying the whole repo.
 COPY scripts/ scripts/
@@ -54,12 +55,13 @@ RUN cd apps/dashboard \
     && NEON_CONTROL_DB_URL="postgresql://placeholder@localhost:5432/placeholder" \
        npx prisma generate
 
-# Build the workspace deps once — both the dashboard and the storefront
-# import @commercejs/nuxt / @commercejs/platform / @commercejs/types at
-# runtime, and the storefront also needs @commercejs/ui.
+# Build the workspace deps once — the dashboard, storefront, and
+# hosted-checkout all import @commercejs/platform / @commercejs/types at
+# runtime, and the storefront also needs @commercejs/nuxt / @commercejs/ui.
 # `--filter '...'` builds a package plus its transitive deps in order.
 RUN pnpm --filter '@commercejs/dashboard...' --filter '!@commercejs/dashboard' \
          --filter 'storefront...'            --filter '!storefront' \
+         --filter 'hosted-checkout...'       --filter '!hosted-checkout' \
          build
 
 # `pnpm --filter dashboard build` runs `nuxt build && pnpm build:worker`,
@@ -69,6 +71,9 @@ RUN pnpm --filter dashboard build
 # Storefront's build emits a node-server bundle at
 # apps/storefront/.output/server/index.mjs. No worker involvement.
 RUN pnpm --filter storefront build
+
+# Hosted checkout — card payments via Tap. Same node-server preset.
+RUN pnpm --filter hosted-checkout build
 
 # Collect runtime node_modules for the worker process (esbuild bundles the
 # worker with `--packages=external`, so we need node_modules at runtime).
@@ -88,6 +93,8 @@ COPY --from=build /app/apps/dashboard/.output .output/
 # Storefront .output sits alongside it. The supervisor launches
 # `node apps/storefront/.output/server/index.mjs` on port 3001.
 COPY --from=build /app/apps/storefront/.output apps/storefront/.output/
+# Hosted checkout .output — launched on port 3002 by the supervisor.
+COPY --from=build /app/apps/hosted-checkout/.output apps/hosted-checkout/.output/
 # Worker runtime deps.
 COPY --from=build /tmp/worker-deploy/node_modules node_modules/
 # Supervisor script that runs the web + storefront processes together.
@@ -97,7 +104,7 @@ ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV NODE_ENV=production
 
-EXPOSE 3000 3001
+EXPOSE 3000 3001 3002
 
 # tini acts as PID 1 so child signals and zombies are handled cleanly.
 # Default CMD is the web supervisor (dashboard + storefront). The

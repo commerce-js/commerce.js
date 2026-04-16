@@ -3,7 +3,6 @@
 // ---------------------------------------------------------------------------
 
 import { createCartDomain } from '@commercejs/platform'
-import { ensureDb } from '../utils/db'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -13,7 +12,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Cart ID is required' })
   }
 
-  ensureDb()
   const config = useRuntimeConfig()
   const currency = config.commerceCurrency || 'BHD'
   const cartDomain = createCartDomain(currency)
@@ -22,7 +20,13 @@ export default defineEventHandler(async (event) => {
     const cart = await cartDomain.getCart(cartId)
     return cart
   }
-  catch {
+  catch (err) {
+    // Log the real error to Fly logs for debugging, return generic 404 to client
+    console.error('[hosted-checkout] Cart lookup failed:', {
+      cartId,
+      merchant: event.context.merchant?.subdomain,
+      error: err instanceof Error ? err.message : String(err),
+    })
     throw createError({ statusCode: 404, message: 'Cart not found' })
   }
 })
