@@ -82,7 +82,9 @@ function loadGoogleMaps(): Promise<void> {
     const key = config.public.googleMapsKey
     if (!key) { reject(new Error('No Google Maps key')); return }
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}`
+    // `loading=async` silences the "loaded directly without loading=async"
+    // warning; `libraries=marker` pulls in google.maps.marker.AdvancedMarkerElement.
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&loading=async&libraries=marker`
     script.async = true
     script.onload = () => { mapsLoaded = true; resolve() }
     script.onerror = () => reject(new Error('Failed to load Google Maps'))
@@ -120,25 +122,32 @@ async function initOrUpdateMap(lat: number, lng: number) {
   if (!map && mapContainer.value) {
     map = new google.maps.Map(mapContainer.value, {
       center: position, zoom: 16,
+      // `mapId` is required for AdvancedMarkerElement. Inline `styles` are
+      // incompatible with `mapId` (they'd log a warning); configure POI /
+      // transit visibility via cloud-based map styling on the same Map ID.
+      mapId: config.public.googleMapsMapId,
       disableDefaultUI: true, zoomControl: true,
       gestureHandling: 'greedy',
-      styles: [
-        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-      ],
     })
-    marker = new google.maps.Marker({ position, map, draggable: true, title: 'Drag to adjust', animation: google.maps.Animation.DROP })
+    marker = new google.maps.marker.AdvancedMarkerElement({
+      position, map, gmpDraggable: true, title: 'Drag to adjust',
+    })
     marker.addListener('dragend', async () => {
-      const pos = marker.getPosition()
-      await onMarkerPositionChanged(pos.lat(), pos.lng())
+      // AdvancedMarkerElement exposes `position` directly (no .getPosition()).
+      // It can be a LatLng or a LatLngLiteral depending on how it was last set.
+      const pos: any = marker.position
+      if (!pos) return
+      const lat = typeof pos.lat === 'function' ? pos.lat() : pos.lat
+      const lng = typeof pos.lng === 'function' ? pos.lng() : pos.lng
+      await onMarkerPositionChanged(lat, lng)
     })
     map.addListener('click', async (e: any) => {
-      marker.setPosition(e.latLng)
+      marker.position = e.latLng
       await onMarkerPositionChanged(e.latLng.lat(), e.latLng.lng())
     })
   } else if (map && marker) {
     map.panTo(position)
-    marker.setPosition(position)
+    marker.position = position
   }
 }
 
