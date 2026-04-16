@@ -89,7 +89,13 @@ Silent failure: `useEvent()` throws a readable error, but if you try/catch it (a
 
 **Fix**: Always enable `nitro.experimental.asyncContext: true` in `nuxt.config.ts` when any code path relies on `useEvent()` for cross-boundary event lookup. Nitro 2.13+ — the flag has been stable for a while but isn't default.
 
-## Static Nitro SSR Handler Pins the `NUXT_PUBLIC_*` Env Var to Build-Time Value
-When `runtimeConfig.public.googleMapsKey = process.env.GOOGLE_MAPS_KEY || ''` is evaluated at `nuxt build`, the default gets baked into the Nitro output. At runtime the default can still be overridden by the prefixed env var `NUXT_PUBLIC_GOOGLE_MAPS_KEY` — Nuxt re-reads those on boot. But if you only set the unprefixed name (`GOOGLE_MAPS_KEY`) as a Fly secret, Nuxt doesn't pick it up because the convention is the `NUXT_PUBLIC_` prefix for public config keys.
+## `NUXT_PUBLIC_*` Is The ONLY Way to Inject Public Runtime Config at Fly Runtime
+`runtimeConfig.public.<key>` defaults like `process.env.FOO || ''` are evaluated at `nuxt build` time — inside Docker, where Fly secrets aren't available. The default gets baked as empty string.
 
-**Fix**: `fly secrets set NUXT_PUBLIC_GOOGLE_MAPS_KEY=… --app …` — note the exact key name, not `GOOGLE_MAPS_KEY`. Use `--stage` if you're about to deploy new code anyway so the restart is bundled.
+At runtime, Nuxt only re-reads env vars matching the `NUXT_PUBLIC_<UPPER_SNAKE_PATH>` convention. So to override `runtimeConfig.public.googleMapsKey` you need `NUXT_PUBLIC_GOOGLE_MAPS_KEY`, not `GOOGLE_MAPS_KEY`. Same for `runtimeConfig.public.tapPublicKey` → `NUXT_PUBLIC_TAP_PUBLIC_KEY`.
+
+This bit twice — Google Maps first session, Tap public key the session after. The pattern is: **whenever you add any `runtimeConfig.public.*` key that comes from an env, the matching Fly secret MUST be `NUXT_PUBLIC_<UPPER_SNAKE_CASE>`**. Unprefixed names only work in local dev where the build and runtime share the same env.
+
+Server-side runtime config (top-level `runtimeConfig.*`, not `.public.*`) uses `NUXT_<UPPER_SNAKE>` and has the same rule. Plain env names like `TAP_SECRET_KEY` are fine for direct `process.env.*` reads but do NOT map into `useRuntimeConfig()`.
+
+**Fix**: `fly secrets set NUXT_PUBLIC_<KEY>=value --app …`. Use `--stage` if you're about to deploy new code so the restart is bundled. Verify by curling a page and grepping the rendered HTML for `"<camelCaseKey>":"<value>"` in the injected `window.__NUXT__` config.

@@ -308,7 +308,18 @@ const selectedPayment = computed(() =>
 const cartItems = computed(() => cart.value?.items ?? [])
 const subtotal = computed(() => cart.value?.totals?.subtotal)
 const shippingCost = computed(() => cart.value?.totals?.shipping ?? selectedShipping.value?.price)
-const total = computed(() => cart.value?.totals?.total)
+// Total recomputes locally from subtotal + currently-selected shipping so
+// the summary updates the instant the buyer picks a method — otherwise the
+// total only reflects the server-persisted value (after "Continue to
+// Payment" fires setShippingMethod). After the PATCH, cart.value.totals
+// matches this computation exactly.
+const total = computed(() => {
+  const subAmount = subtotal.value?.amount ?? 0
+  const shipAmount = shippingCost.value?.amount ?? 0
+  const currency = subtotal.value?.currency ?? selectedShipping.value?.price?.currency ?? 'SAR'
+  const amount = subAmount + shipAmount
+  return { amount, currency, formatted: `${amount} ${currency}` }
+})
 
 useHead({
   title: 'Checkout — CommerceJS',

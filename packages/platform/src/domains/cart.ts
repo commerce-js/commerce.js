@@ -57,9 +57,12 @@ export function createCartDomain(currency: string) {
 
     const subtotal = cartItems.reduce((sum: number, item: any) => sum + item.totalPrice.amount, 0)
 
-    // Look up stored shipping method price
-    // Shipping rates are defined here to keep cart domain self-contained
-    const shippingRates: Record<string, number> = { standard: 20, express: 35 }
+    // Look up stored shipping method price.
+    // Rates MUST match `checkout.ts::getShippingMethods` — if they diverge
+    // the cart summary shows a different amount from the option the buyer
+    // picked. TODO: extract these to a shared module (or store price on
+    // the cart row at selection time) so there's a single source of truth.
+    const shippingRates: Record<string, number> = { standard: 15, express: 35 }
     const shippingMethodId = cartRow.shippingMethodId ?? null
     const shippingAmount = shippingMethodId ? (shippingRates[shippingMethodId] ?? 0) : 0
 
