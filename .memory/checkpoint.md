@@ -5,7 +5,7 @@
 
 ## Current Phase
 
-**Phase 7 Storefront EaaS — T01–T04 + phase-1 composables + next-step (A) seed + carry-over #1 (hosted-checkout card payments) all SHIPPED and BROWSER-VERIFIED. Merchant-admin plan locked in; T01 is the next entry point.**
+**Phase 7 merchant-admin T01 — code complete + reviewed + build green. Uncommitted on working tree; awaiting smoke-password verification + deploy + live curl test to close.** Previously: T01–T04 storefront EaaS + phase-1 composables + smoke seed + hosted-checkout card payments all SHIPPED and browser-verified.
 
 The Fly.io EaaS pipeline (Steps 1–8) provisions merchant Neon branches in
 ~6 seconds. On top of that, the full four-layer storefront architecture
@@ -23,11 +23,55 @@ Branch: `fly/eaas` · Latest commit lands after this session
 1. ~~**Credit-card checkout route 404s**~~ ✅ Fixed 2026-04-16 (this session) — `apps/hosted-checkout` now runs as a third co-supervised Fly process on `:3002`. Full card-payment path works end-to-end via Tap.
 2. **No merchant admin UI** → merchants have no way to CRUD products / view orders. The existing `apps/dashboard` is platform-operator-facing (manages merchants), not merchant-facing.
 
-## Next Step (Recommended)
+## Next Step — Close Out T01
 
-**Merchant-admin T01 — auth foundation.** See `.plans/merchant-admin/plan.md` → Next Steps. Deliverable: `curl -i -X POST {sub}.commercejs.cloud/api/admin/auth/login` returns 200 with a `cjs-merchant-session` cookie.
+T01 code is **code-complete, reviewed, build green**, but still uncommitted on the working tree. To ship it:
 
-Parallel track (non-blocking): migrate dashboard's tenant middleware from `bindDb()` + `initPrisma()` fallback to the per-event `registerEventResolver()` + `useEvent()` pattern that hosted-checkout now uses. Required before multi-merchant production traffic — see `.memory/checkpoints/2026-04-17T1800.md` "Carry-Overs".
+1. **Verify smoke merchant `password_hash` is set on control DB** — the bootstrap path reads `Merchant.passwordHash`; if null, the first login returns a generic 401 that will look like a code bug.
+
+   ```bash
+   pnpm exec tsx scripts/verify-merchant-pw.ts
+   # expect: "hash present: yes" + ".secrets password matches DB hash: true"
+   # if not: pnpm exec tsx scripts/set-merchant-password.ts smoke
+   ```
+
+2. **Optional 3-line race fix** in `apps/dashboard/server/api/admin/auth/login.post.ts`: wrap the `admin.auth.createAdmin(...)` call in a try/catch so two simultaneous first-logins don't surface a 500 on the `admin_users.email` UNIQUE constraint collision — fall through to the normal login path on "already exists".
+
+3. **Decide on temp scripts** — `scripts/check-merchant.ts` and `scripts/verify-merchant-pw.ts` are labeled "Temporary" at the top. Either rename/re-document as permanent diagnostic utilities or delete them post-test. `scripts/set-merchant-password.ts` is properly documented — keep.
+
+4. **Deploy + acceptance curl** against `smoke.commercejs.cloud`:
+   ```bash
+   fly deploy --config fly.toml
+   # happy path
+   curl -i -X POST https://smoke.commercejs.cloud/api/admin/auth/login \
+     -H "Content-Type: application/json" \
+     -d "{\"email\":\"$SMOKE_MERCHANT_EMAIL\",\"password\":\"$SMOKE_MERCHANT_PASSWORD\"}" \
+     -c /tmp/cjs-m.txt
+   # expect: 200, Set-Cookie: cjs-merchant-session=...; HttpOnly; Secure; SameSite=Lax
+   # wrong password
+   curl -i -X POST https://smoke.commercejs.cloud/api/admin/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"'$SMOKE_MERCHANT_EMAIL'","password":"WRONG"}'
+   # expect: 401 generic "Invalid email or password"
+   # cross-tenant replay (should 403)
+   curl -i -b /tmp/cjs-m.txt https://nonexistent.commercejs.cloud/api/admin/auth/session
+   # expect: 404 Merchant not found (blocked by tenant middleware before the handler)
+   ```
+
+5. **Commit** with the working-tree contents as a single commit. Bump `.plans/merchant-admin/plan.md` T01 status to ✅ and bump `.plans/grand-plan.md` State Snapshot in the same commit (per the update policy added with grand-plan).
+
+6. **Then T02** — admin shell in `apps/storefront` (`.plans/merchant-admin/tasks/T02.md`). Protected layout at `/admin`, redirects unauthed to `/admin/login`, shows a dashboard landing page for authed.
+
+## Review findings (worth knowing before shipping)
+
+Reviewed the T01 working tree 2026-04-17. Code is correct and security-conscious — cross-tenant replay is double-defended, generic 401 hygiene is solid, cookie flags are textbook, first-login bootstrap logic is tight. Build passes; `.output/server/chunks/routes/api/admin/auth/{login,logout,session}` all emitted.
+
+**Filed as follow-ups (not T01 blockers):**
+- `packages/platform/src/admin/auth.ts` uses `compareSync` (blocks event loop ~100 ms per login) — swap to async `compare`. ~5-line fix.
+- `admin.auth.listAdmins()` used just to check emptiness — expose `countAdmins()` instead. Micro-perf.
+- Subdomain enumeration via 404 (unknown merchant) vs 401 (wrong creds) — OWASP-acceptable trade-off for subdomain-based tenancy since subdomains are public-facing by design. Document only.
+
+**Pre-existing carry-over, unchanged:** dashboard tenant middleware still on `bindDb()` + `initPrisma()` fallback. T01 now routes admin traffic through the same race-prone path. Fine for single-merchant smoke; must migrate to `registerEventResolver()` + `useEvent()` before multi-merchant prod traffic. Fix lives in its own commit after merchant-admin ships — see `.memory/checkpoints/2026-04-17T1800.md` "Carry-Overs".
 
 ## Where to Look
 
@@ -60,9 +104,9 @@ Parallel track (non-blocking): migrate dashboard's tenant middleware from `bindD
 
 ## Session-Starting Checklist
 
-1. Read this file → points at the detailed checkpoint
-2. Read `.memory/checkpoints/2026-04-17T1800.md` → commit list, architecture, carry-overs
-3. Read `.plans/merchant-admin/plan.md` "Next Steps" section (T01 entry point)
+1. Read `.plans/grand-plan.md` → orientation: vision, architecture, current phase
+2. Read this file → current phase + "Next Step — Close Out T01" above
+3. Read `.plans/merchant-admin/tasks/T01.md` → Execution Summary section details what's already implemented
 4. `git log --oneline fly/eaas -10` → scan recent work
-5. `git status` → confirm clean tree
-6. Start T01 of merchant-admin (auth foundation)
+5. `git status` → expect T01 files on working tree (auth routes, merchant-session/merchant-auth utils, tenant.ts edit, scripts, plan-file updates)
+6. Execute the "Next Step — Close Out T01" six-item list above (verify password-hash → optional race fix → temp-script cleanup → deploy → curl-test → single commit bumping plan.md + grand-plan.md)
