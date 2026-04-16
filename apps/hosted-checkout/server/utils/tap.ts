@@ -50,7 +50,13 @@ export function useTapProviderFromEnv(): TapProviderResult {
   const runtimeConfig = useRuntimeConfig()
 
   if (!runtimeConfig.tapSecretKey) {
-    throw new Error('TAP_SECRET_KEY is not configured and no merchantId was provided')
+    throw new Error(
+      'Tap secret key is not configured. Set `NUXT_TAP_SECRET_KEY` as a '
+      + 'Fly secret (the plain `TAP_SECRET_KEY` env var only works at build '
+      + 'time — Nuxt requires the `NUXT_` prefix to override `runtimeConfig.*` '
+      + 'at runtime). Alternatively, pass a merchantId so per-merchant keys '
+      + 'are loaded from the merchant store.',
+    )
   }
 
   const provider = new TapPaymentProvider({
