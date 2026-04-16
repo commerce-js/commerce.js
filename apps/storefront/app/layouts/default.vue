@@ -47,7 +47,10 @@ const navLinks = computed(() => {
   return links
 })
 
-const cartBadge = computed(() =>
+// Cart badge text — only shown when there are items.
+// Nuxt UI v4 UButton dropped the `:badge` prop; we wrap the button in
+// <UChip> instead (see the header markup below).
+const cartBadgeText = computed(() =>
   itemCount.value > 0 ? String(itemCount.value) : undefined,
 )
 </script>
@@ -115,16 +118,21 @@ const cartBadge = computed(() =>
               </template>
             </ClientOnly>
 
-            <UButton
-              to="/cart"
-              icon="i-heroicons-shopping-cart-20-solid"
-              variant="ghost"
-              color="neutral"
-              size="sm"
-              :badge="cartBadge"
-              :badge-color="itemCount > 0 ? 'primary' : undefined"
-              aria-label="Cart"
-            />
+            <UChip
+              :text="cartBadgeText"
+              :show="itemCount > 0"
+              color="primary"
+              size="md"
+            >
+              <UButton
+                to="/cart"
+                icon="i-heroicons-shopping-cart-20-solid"
+                variant="ghost"
+                color="neutral"
+                size="sm"
+                aria-label="Cart"
+              />
+            </UChip>
 
             <UColorModeButton size="sm" />
           </div>

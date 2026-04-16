@@ -1,31 +1,31 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-16T0200.md`](checkpoints/2026-04-16T0200.md)
-> Previous Step 8 (Fly.io deployment) checkpoint content is preserved in git history if needed.
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-16T1000.md`](checkpoints/2026-04-16T1000.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-16T0200.md`](checkpoints/2026-04-16T0200.md)
 
 ## Current Phase
 
-**Phase 7 Storefront EaaS — Tasks T01–T04 + phase-1 composable rewrite all SHIPPED and LIVE.**
+**Phase 7 Storefront EaaS — T01–T04 + phase-1 composables + next-step (A) smoke-tenant seed all SHIPPED and BROWSER-VERIFIED.**
 
 The Fly.io EaaS pipeline (Steps 1–8) provisions merchant Neon branches in
 ~6 seconds. On top of that, the full four-layer storefront architecture
-is now running on `commercejs-cloud.fly.dev`:
+is now running and browser-verified end-to-end on `smoke.commercejs.cloud`:
 
 - `app.commercejs.cloud` → platform-operator dashboard (T01 API routes at `/api/storefront/*`)
-- `smoke.commercejs.cloud` → merchant storefront, SSR'd on a co-supervised `:3001` process, styled with `@nuxt/ui` v4, asset bundles at `/_storefront/*`
+- `smoke.commercejs.cloud` → merchant storefront, SSR'd on a co-supervised `:3001` process, styled with `@nuxt/ui` v4, asset bundles at `/_storefront/*`, populated with 4 sample products + 6 GCC countries
 - `nonexistent.commercejs.cloud` → generic shell, no cross-tenant bleed
-- `@commercejs/nuxt` composables (`useCart`, `useCheckout`, `useBrands`, `useLocations`) all speak T01's session-based contract
+- `@commercejs/nuxt` composables (`useCart`, `useCheckout`, `useBrands`, `useLocations`) all speak T01's session-based contract; cart badge renders via Nuxt UI v4 `<UChip>`; `/cart` direct-visit works
 
-Branch: `fly/eaas` · Latest commit: `95fcd78`
+Branch: `fly/eaas` · Latest commit lands after this session
 
 ## What's Blocking "Real Merchant Onboarding"
 
-1. **Smoke tenant has zero products** → `/api/storefront/products` returns `[]`. Browser add-to-cart can't be exercised until catalog data exists.
+1. **Credit-card checkout route 404s** — `checkout.commercejs.cloud/pay/cart` is the old Cloudflare hosted-checkout, DNS now caught by Fly wildcard and routed to commercejs-cloud which has no such route. COD works; card path needs `apps/hosted-checkout` re-deployed as its own Fly app (or merged into commercejs-cloud).
 2. **No merchant admin UI** → merchants have no way to CRUD products / view orders. The existing `apps/dashboard` is platform-operator-facing (manages merchants), not merchant-facing.
 
 ## Next Step (Recommended)
 
-**(A) Seed smoke tenant (~30 min), then (B) merchant admin UI (days).**
+**(B) Merchant admin UI.** (A) shipped this session. The ranked menu in the plan has (C) phase-2 composable rewrite and (D) Tap billing as smaller items.
 
 Full ranked menu with rationale + implementation notes in [`.plans/storefront-eaas/plan.md`](../.plans/storefront-eaas/plan.md) "Next Steps" section.
 
@@ -33,7 +33,8 @@ Full ranked menu with rationale + implementation notes in [`.plans/storefront-ea
 
 | Question | File |
 |---|---|
-| What shipped this session and what's next? | `.memory/checkpoints/2026-04-16T0200.md` |
+| What shipped this session and what's next? | `.memory/checkpoints/2026-04-16T1000.md` |
+| Previous session handoff | `.memory/checkpoints/2026-04-16T0200.md` |
 | Storefront EaaS strategy + ranked next-steps | `.plans/storefront-eaas/plan.md` |
 | T01–T04 execution + challenges | `.plans/storefront-eaas/tasks/T01.md` – `T04.md` |
 | Architectural decisions (locked) | `.memory/decisions.md` |
@@ -58,8 +59,8 @@ Full ranked menu with rationale + implementation notes in [`.plans/storefront-ea
 ## Session-Starting Checklist
 
 1. Read this file → points at the detailed checkpoint
-2. Read `.memory/checkpoints/2026-04-16T0200.md` → commit list, architecture, next steps
+2. Read `.memory/checkpoints/2026-04-16T1000.md` → commit list, architecture, next steps
 3. Read `.plans/storefront-eaas/plan.md` "Next Steps" section
 4. `git log --oneline fly/eaas -10` → scan recent work
 5. `git status` → confirm clean tree
-6. Pick a task from the ranked menu
+6. Pick a task from the ranked menu (B = merchant admin UI is the highest-impact)

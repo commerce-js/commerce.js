@@ -1,0 +1,19 @@
+{
+  "name": "@commercejs/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-only operational scripts (seed, migrate, backfill). Not published.",
+  "type": "module",
+  "scripts": {
+    "seed-merchant": "tsx seed-merchant.ts"
+  },
+  "dependencies": {
+    "@commercejs/platform": "workspace:*",
+    "@neondatabase/serverless": "^1.0.2",
+    "@prisma/adapter-neon": "^7.6.0",
+    "@prisma/client": "^7.6.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0"
+  }
+}

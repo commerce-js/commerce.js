@@ -8,27 +8,26 @@ defineShortcuts({
   meta_k: () => { open.value = true },
 })
 
-// Fetch products matching search term
-const { data: searchResults, status: searchStatus } = useFetch('/api/_commerce/products', {
-  key: 'search-products',
-  params: { query: searchTerm },
-  transform: (data: any) => {
-    return (data?.products?.items ?? []).map((p: any) => ({
-      id: p.id,
-      label: t(p.name),
-      suffix: p.price?.formatted || undefined,
-      avatar: p.images?.[0] ? { src: p.images[0].url } : undefined,
-      to: `/products/${p.slug || p.id}`,
-    }))
-  },
-  lazy: true,
-  watch: [searchTerm],
-})
+// Fetch products matching search term. useProducts composable reads the
+// runtime apiBase (remote mode → proxied /api/storefront, local mode →
+// /api/_commerce), so we don't hardcode the namespace here.
+const searchParams = computed(() => ({ query: searchTerm.value }))
+const { data: searchData, status: searchStatus } = useProducts(searchParams)
+
+const searchResults = computed(() =>
+  (searchData.value?.products?.items ?? []).map((p: any) => ({
+    id: p.id,
+    label: t(p.name),
+    suffix: p.price?.formatted || undefined,
+    avatar: p.primaryImage ? { src: p.primaryImage.url } : undefined,
+    to: `/products/${p.slug || p.id}`,
+  })),
+)
 
 const groups = computed(() => [{
   id: 'products',
   label: searchTerm.value ? `Results for "${searchTerm.value}"` : 'Products',
-  items: searchResults.value || [],
+  items: searchResults.value,
   ignoreFilter: true,
 }])
 

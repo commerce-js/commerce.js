@@ -56,3 +56,24 @@ Env vars set in `fly.toml [env]` are runtime-only. `nuxt build` runs at Docker b
 Setting `runtime.public.store = { … }` from inside a Nitro `request` hook throws `Cannot assign to read only property 'store' of object`. Public runtime config is sealed after Nitro boot.
 
 **Fix**: For per-request data, use `event.context` or AsyncLocalStorage. For merchant-shared data that needs to flow to the client, fetch via `useFetch` with a key (cached per SSR pass) rather than trying to mutate runtime config.
+
+## Declaring `@prisma/client` on `@commercejs/platform` Breaks the Docker Build
+The platform package's generated Prisma client (`src/database/prisma/generated/internal/class.js`) imports `@prisma/client/runtime/client`, but `packages/platform/package.json` does NOT declare `@prisma/client` as a dep. Consumers like `apps/dashboard` declare it themselves and bundle at build time, so the miss never surfaces there.
+
+Declaring it on platform feels like the "correct" fix, but it causes two regressions:
+1. `packages/platform/src/database/prisma/queries/profiles.ts` type-checks against stricter Prisma 7.7 generated types. `Record<string, any> | null` in the function signatures (e.g. `preferences`, `billingAddress`) fails to assign to the new `NullableJsonNullValueInput | InputJsonValue` input shape — `null` must become `Prisma.DbNull` or be omitted.
+2. Previously-dormant TSC-resolution paths flip to strict: without a resolvable `@prisma/client` anywhere in the workspace-root walk from `packages/platform/`, TSC was silently typing the generated imports loosely; the declared dep creates a symlink at `packages/platform/node_modules/@prisma/client` that forces strict resolution.
+
+**Fix**: Do NOT declare `@prisma/client` on platform until `profiles.ts` is properly reworked to use `Prisma.DbNull` sentinels. For unbundled consumers (seed scripts, CLI tools), declare `@prisma/client` on the consumer workspace package instead — pnpm will symlink it into the consumer's `node_modules` where Node's upward walk can find it when loading platform/dist code.
+
+See `scripts/package.json` for the working pattern.
+
+## Nuxt UI v4 Dropped UButton's `:badge` Prop (Silent Drop)
+Nuxt UI v3 supported `<UButton :badge="…" :badge-color="…">` for overlaid count indicators. In v4 (4.4.0 at time of writing) those props were removed without replacement or console warning — they're silently ignored. The badge never renders; no error.
+
+**Fix**: Wrap the button in `<UChip :text="…" :show="…" color="primary">`. UChip v4 has `inset`, `position`, and `standalone` props for fine-tuning placement.
+
+## Static Nitro SSR Handler Pins the `NUXT_PUBLIC_*` Env Var to Build-Time Value
+When `runtimeConfig.public.googleMapsKey = process.env.GOOGLE_MAPS_KEY || ''` is evaluated at `nuxt build`, the default gets baked into the Nitro output. At runtime the default can still be overridden by the prefixed env var `NUXT_PUBLIC_GOOGLE_MAPS_KEY` — Nuxt re-reads those on boot. But if you only set the unprefixed name (`GOOGLE_MAPS_KEY`) as a Fly secret, Nuxt doesn't pick it up because the convention is the `NUXT_PUBLIC_` prefix for public config keys.
+
+**Fix**: `fly secrets set NUXT_PUBLIC_GOOGLE_MAPS_KEY=… --app …` — note the exact key name, not `GOOGLE_MAPS_KEY`. Use `--stage` if you're about to deploy new code anyway so the restart is bundled.

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 const { t } = useLocalizedString()
 const { formatPrice } = usePrice()
-const { cart, loading, updateItem, removeItem, refresh, itemCount, createCart, cartId } = useCart()
+const { cart, loading, updateItem, removeItem, refresh, itemCount } = useCart()
 
 // await + lazy = blocks SSR, doesn't block SPA navigation
 // getCachedData: () => undefined forces re-fetch on every visit
+// Unconditional refresh — GET /cart is idempotent and auto-creates server-side
+// if the buyer session doesn't have a cart yet.
 await useLazyAsyncData('cart-page', async () => {
-  if (cartId.value) await refresh()
+  await refresh()
   return true
 }, {
   getCachedData: () => undefined,
