@@ -1,11 +1,11 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-16T1900.md`](checkpoints/2026-04-16T1900.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-16T1000.md`](checkpoints/2026-04-16T1000.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-17T1800.md`](checkpoints/2026-04-17T1800.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-16T1900.md`](checkpoints/2026-04-16T1900.md)
 
 ## Current Phase
 
-**Phase 7 Storefront EaaS — T01–T04 + phase-1 composables + next-step (A) smoke-tenant seed all SHIPPED and BROWSER-VERIFIED.**
+**Phase 7 Storefront EaaS — T01–T04 + phase-1 composables + next-step (A) seed + carry-over #1 (hosted-checkout card payments) all SHIPPED and BROWSER-VERIFIED. Merchant-admin plan locked in; T01 is the next entry point.**
 
 The Fly.io EaaS pipeline (Steps 1–8) provisions merchant Neon branches in
 ~6 seconds. On top of that, the full four-layer storefront architecture
@@ -25,16 +25,17 @@ Branch: `fly/eaas` · Latest commit lands after this session
 
 ## Next Step (Recommended)
 
-**(B) Merchant admin UI.** (A) shipped this session. The ranked menu in the plan has (C) phase-2 composable rewrite and (D) Tap billing as smaller items.
+**Merchant-admin T01 — auth foundation.** See `.plans/merchant-admin/plan.md` → Next Steps. Deliverable: `curl -i -X POST {sub}.commercejs.cloud/api/admin/auth/login` returns 200 with a `cjs-merchant-session` cookie.
 
-Full ranked menu with rationale + implementation notes in [`.plans/storefront-eaas/plan.md`](../.plans/storefront-eaas/plan.md) "Next Steps" section.
+Parallel track (non-blocking): migrate dashboard's tenant middleware from `bindDb()` + `initPrisma()` fallback to the per-event `registerEventResolver()` + `useEvent()` pattern that hosted-checkout now uses. Required before multi-merchant production traffic — see `.memory/checkpoints/2026-04-17T1800.md` "Carry-Overs".
 
 ## Where to Look
 
 | Question | File |
 |---|---|
-| What shipped this session and what's next? | `.memory/checkpoints/2026-04-16T1000.md` |
-| Previous session handoff | `.memory/checkpoints/2026-04-16T0200.md` |
+| What shipped this session and what's next? | `.memory/checkpoints/2026-04-17T1800.md` |
+| Previous session handoff | `.memory/checkpoints/2026-04-16T1000.md` |
+| Merchant admin UI plan | `.plans/merchant-admin/plan.md` |
 | Storefront EaaS strategy + ranked next-steps | `.plans/storefront-eaas/plan.md` |
 | T01–T04 execution + challenges | `.plans/storefront-eaas/tasks/T01.md` – `T04.md` |
 | Architectural decisions (locked) | `.memory/decisions.md` |
@@ -59,8 +60,8 @@ Full ranked menu with rationale + implementation notes in [`.plans/storefront-ea
 ## Session-Starting Checklist
 
 1. Read this file → points at the detailed checkpoint
-2. Read `.memory/checkpoints/2026-04-16T1000.md` → commit list, architecture, next steps
-3. Read `.plans/storefront-eaas/plan.md` "Next Steps" section
+2. Read `.memory/checkpoints/2026-04-17T1800.md` → commit list, architecture, carry-overs
+3. Read `.plans/merchant-admin/plan.md` "Next Steps" section (T01 entry point)
 4. `git log --oneline fly/eaas -10` → scan recent work
 5. `git status` → confirm clean tree
-6. Pick a task from the ranked menu (B = merchant admin UI is the highest-impact)
+6. Start T01 of merchant-admin (auth foundation)
