@@ -5,9 +5,10 @@
 Before doing anything else — before answering questions, before writing code:
 
 ```
-1. Read .memory/checkpoint.md          ← current state, immediate next task
-2. Read .agent/skills/commercejs/SKILL.md  ← build chain, branch rules, EaaS architecture
-3. Check current branch: git branch --show-current
+1. Read .plans/grand-plan.md               ← ENTRY POINT — vision, architecture, current phase
+2. Read .memory/checkpoint.md              ← latest session state, immediate next task
+3. Read .agent/skills/commercejs/SKILL.md  ← build chain, branch rules, EaaS architecture
+4. Check current branch: git branch --show-current
 ```
 
 Then follow `.agent/rules/operating-protocol.md` for everything that follows.
@@ -205,18 +206,23 @@ The `.agent/` directory contains the full operating protocol for Claude sessions
 .memory/checkpoints/    # Session checkpoints — what was done and when
 .memory/checkpoint.md   # Latest session state
 
+.plans/grand-plan.md               # ENTRY POINT — read first every session
 .plans/roadmap.md                  # Master roadmap (7 phases)
-.plans/fly-migration-plan.md       # LOCKED DOWN — Fly.io EaaS implementation (start here)
-.plans/provider-swap-flyio.md      # Alternative: provider swap only (lighter option)
+.plans/fly-migration-plan.md       # LOCKED DOWN — Fly.io EaaS implementation
+.plans/merchant-admin/plan.md      # Current gate — merchant-facing admin UI
+.plans/storefront-eaas/plan.md     # Shipped — hosted Nuxt storefront on Fly
+.plans/provider-swap-flyio.md      # Alternative: provider swap only
 .plans/post-mortem-eaas-pivot.md   # Contingency: EaaS multi-tenant blueprint
 .plans/post-mortem-backup-plan.md  # Contingency: if Cloud vision stalls
 ```
 
 **Workflow rules:**
+- **Read `.plans/grand-plan.md` first** — mandatory at session start; it points to the current gate, phase status, and every other doc
 - Update `.plans/` in the same commit as the work — never defer
 - Write session checkpoints to `.memory/checkpoints/` with timestamp
 - When making an architectural decision, add it to `.memory/decisions.md`
 - When discovering a new gotcha, add it to `.memory/gotchas.md`
+- When a phase-level milestone closes (a `.plans/*/plan.md` flips to ✅, current gate changes, new deployment added), bump `.plans/grand-plan.md` in the same commit
 
 ---
 

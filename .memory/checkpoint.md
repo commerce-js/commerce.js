@@ -33,6 +33,7 @@ Parallel track (non-blocking): migrate dashboard's tenant middleware from `bindD
 
 | Question | File |
 |---|---|
+| Project orientation + current phase (start here) | `.plans/grand-plan.md` |
 | What shipped this session and what's next? | `.memory/checkpoints/2026-04-17T1800.md` |
 | Previous session handoff | `.memory/checkpoints/2026-04-16T1000.md` |
 | Merchant admin UI plan | `.plans/merchant-admin/plan.md` |

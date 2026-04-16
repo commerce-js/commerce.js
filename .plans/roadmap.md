@@ -1,6 +1,8 @@
 # CommerceJS — Roadmap & Backlog
 
 > Architecture vision + prioritized feature backlog
+>
+> For session orientation and current phase status, start at [`grand-plan.md`](./grand-plan.md).
 
 ---
 
