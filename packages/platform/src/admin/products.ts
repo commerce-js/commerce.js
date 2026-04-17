@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import type { Product } from '@commercejs/types'
-import type { AdminListParams, CreateProductInput, UpdateProductInput } from './types.js'
+import type { AdminListProductsParams, CreateProductInput, UpdateProductInput } from './types.js'
 import {
   findProductById,
   findProductBySlug,
@@ -104,6 +104,8 @@ function mapProduct(row: any, related: {
     priceTiers: null,
     customerGroupPricing: null,
     isDropshipped: Boolean(row.isDropshipped),
+    status: (row.status ?? null) as ('draft' | 'active' | 'archived' | null),
+    inventoryQuantity: row.inventoryQuantity ?? null,
   }
 }
 
@@ -321,13 +323,14 @@ export function createAdminProductsDomain(currency: string) {
       await deleteProductById(id)
     },
 
-    async listProducts(params?: AdminListParams) {
+    async listProducts(params?: AdminListProductsParams) {
       const page = params?.page ?? 1
       const perPage = params?.perPage ?? 20
       const offset = (page - 1) * perPage
 
       const { rows, total } = await findAllProducts({
         search: params?.search,
+        status: params?.status,
         sort: params?.sort,
         limit: perPage,
         offset,

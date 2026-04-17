@@ -24,7 +24,8 @@
     "ioredis": "^5.4.2",
     "lru-cache": "^11.2.5",
     "nuxt": "^4.3.0",
-    "tailwindcss": "^4.2.1"
+    "tailwindcss": "^4.2.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.89",

@@ -37,6 +37,7 @@ export async function adminListProducts(opts: {
   limit: number
   offset: number
   search?: string
+  status?: string
   sort?: { field: string; direction: 'asc' | 'desc' }
   orderBy?: { field: string; direction: 'asc' | 'desc' }
 }) {
@@ -45,6 +46,10 @@ export async function adminListProducts(opts: {
 
   if (opts.search) {
     conditions.push(like(schema.products.name, `%${opts.search}%`))
+  }
+
+  if (opts.status) {
+    conditions.push(eq(schema.products.status, opts.status))
   }
 
   const sorting = opts.orderBy || opts.sort

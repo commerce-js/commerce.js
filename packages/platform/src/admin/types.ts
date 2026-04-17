@@ -26,6 +26,10 @@ export interface AdminListParams extends PaginationParams {
   sort?: { field: string; direction: 'asc' | 'desc' }
 }
 
+export interface AdminListProductsParams extends AdminListParams {
+  status?: 'draft' | 'active' | 'archived'
+}
+
 // ---- Products ----
 
 export interface CreateProductInput {
@@ -191,9 +195,10 @@ export interface AdminAPI {
   createProduct(input: CreateProductInput): Promise<Product>
   updateProduct(id: string, input: UpdateProductInput): Promise<Product>
   deleteProduct(id: string): Promise<void>
-  listProducts(params?: AdminListParams): Promise<PaginatedResult<Product>>
+  listProducts(params?: AdminListProductsParams): Promise<PaginatedResult<Product>>
 
   // Categories
+  listCategories(parentId?: string): Promise<Category[]>
   createCategory(input: CreateCategoryInput): Promise<Category>
   updateCategory(id: string, input: UpdateCategoryInput): Promise<Category>
   deleteCategory(id: string): Promise<void>

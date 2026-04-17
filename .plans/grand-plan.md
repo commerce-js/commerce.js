@@ -59,7 +59,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 | Operator dashboard (merchants CRUD, async provisioning, danger-zone delete) | ✅ | `apps/dashboard/` |
 | Storefront EaaS (T01 API routes + T02 remote mode + T03 node-server + T04 hosted SSR + composable rewrite) | ✅ | [`storefront-eaas/plan.md`](storefront-eaas/plan.md) |
 | Hosted checkout card payments (Tap SDK + COD, co-supervised on `:3002`) | ✅ | `apps/hosted-checkout/` |
-| **Merchant admin UI (T01–T05)** | 🟡 | [`merchant-admin/plan.md`](merchant-admin/plan.md) ← **current gate** (T01 ✅, T02 ✅; T03 next) |
+| **Merchant admin UI (T01–T05)** | 🟡 | [`merchant-admin/plan.md`](merchant-admin/plan.md) ← **current gate** (T01 ✅, T02 ✅, T03 ✅; T04 next) |
 | Tap subscription billing (merchant SaaS plan charges) | 🔲 | No plan doc yet; `Merchant.tapCustomerId` column plumbed |
 | Transactional emails (order confirmations, password resets, trial-ending) | 🔲 | No plan doc yet; `handleSendEmail` stub in `worker.ts` |
 
@@ -67,7 +67,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 
 ## 🎯 What's Next
 
-**The gate.** Merchants can sign up and get provisioned, the storefront renders, the checkout takes cards and COD — but merchants have no way to populate their catalog or view orders. Merchant-admin **T01 + T02 shipped 2026-04-17**: sealed `cjs-merchant-session` cookie, `/api/admin/auth/{login,logout,session}` routes, first-login bootstrap from the `Merchant` row, and a protected `/admin` shell in `apps/storefront` (left-nav layout, CSR-only pages, dashboard landing wired to `getDashboardStats()`). Next up: **T03 (products CRUD)** — list/create/edit/delete pages in `apps/storefront/app/pages/admin/products/` + HTTP wrappers at `/api/admin/products/*` over the existing `event.context.admin.{listProducts,createProduct,updateProduct,deleteProduct}` domain. Detail → [`merchant-admin/plan.md`](merchant-admin/plan.md).
+**The gate.** Merchants can sign up and get provisioned, the storefront renders, the checkout takes cards and COD — but merchants have no way to upload images or view orders yet. Merchant-admin **T01 + T02 + T03 shipped 2026-04-17**: sealed `cjs-merchant-session` cookie, `/api/admin/auth/{login,logout,session}` routes, protected `/admin` shell, and now full products CRUD — `/api/admin/products/{index,[id]}.{get,post,patch,delete}` with Zod-validated bodies + a new `admin.listCategories()` on `AdminAPI`, backing `pages/admin/products/{index.vue,new.vue,[id]/edit.vue}` with a shared `AdminProductForm` component (search + server pagination + status filter + delete confirm + "Save as draft / Save and publish"). Next up: **T04 (image upload)** — presigned S3 PUT via `@commercejs/storage-s3`, scoped under `merchants/${id}/products/`, wired into the product form. Needs `NUXT_S3_*` secrets set on Fly before the route can light up. Detail → [`merchant-admin/plan.md`](merchant-admin/plan.md).
 
 **Parallel (non-blocking) track.** Migrate the dashboard's tenant middleware from the legacy `bindDb()` + `initPrisma()` fallback to the per-event `registerEventResolver()` + `useEvent()` pattern that `apps/hosted-checkout` now uses. Race-prone under concurrent different-merchant traffic; currently masked because the smoke tenant is the only one in play. Must land before the merchant admin UI sees multi-merchant production traffic. Detail → the latest checkpoint's "Carry-Overs" section.
 
@@ -90,18 +90,22 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 ─────────────────────────────────────────────────────────
   Active branch:         fly/eaas
   Latest checkpoint:     .memory/checkpoints/2026-04-17T1800.md
-  Last major milestone:  Merchant-admin T02 (admin shell)
-                         shipped — protected /admin layout in
-                         apps/storefront, login / dashboard /
-                         products stub, dashboard builds green
-  Current blocker:       T03 — products CRUD (list/create/edit/
-                         delete pages + /api/admin/products/*
-                         HTTP wrappers over event.context.admin)
+  Last major milestone:  Merchant-admin T03 (products CRUD)
+                         shipped — /api/admin/products/* routes
+                         + three storefront admin pages + shared
+                         AdminProductForm component; dashboard +
+                         storefront builds green
+  Current blocker:       T04 — image upload (presigned S3 PUT in
+                         @commercejs/storage-s3, scoped under
+                         merchants/${id}/products/, wired into
+                         AdminProductForm). Needs NUXT_S3_*
+                         secrets on Fly before the route lights up
   Open carry-overs:      Dashboard still on bindDb()+_db fallback
                          (pending per-event migration — now
-                         carries /api/admin/* traffic too).
-                         NUXT_* prefix gotcha has bitten 3× —
-                         keep near the top of .memory/gotchas.md.
+                         carries /api/admin/products/* traffic
+                         too). NUXT_* prefix gotcha has bitten
+                         3× — keep near the top of
+                         .memory/gotchas.md.
   Last updated:          2026-04-17
 ─────────────────────────────────────────────────────────
 ```
@@ -142,6 +146,7 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 
 ## Change Log
 
+- **2026-04-17** — Merchant-admin T03 shipped. Phase 7 → Merchant admin workstream stays 🟡 (T01 ✅ + T02 ✅ + T03 ✅; T04 next). State Snapshot bumped: last major milestone points to products CRUD, blocker rolled forward to T04 (image upload). Admin row in the Phase 7 workstreams table shows T03 ✅.
 - **2026-04-17** — Merchant-admin T02 shipped. State Snapshot bumped: last major milestone now points to the admin shell; blocker rolled forward to T03 (products CRUD). Merchant-admin row in the Phase 7 table updated to show T01 ✅ + T02 ✅.
 - **2026-04-17** — Merchant-admin T01 shipped. Phase 7 → Merchant admin workstream flips from 🔲 → 🟡 (T01 ✅, T02 next). State Snapshot bumped: last major milestone now points to the T01 deploy; blocker rolled forward to T02 (admin shell in `apps/storefront`).
 - **2026-04-17** — Initial grand plan. Consolidates the three-pillar vision (previously only in `.research/best-ecommerce-strategy.md`) with the phase-based roadmap, current deployment state, and navigation to every other planning doc. Added to `CLAUDE.md` as the mandatory first-read at session start.

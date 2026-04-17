@@ -42,6 +42,7 @@ export async function deleteProductById(id: string) {
 
 export async function findAllProducts(opts: {
   search?: string
+  status?: string
   sort?: { field: string; direction: 'asc' | 'desc' }
   limit: number
   offset: number
@@ -54,6 +55,10 @@ export async function findAllProducts(opts: {
       { name: { contains: opts.search } },
       { sku: { contains: opts.search } },
     ]
+  }
+
+  if (opts.status) {
+    where.status = opts.status
   }
 
   const orderField = opts.sort?.field === 'price' ? 'price'

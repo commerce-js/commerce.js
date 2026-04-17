@@ -54,6 +54,7 @@ export function createAdminAPI(currency: string): AdminAPI {
     listProducts: products.listProducts,
 
     // Categories
+    listCategories: categories.listCategories,
     createCategory: categories.createCategory,
     updateCategory: categories.updateCategory,
     deleteCategory: categories.deleteCategory,
@@ -178,4 +179,5 @@ export type {
   CreateProductImageInput,
   CreateVariantInput,
   CreateAttributeInput,
+  AdminListProductsParams,
 } from './types.js'

@@ -18,7 +18,7 @@
 
 * [x] [**T01**: Merchant auth foundation](tasks/T01.md) — Status: ✅ Completed (2026-04-17)
 * [x] [**T02**: Admin shell in apps/storefront](tasks/T02.md) — Status: ✅ Completed (2026-04-17)
-* [ ] [**T03**: Products CRUD](tasks/T03.md) — Status: 🟡 Planned
+* [x] [**T03**: Products CRUD](tasks/T03.md) — Status: ✅ Completed (2026-04-17)
 * [ ] [**T04**: Image upload (presigned S3)](tasks/T04.md) — Status: 🟡 Planned
 * [ ] [**T05**: Orders list + detail (read-first)](tasks/T05.md) — Status: 🟡 Planned
 
@@ -401,6 +401,24 @@ Out of scope for this plan (follow-up):
 
 ## Change Log
 
+- **2026-04-17**: T03 products CRUD shipped. Dashboard gained
+  `/api/admin/products/{index.get,index.post,[id].get,[id].patch,[id].delete}`
+  and `/api/admin/categories.get` — all guarded by `requireMerchantSession` and
+  backed by `event.context.admin`. Zod schemas in
+  `apps/dashboard/server/utils/admin-schemas.ts` parse body + query at the
+  route boundary via `parseOrThrow()`. Platform gained `admin.listCategories()`
+  on the `AdminAPI` + a `status` filter on `admin.listProducts()` (parity'd in
+  Prisma and Drizzle `findAllProducts` / `adminListProducts`). `Product` type
+  gained optional `status` + `inventoryQuantity` fields so the admin list UI
+  can render them without a separate shape. Storefront's `/admin/products`
+  stub replaced with three new pages — `pages/admin/products/index.vue` (list
+  with debounced search, status filter, server pagination, UTable with image
+  thumb, edit/delete row actions, delete confirm modal), `pages/admin/products/new.vue`
+  (create form with "Save as draft" / "Save and publish"), and
+  `pages/admin/products/[id]/edit.vue` (same form pre-filled, delete action).
+  Shared `components/AdminProductForm.vue` covers basics / pricing / inventory
+  / organization / attributes; variants render read-only if present. Prices
+  rendered via `usePrice` + `useStoreInfo` — no hardcoded currency.
 - **2026-04-17**: Plan created. Research completed in a single session — decisions locked in
   from the prior trade-off analysis (auth = per-merchant `admin_users`, hosting = `/admin/**`
   in storefront + `/api/admin/**` in dashboard, namespace = `/api/admin/*` reusing tenant

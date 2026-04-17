@@ -38,6 +38,11 @@ function mapCategory(row: any): Category {
 
 export function createAdminCategoriesDomain() {
   return {
+    async listCategories(parentId?: string): Promise<Category[]> {
+      const rows = await findCategories(parentId)
+      return rows.map(mapCategory)
+    },
+
     async createCategory(input: CreateCategoryInput): Promise<Category> {
       const id = crypto.randomUUID()
       const slug = input.slug ?? slugify(input.name)

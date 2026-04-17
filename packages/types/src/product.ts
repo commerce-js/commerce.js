@@ -190,4 +190,12 @@ export interface Product {
 
   /** Whether this product is fulfilled by a third-party / dropshipper */
   isDropshipped: boolean
+
+  // ---- Admin-facing metadata (optional — not all adapters expose these) ----
+
+  /** Publish status on the merchant catalog. */
+  status?: Maybe<'draft' | 'active' | 'archived'>
+
+  /** Current inventory count at the product level (null = not tracked / variant-level). */
+  inventoryQuantity?: Maybe<number>
 }
