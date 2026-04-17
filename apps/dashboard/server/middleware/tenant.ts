@@ -8,15 +8,23 @@
 //   1. resolveMerchant(event)                    → MerchantResolution
 //   2. getPrismaClient(merchant.databaseUrl)     → cached Prisma client for
 //                                                  the merchant's Neon branch
-//   3. bindDb(client)                            → binds that client to the
-//                                                  platform's AsyncLocalStorage
-//                                                  so every downstream
-//                                                  getDb() returns this
-//                                                  merchant's client
-//   4. ensureAdapter(merchant)                   → cached PlatformAdapter
-//                                                  (built lazily, domain
-//                                                  closures read ALS-bound
-//                                                  client at call time)
+//   3. event.context.db = client                 → per-event scoping. The
+//                                                  platform's getDb() reads
+//                                                  this via the resolver
+//                                                  registered in
+//                                                  server/plugins/platform-
+//                                                  event-resolver.ts. This
+//                                                  is concurrency-safe under
+//                                                  multi-tenant traffic
+//                                                  (event.context is per-
+//                                                  request; no ALS frame
+//                                                  propagation hazard).
+//   4. ensureAdapter(merchant)                   → cached PlatformAdapter.
+//                                                  On cache miss, createPlatformAdapter
+//                                                  calls admin.auth.seedInitialAdmin()
+//                                                  which itself calls getDb() —
+//                                                  so event.context.db MUST
+//                                                  be set before this line.
 //   5. event.context.merchant = merchant
 //      event.context.adapter  = adapter.adapter
 //      event.context.admin    = adapter.admin
@@ -26,7 +34,7 @@
 // ---------------------------------------------------------------------------
 
 // defineEventHandler / createError / getRequestURL are Nitro auto-imports.
-import { createPlatformAdapter, getPrismaClient, bindDb } from '@commercejs/platform'
+import { createPlatformAdapter, getPrismaClient } from '@commercejs/platform'
 import type { PlatformAdapterResult } from '@commercejs/platform'
 import { resolveMerchant } from '../utils/tenant'
 import type { MerchantContext } from '../utils/tenant'
@@ -125,7 +133,11 @@ export default defineEventHandler(async (event) => {
   }
 
   const prismaClient = getPrismaClient(merchant.databaseUrl!)
-  bindDb(prismaClient)
+
+  // Set per-event DB BEFORE ensureAdapter — on a cache miss it will call
+  // createPlatformAdapter → admin.auth.seedInitialAdmin → getDb(), and the
+  // plugin-registered event resolver reads from event.context.db.
+  event.context.db = prismaClient
 
   const { adapter, admin } = await ensureAdapter(merchant)
 
