@@ -19,8 +19,11 @@ const { formatPrice } = usePrice()
 const route = useRoute()
 const router = useRouter()
 
+// Reka UI's <SelectItem> forbids empty-string values (empty string is
+// reserved for "clear selection"), so "All statuses" uses a sentinel and
+// we map it to an unset filter when building the query.
 type StatusFilter =
-  | ''
+  | 'all'
   | 'pending'
   | 'processing'
   | 'shipped'
@@ -31,7 +34,7 @@ type StatusFilter =
 
 const search = ref((route.query.q as string) || '')
 const searchDebounced = refDebounced(search, 300)
-const status = ref<StatusFilter>((route.query.status as StatusFilter) || '')
+const status = ref<StatusFilter>((route.query.status as StatusFilter) || 'all')
 const dateFrom = ref((route.query.from as string) || '')
 const dateTo = ref((route.query.to as string) || '')
 const page = ref(Number(route.query.page) || 1)
@@ -42,7 +45,7 @@ watch([searchDebounced, status, dateFrom, dateTo], () => { page.value = 1 })
 watchEffect(() => {
   const q: Record<string, string> = {}
   if (searchDebounced.value) q.q = searchDebounced.value
-  if (status.value) q.status = status.value
+  if (status.value !== 'all') q.status = status.value
   if (dateFrom.value) q.from = dateFrom.value
   if (dateTo.value) q.to = dateTo.value
   if (page.value > 1) q.page = String(page.value)
@@ -52,7 +55,7 @@ watchEffect(() => {
 const queryParams = computed(() => {
   const p: Record<string, string | number> = { page: page.value, perPage }
   if (searchDebounced.value) p.search = searchDebounced.value
-  if (status.value) p.status = status.value
+  if (status.value !== 'all') p.status = status.value
   if (dateFrom.value) p.dateFrom = dateFrom.value
   if (dateTo.value) p.dateTo = dateTo.value
   return p
@@ -72,7 +75,7 @@ const items = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 
 const statusOptions = [
-  { label: 'All statuses', value: '' },
+  { label: 'All statuses', value: 'all' },
   { label: 'Pending', value: 'pending' },
   { label: 'Processing', value: 'processing' },
   { label: 'Shipped', value: 'shipped' },
