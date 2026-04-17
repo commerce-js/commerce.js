@@ -71,23 +71,44 @@ const locationError = ref<string | null>(null)
 const mapContainer = ref<HTMLElement | null>(null)
 let map: any = null
 let marker: any = null
-let mapsLoaded = false
+let MapCtor: any = null
+let MarkerCtor: any = null
 
-function loadGoogleMaps(): Promise<void> {
-  if (mapsLoaded || (window as any).google?.maps) {
-    mapsLoaded = true
-    return Promise.resolve()
-  }
-  return new Promise((resolve, reject) => {
-    const key = config.public.googleMapsKey
-    if (!key) { reject(new Error('No Google Maps key')); return }
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}`
-    script.async = true
-    script.onload = () => { mapsLoaded = true; resolve() }
-    script.onerror = () => reject(new Error('Failed to load Google Maps'))
-    document.head.appendChild(script)
-  })
+// Google's inline bootstrap loader — defines `google.maps.importLibrary`
+// synchronously and loads the Maps script with `loading=async` internally,
+// avoiding the "loaded without loading=async" deprecation warning.
+// Ref: https://developers.google.com/maps/documentation/javascript/load-maps-js-api
+function installMapsLoader(apiKey: string): void {
+  if ((window as any).google?.maps?.importLibrary) return
+  ;((g: Record<string, string>) => {
+    let h: any, a: any, k: any
+    const p = 'The Google Maps JavaScript API', c = 'google', l = 'importLibrary', q = '__ib__', m = document
+    let b: any = (window as any)
+    b = b[c] || (b[c] = {})
+    const d = b.maps || (b.maps = {}), r = new Set(), e = new URLSearchParams()
+    const u = () => h || (h = new Promise(async (f: any, n: any) => {
+      await (a = m.createElement('script'))
+      e.set('libraries', [...r].join(','))
+      for (k in g) e.set(k.replace(/[A-Z]/g, (t: string) => '_' + t[0].toLowerCase()), g[k])
+      e.set('callback', c + '.maps.' + q)
+      a.src = `https://maps.${c}apis.com/maps/api/js?` + e.toString()
+      d[q] = f
+      a.onerror = () => (h = n(Error(p + ' could not load.')))
+      a.nonce = m.querySelector('script[nonce]')?.nonce ?? ''
+      m.head.append(a)
+    }))
+    d[l] ? console.warn(p + ' only loads once.') : (d[l] = (f: string, ...n: any[]) => r.add(f) && u().then(() => d[l](f, ...n)))
+  })({ key: apiKey, v: 'weekly' })
+}
+
+async function loadGoogleMaps(): Promise<void> {
+  if (MapCtor && MarkerCtor) return
+  const key = config.public.googleMapsKey as string
+  if (!key) throw new Error('No Google Maps key')
+  installMapsLoader(key)
+  const google = (window as any).google
+  ;({ Map: MapCtor } = await google.maps.importLibrary('maps'))
+  ;({ AdvancedMarkerElement: MarkerCtor } = await google.maps.importLibrary('marker'))
 }
 
 async function reverseGeocode(lat: number, lng: number) {
@@ -114,31 +135,37 @@ async function onMarkerPositionChanged(lat: number, lng: number) {
 
 async function initOrUpdateMap(lat: number, lng: number) {
   try { await loadGoogleMaps() } catch { return }
-  const google = (window as any).google
   const position = { lat, lng }
   reverseGeocode(lat, lng)
   if (!map && mapContainer.value) {
-    map = new google.maps.Map(mapContainer.value, {
+    map = new MapCtor(mapContainer.value, {
       center: position, zoom: 16,
+      // `mapId` is required for AdvancedMarkerElement. Inline `styles` are
+      // incompatible with `mapId` (they'd log a warning); configure POI /
+      // transit visibility via cloud-based map styling on the same Map ID.
+      mapId: config.public.googleMapsMapId,
       disableDefaultUI: true, zoomControl: true,
       gestureHandling: 'greedy',
-      styles: [
-        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-      ],
     })
-    marker = new google.maps.Marker({ position, map, draggable: true, title: 'Drag to adjust', animation: google.maps.Animation.DROP })
+    marker = new MarkerCtor({
+      position, map, gmpDraggable: true, title: 'Drag to adjust',
+    })
     marker.addListener('dragend', async () => {
-      const pos = marker.getPosition()
-      await onMarkerPositionChanged(pos.lat(), pos.lng())
+      // AdvancedMarkerElement exposes `position` directly (no .getPosition()).
+      // It can be a LatLng or a LatLngLiteral depending on how it was last set.
+      const pos: any = marker.position
+      if (!pos) return
+      const lat = typeof pos.lat === 'function' ? pos.lat() : pos.lat
+      const lng = typeof pos.lng === 'function' ? pos.lng() : pos.lng
+      await onMarkerPositionChanged(lat, lng)
     })
     map.addListener('click', async (e: any) => {
-      marker.setPosition(e.latLng)
+      marker.position = e.latLng
       await onMarkerPositionChanged(e.latLng.lat(), e.latLng.lng())
     })
   } else if (map && marker) {
     map.panTo(position)
-    marker.setPosition(position)
+    marker.position = position
   }
 }
 

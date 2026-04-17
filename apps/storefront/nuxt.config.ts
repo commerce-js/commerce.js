@@ -56,6 +56,10 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       googleMapsKey: process.env.GOOGLE_MAPS_KEY || '',
+      // Map ID is required by google.maps.marker.AdvancedMarkerElement.
+      // Create one in Google Cloud Console → Map Management; falls back
+      // to DEMO_MAP_ID (works but renders a "for development" watermark).
+      googleMapsMapId: process.env.GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID',
     },
   },
 
