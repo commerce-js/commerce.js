@@ -10,6 +10,7 @@ import type {
   GetProductParams,
   GetCategoriesParams,
 } from '@commercejs/types'
+import { CommerceError } from '@commercejs/types'
 import {
   findProductById,
   findProductBySlug,
@@ -127,7 +128,11 @@ export function createCatalogDomain(currency: string) {
           : null
 
       if (!row) {
-        throw new Error(`Product not found: ${params.id ?? params.slug}`)
+        throw new CommerceError(
+          `Product not found: ${params.id ?? params.slug}`,
+          'NOT_FOUND',
+          404,
+        )
       }
 
       const related = await fetchProductRelations(row.id)
