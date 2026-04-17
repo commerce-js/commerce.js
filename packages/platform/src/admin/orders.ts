@@ -80,6 +80,13 @@ function mapOrder(row: any, items: any[], currency: string): Order {
   }
 }
 
+// Status transitions that reject a fulfill / refund call. Mirrors the T05
+// merchant-admin UI gating: fulfill is only valid out of pending/processing;
+// refund is only valid out of processing/shipped/delivered (nothing to
+// refund on pending; terminal states can't be re-refunded).
+const FULFILL_FORBIDDEN_STATUSES = new Set(['shipped', 'delivered', 'refunded', 'cancelled', 'returned'])
+const REFUND_FORBIDDEN_STATUSES = new Set(['pending', 'refunded', 'cancelled', 'returned'])
+
 export function createAdminOrdersDomain(currency: string) {
   async function fullOrder(id: string): Promise<Order> {
     const row = await findOrderById(id)
@@ -126,6 +133,10 @@ export function createAdminOrdersDomain(currency: string) {
       const order = await findOrderById(id)
       if (!order) throw new Error(`Order not found: ${id}`)
 
+      if (FULFILL_FORBIDDEN_STATUSES.has(order.status)) {
+        throw new Error(`Cannot fulfill order in status '${order.status}'`)
+      }
+
       await updateOrderTracking(id, {
         trackingNumber: input.trackingNumber ?? null,
         trackingUrl: input.trackingUrl ?? null,
@@ -143,6 +154,10 @@ export function createAdminOrdersDomain(currency: string) {
     async refundOrder(id: string, note?: string): Promise<void> {
       const order = await findOrderById(id)
       if (!order) throw new Error(`Order not found: ${id}`)
+
+      if (REFUND_FORBIDDEN_STATUSES.has(order.status)) {
+        throw new Error(`Cannot refund order in status '${order.status}'`)
+      }
 
       await updateOrder(id, { status: 'refunded' })
 
