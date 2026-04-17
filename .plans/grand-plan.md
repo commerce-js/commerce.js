@@ -69,7 +69,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 
 **The gate just closed.** Merchant-admin **T01 + T02 + T03 + T04 + T05 shipped 2026-04-17** — all five tasks from the merchant-admin plan are ✅. Merchants can sign up, get provisioned, log in to `/admin`, CRUD products with image uploads (Fly Tigris, per-merchant prefix), and now view + fulfill + refund orders. T05 added `/api/admin/orders/{index,[id],[id]/fulfill,[id]/refund}` under the dashboard (all `requireMerchantSession`-gated, Zod-validated, wrapping `admin.listOrders/getOrder/fulfillOrder/refundOrder`), plus `/admin/orders/{index,[id]}.vue` in the storefront (filterable list + six-panel detail + fulfill/refund modals). History panel was deliberately skipped (AdminAPI doesn't expose `getOrderHistory`; don't extend the platform API in T05). Status enum is the platform's actual `pending | processing | shipped | delivered | cancelled | refunded | returned` — "Mark fulfilled" writes `status='shipped'`. Build green on both apps. Next **up to the user** (no follow-up gate in this plan — Settings, staff invites, customer management, analytics, and theming are the follow-up plan). Immediate carry-over: deploy T05 to `smoke.commercejs.cloud` when given the go.
 
-**Parallel (non-blocking) track.** Migrate the dashboard's tenant middleware from the legacy `bindDb()` + `initPrisma()` fallback to the per-event `registerEventResolver()` + `useEvent()` pattern that `apps/hosted-checkout` now uses. Race-prone under concurrent different-merchant traffic; currently masked because the smoke tenant is the only one in play. Must land before the merchant admin UI sees multi-merchant production traffic. Detail → the latest checkpoint's "Carry-Overs" section.
+**Parallel (non-blocking) track.** ✅ Landed 2026-04-17 alongside T05 — the dashboard's tenant middleware now uses the per-event `registerEventResolver()` + `useEvent()` pattern that `apps/hosted-checkout` already runs. `event.context.db = prismaClient` is set in the middleware before `ensureAdapter()`, and a Nitro plugin wires the platform's `getDb()` to read from there. The race-prone `bindDb()` + `initPrisma()` fallback is gone from the dashboard request path (worker + provisioner still use explicit `runWithDb()` callbacks, which are unaffected). Verified live on `smoke.commercejs.cloud` — login, admin.listOrders, admin.listProducts, admin.stats, storefront catalog/store, and SSR homepage all still 200. Multi-merchant concurrent prod traffic is now safe.
 
 ## Live Deployments
 
@@ -108,19 +108,15 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
                          Beyond that, no follow-up task is queued — the
                          next plan (settings / staff / customers /
                          analytics / theming) is TBD by the user.
-  Open carry-overs:      (1) Dashboard tenant middleware still on
-                         bindDb()+initPrisma() fallback — now also
-                         carries /api/admin/orders/* traffic. Race-
-                         prone under concurrent different-merchant
-                         traffic; fine for smoke, must migrate to
-                         per-event registerEventResolver() + useEvent()
-                         before multi-merchant prod. Separate commit
-                         after merchant-admin deploys. (2) Changeset
-                         attached but unreleased for
+  Open carry-overs:      (1) Changeset attached but unreleased for
                          @commercejs/storage-s3 v0.2.0 → 0.2.1 presign
                          signature fix — run `pnpm release` to publish.
-                         (3) NUXT_* prefix gotcha has bitten 3× — keep
+                         (2) NUXT_* prefix gotcha has bitten 3× — keep
                          near top of .memory/gotchas.md.
+                         (Dropped 2026-04-17: dashboard tenant middleware
+                         migrated to per-event registerEventResolver() +
+                         useEvent() — bindDb()+initPrisma() race-prone
+                         fallback is out of the request path.)
   Last updated:          2026-04-17
 ─────────────────────────────────────────────────────────
 ```
@@ -161,6 +157,7 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 
 ## Change Log
 
+- **2026-04-17** — Dashboard tenant middleware migrated to per-event Prisma binding. New Nitro plugin at `apps/dashboard/server/plugins/platform-event-resolver.ts` registers `useEvent()` with `@commercejs/platform`. `apps/dashboard/server/middleware/tenant.ts` now sets `event.context.db = prismaClient` before `ensureAdapter()` and drops the `bindDb()` call. Mirror of the pattern that `apps/hosted-checkout` has been running in prod. The "Parallel (non-blocking) track" row in "What's Next" flipped from pending → shipped, and the matching open carry-over was cleared from State Snapshot. No API surface change — all 22 admin/storefront handlers continue reading `event.context.adapter`/`admin`/`merchant`. Verified live on smoke.commercejs.cloud: login, admin.listOrders, admin.listProducts, admin.stats, storefront catalog/store, and SSR homepage all still return 200.
 - **2026-04-17** — Merchant-admin T05 shipped (orders list + detail, read-first). Phase 7 → Merchant admin workstream flips 🟡 → ✅ (T01 + T02 + T03 + T04 + T05 all ✅; merchant-admin plan fully closed). State Snapshot bumped: last major milestone points to T05 (four new `/api/admin/orders/*` routes + two pages wrapping `admin.listOrders/getOrder/fulfillOrder/refundOrder`); current blocker cleared — the only remaining item is the explicit-go `fly deploy` + 8-scenario acceptance on `smoke.commercejs.cloud`. "What's Next" section revised to reflect plan closure. **Gate decision documented**: History panel SKIPPED because `AdminAPI.getOrder` returns `Order` without an audit trail (the platform's domain-layer `getOrderHistory` is intentionally not surfaced on the admin API — per T05 gate rule, don't extend the platform API in this task). **Status enum clarification**: platform uses `pending | processing | shipped | delivered | cancelled | refunded | returned` — no `paid` / `fulfilled`; "Mark fulfilled" writes `status='shipped'`.
 - **2026-04-17** — Merchant-admin T04 shipped. Phase 7 → Merchant admin workstream stays 🟡 (T01 ✅ + T02 ✅ + T03 ✅ + T04 ✅; T05 next). State Snapshot bumped: last major milestone points to image upload + Fly Tigris provisioning, blocker rolled forward to T05 (orders list + detail). New carry-over added: changeset pending for the upstream `@commercejs/storage-s3` presign signature bug fix (X-Amz-Expires was being set post-sign, invalidating the signature) — v0.2.0 → 0.2.1 patch bump. Admin row in the Phase 7 workstreams table shows T04 ✅.
 - **2026-04-17** — Merchant-admin T03 shipped. Phase 7 → Merchant admin workstream stays 🟡 (T01 ✅ + T02 ✅ + T03 ✅; T04 next). State Snapshot bumped: last major milestone points to products CRUD, blocker rolled forward to T04 (image upload). Admin row in the Phase 7 workstreams table shows T03 ✅.
