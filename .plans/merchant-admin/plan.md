@@ -17,7 +17,7 @@
 * [x] **Research & Strategy Selection** ✅ Completed (2026-04-17)
 
 * [x] [**T01**: Merchant auth foundation](tasks/T01.md) — Status: ✅ Completed (2026-04-17)
-* [ ] [**T02**: Admin shell in apps/storefront](tasks/T02.md) — Status: 🟡 Planned
+* [x] [**T02**: Admin shell in apps/storefront](tasks/T02.md) — Status: ✅ Completed (2026-04-17)
 * [ ] [**T03**: Products CRUD](tasks/T03.md) — Status: 🟡 Planned
 * [ ] [**T04**: Image upload (presigned S3)](tasks/T04.md) — Status: 🟡 Planned
 * [ ] [**T05**: Orders list + detail (read-first)](tasks/T05.md) — Status: 🟡 Planned
@@ -406,6 +406,23 @@ Out of scope for this plan (follow-up):
   in storefront + `/api/admin/**` in dashboard, namespace = `/api/admin/*` reusing tenant
   middleware, image upload = shared S3 bucket with per-merchant prefix). T01–T05 task stubs
   created; implementation deferred to next session.
+- **2026-04-17**: T02 admin shell shipped. New files in `apps/storefront/app/`:
+  `composables/useMerchantSession.ts` (client-side session reader + logout
+  wrapped around `/api/admin/auth/*`), `middleware/admin.ts` (named route
+  middleware — CSR-only, redirects unauth'd `/admin/**` to `/admin/login`),
+  `layouts/admin.vue` (sidebar nav + header with store name, user email,
+  sign-out), `pages/admin/login.vue` (centered form, no layout, generic
+  401 error), `pages/admin/index.vue` (dashboard landing — 5 stat cards,
+  orders-by-status breakdown, recent-orders mini-table, all from
+  `getDashboardStats()`), `pages/admin/products.vue` (stub: "Coming in T03").
+  New `apps/dashboard/server/api/admin/stats.get.ts` — thin wrapper around
+  `event.context.admin.getDashboardStats()` behind `requireMerchantSession`.
+  Admin pages are `ssr: false` because the storefront Nitro has no
+  `/api/admin/*` proxy (the module's remote-mode proxy only covers
+  `/api/storefront/*`); browser-origin `/api/admin/*` calls hit the dashboard
+  directly via the existing storefront-proxy rule that keeps `/api/*` on
+  `:3000`. Storefront + dashboard builds both green. T03 (products CRUD)
+  is the next unblocked task.
 - **2026-04-17**: T01 merchant auth foundation implemented. New
   `apps/dashboard/server/utils/merchant-session.ts` (sealed h3 cookie,
   `cjs-merchant-session`, host-scoped), `utils/merchant-auth.ts`
