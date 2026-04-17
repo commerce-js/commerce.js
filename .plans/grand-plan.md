@@ -59,7 +59,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 | Operator dashboard (merchants CRUD, async provisioning, danger-zone delete) | ✅ | `apps/dashboard/` |
 | Storefront EaaS (T01 API routes + T02 remote mode + T03 node-server + T04 hosted SSR + composable rewrite) | ✅ | [`storefront-eaas/plan.md`](storefront-eaas/plan.md) |
 | Hosted checkout card payments (Tap SDK + COD, co-supervised on `:3002`) | ✅ | `apps/hosted-checkout/` |
-| **Merchant admin UI (T01–T05)** | 🟡 | [`merchant-admin/plan.md`](merchant-admin/plan.md) ← **current gate** (T01 ✅, T02 ✅, T03 ✅; T04 next) |
+| **Merchant admin UI (T01–T05)** | 🟡 | [`merchant-admin/plan.md`](merchant-admin/plan.md) ← **current gate** (T01 ✅, T02 ✅, T03 ✅, T04 ✅; T05 next) |
 | Tap subscription billing (merchant SaaS plan charges) | 🔲 | No plan doc yet; `Merchant.tapCustomerId` column plumbed |
 | Transactional emails (order confirmations, password resets, trial-ending) | 🔲 | No plan doc yet; `handleSendEmail` stub in `worker.ts` |
 
@@ -67,7 +67,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 
 ## 🎯 What's Next
 
-**The gate.** Merchants can sign up and get provisioned, the storefront renders, the checkout takes cards and COD — but merchants have no way to upload images or view orders yet. Merchant-admin **T01 + T02 + T03 shipped 2026-04-17**: sealed `cjs-merchant-session` cookie, `/api/admin/auth/{login,logout,session}` routes, protected `/admin` shell, and now full products CRUD — `/api/admin/products/{index,[id]}.{get,post,patch,delete}` with Zod-validated bodies + a new `admin.listCategories()` on `AdminAPI`, backing `pages/admin/products/{index.vue,new.vue,[id]/edit.vue}` with a shared `AdminProductForm` component (search + server pagination + status filter + delete confirm + "Save as draft / Save and publish"). Next up: **T04 (image upload)** — presigned S3 PUT via `@commercejs/storage-s3`, scoped under `merchants/${id}/products/`, wired into the product form. Needs `NUXT_S3_*` secrets set on Fly before the route can light up. Detail → [`merchant-admin/plan.md`](merchant-admin/plan.md).
+**The gate.** Merchants can sign up and get provisioned, the storefront renders, the checkout takes cards and COD — and now merchants can CRUD their own catalog with product images. Merchant-admin **T01 + T02 + T03 + T04 shipped 2026-04-17**: sealed `cjs-merchant-session` cookie + `/api/admin/auth/{login,logout,session}` routes + protected `/admin` shell + full products CRUD (`/api/admin/products/{index,[id]}.{get,post,patch,delete}` with Zod-validated bodies + `admin.listCategories()` on `AdminAPI` + shared `AdminProductForm`) + image upload via presigned Fly Tigris PUT (`/api/admin/uploads/presign.post.ts`, per-merchant key prefix `merchants/${id}/...` hard-coded from `event.context.merchant.id`, mime allow-list, 10 MB cap, 15-min expiry). Also: upstream bug fix in `@commercejs/storage-s3`'s presign helpers (X-Amz-Expires was appended post-sign, invalidating the signature) — changeset pending. Next up: **T05 (orders list + detail)** — read-first pass wrapping `admin.listOrders/getOrder/fulfillOrder/refundOrder`, with status filter + tracking fulfill + refund actions. Detail → [`merchant-admin/plan.md`](merchant-admin/plan.md).
 
 **Parallel (non-blocking) track.** Migrate the dashboard's tenant middleware from the legacy `bindDb()` + `initPrisma()` fallback to the per-event `registerEventResolver()` + `useEvent()` pattern that `apps/hosted-checkout` now uses. Race-prone under concurrent different-merchant traffic; currently masked because the smoke tenant is the only one in play. Must land before the merchant admin UI sees multi-merchant production traffic. Detail → the latest checkpoint's "Carry-Overs" section.
 
@@ -90,21 +90,27 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 ─────────────────────────────────────────────────────────
   Active branch:         fly/eaas
   Latest checkpoint:     .memory/checkpoints/2026-04-17T1800.md
-  Last major milestone:  Merchant-admin T03 (products CRUD)
-                         shipped — /api/admin/products/* routes
-                         + three storefront admin pages + shared
-                         AdminProductForm component; dashboard +
-                         storefront builds green
-  Current blocker:       T04 — image upload (presigned S3 PUT in
-                         @commercejs/storage-s3, scoped under
-                         merchants/${id}/products/, wired into
-                         AdminProductForm). Needs NUXT_S3_*
-                         secrets on Fly before the route lights up
-  Open carry-overs:      Dashboard still on bindDb()+_db fallback
-                         (pending per-event migration — now
-                         carries /api/admin/products/* traffic
-                         too). NUXT_* prefix gotcha has bitten
-                         3× — keep near the top of
+  Last major milestone:  Merchant-admin T04 (image upload) shipped —
+                         /api/admin/uploads/presign.post.ts +
+                         AdminProductForm image card + upstream
+                         storage-s3 presign signature bug fix;
+                         Fly Tigris bucket provisioned, public,
+                         CORS-configured; 6/6 smoke acceptance
+                         scenarios green on smoke.commercejs.cloud
+  Current blocker:       T05 — orders list + detail (read-first).
+                         `/api/admin/orders/*` routes + pages/admin/
+                         orders/{index,[id]}.vue over
+                         admin.listOrders/getOrder/fulfillOrder/
+                         refundOrder. No infra gates — just code +
+                         build + deploy.
+  Open carry-overs:      Dashboard still on bindDb()+initPrisma()
+                         fallback (pending per-event migration — now
+                         carries /api/admin/products/* AND
+                         /api/admin/uploads/* traffic). Changeset
+                         pending for @commercejs/storage-s3 presign
+                         signature fix (bug was in published v0.2.0;
+                         bump to 0.2.1 patch). NUXT_* prefix gotcha
+                         has bitten 3× — keep near top of
                          .memory/gotchas.md.
   Last updated:          2026-04-17
 ─────────────────────────────────────────────────────────
@@ -146,6 +152,7 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 
 ## Change Log
 
+- **2026-04-17** — Merchant-admin T04 shipped. Phase 7 → Merchant admin workstream stays 🟡 (T01 ✅ + T02 ✅ + T03 ✅ + T04 ✅; T05 next). State Snapshot bumped: last major milestone points to image upload + Fly Tigris provisioning, blocker rolled forward to T05 (orders list + detail). New carry-over added: changeset pending for the upstream `@commercejs/storage-s3` presign signature bug fix (X-Amz-Expires was being set post-sign, invalidating the signature) — v0.2.0 → 0.2.1 patch bump. Admin row in the Phase 7 workstreams table shows T04 ✅.
 - **2026-04-17** — Merchant-admin T03 shipped. Phase 7 → Merchant admin workstream stays 🟡 (T01 ✅ + T02 ✅ + T03 ✅; T04 next). State Snapshot bumped: last major milestone points to products CRUD, blocker rolled forward to T04 (image upload). Admin row in the Phase 7 workstreams table shows T03 ✅.
 - **2026-04-17** — Merchant-admin T02 shipped. State Snapshot bumped: last major milestone now points to the admin shell; blocker rolled forward to T03 (products CRUD). Merchant-admin row in the Phase 7 table updated to show T01 ✅ + T02 ✅.
 - **2026-04-17** — Merchant-admin T01 shipped. Phase 7 → Merchant admin workstream flips from 🔲 → 🟡 (T01 ✅, T02 next). State Snapshot bumped: last major milestone now points to the T01 deploy; blocker rolled forward to T02 (admin shell in `apps/storefront`).

@@ -58,6 +58,11 @@ export default defineNuxtConfig({
     // layer so the dashboard + hosted-checkout share one Tap account.
     tapSecretKey: process.env.TAP_SECRET_KEY || '',
     tapWebhookSecret: process.env.TAP_WEBHOOK_SECRET || '',
+    // S3-compatible storage (merchant product images etc.) is read directly
+    // from process.env in server/utils/s3.ts — see comment there. The Fly
+    // Tigris provisioner auto-injects AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+    // / AWS_ENDPOINT_URL_S3 / AWS_REGION / BUCKET_NAME, so no NUXT_*
+    // remapping is needed.
     public: {
       appTitle: 'CommerceJS Cloud',
       baseUrl: 'http://localhost:3002',

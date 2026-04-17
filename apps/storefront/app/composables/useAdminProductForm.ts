@@ -5,6 +5,13 @@
 
 import type { ProductFormValue } from '../components/AdminProductForm.vue'
 
+interface ProductPayloadImage {
+  url: string
+  altText?: string
+  sortOrder: number
+  isPrimary: boolean
+}
+
 interface ProductPayload {
   name: string
   nameAr?: string
@@ -24,6 +31,7 @@ interface ProductPayload {
   categories: string[]
   tags: string[]
   attributes: { code: string, name: string, value: string }[]
+  images: ProductPayloadImage[]
 }
 
 export function useAdminProductForm() {
@@ -42,6 +50,22 @@ export function useAdminProductForm() {
     const attributes = v.attributes
       .filter(a => a.code.trim() && a.name.trim() && a.value.trim())
 
+    const images: ProductPayloadImage[] = v.images.map((img, idx) => {
+      const out: ProductPayloadImage = {
+        url: img.url,
+        sortOrder: idx,
+        isPrimary: img.isPrimary,
+      }
+      const alt = img.altText.trim()
+      if (alt) out.altText = alt
+      return out
+    })
+
+    // If the user didn't mark a primary explicitly, fall back to index 0.
+    if (images.length > 0 && !images.some(i => i.isPrimary)) {
+      images[0]!.isPrimary = true
+    }
+
     const payload: ProductPayload = {
       name: v.name.trim(),
       status,
@@ -51,6 +75,7 @@ export function useAdminProductForm() {
       categories: v.categories,
       tags,
       attributes,
+      images,
     }
 
     if (v.nameAr.trim()) payload.nameAr = v.nameAr.trim()

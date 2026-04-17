@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@commercejs/platform": "workspace:*",
+    "@commercejs/storage-s3": "workspace:*",
     "@commercejs/types": "workspace:*",
     "@nuxt/ui": "^4.4.0",
     "@prisma/adapter-neon": "^7.6.0",

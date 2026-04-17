@@ -131,27 +131,28 @@ export class S3StorageProvider implements StorageProvider {
   ): Promise<PresignedUrlResult> {
     const fullKey = this.prefixKey(key)
     const expiresIn = options.expiresIn ?? 3600
-    const url = this.getObjectUrl(fullKey)
+
+    // X-Amz-Expires MUST be in the URL before signing — aws4fetch signs the
+    // query string as-is and defaults to X-Amz-Expires=86400 when missing.
+    // Appending/overwriting it after signing invalidates the signature.
+    const urlToSign = new URL(this.getObjectUrl(fullKey))
+    urlToSign.searchParams.set('X-Amz-Expires', String(expiresIn))
 
     const headers: Record<string, string> = {}
     if (options.contentType) {
       headers['Content-Type'] = options.contentType
     }
 
-    const signed = await this.client.sign(url, {
+    const signed = await this.client.sign(urlToSign.toString(), {
       method: 'PUT',
       headers,
       aws: { signQuery: true },
     })
 
-    // Append X-Amz-Expires to the signed URL
-    const signedUrl = new URL(signed.url)
-    signedUrl.searchParams.set('X-Amz-Expires', String(expiresIn))
-
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString()
 
     return {
-      url: signedUrl.toString(),
+      url: signed.url,
       expiresAt,
       method: 'PUT',
       headers: options.contentType ? { 'Content-Type': options.contentType } : undefined,
@@ -166,20 +167,19 @@ export class S3StorageProvider implements StorageProvider {
   ): Promise<PresignedUrlResult> {
     const fullKey = this.prefixKey(key)
     const expiresIn = options.expiresIn ?? 3600
-    const url = this.getObjectUrl(fullKey)
 
-    const signed = await this.client.sign(url, {
+    const urlToSign = new URL(this.getObjectUrl(fullKey))
+    urlToSign.searchParams.set('X-Amz-Expires', String(expiresIn))
+
+    const signed = await this.client.sign(urlToSign.toString(), {
       method: 'GET',
       aws: { signQuery: true },
     })
 
-    const signedUrl = new URL(signed.url)
-    signedUrl.searchParams.set('X-Amz-Expires', String(expiresIn))
-
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString()
 
     return {
-      url: signedUrl.toString(),
+      url: signed.url,
       expiresAt,
       method: 'GET',
     }

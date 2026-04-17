@@ -19,7 +19,7 @@
 * [x] [**T01**: Merchant auth foundation](tasks/T01.md) — Status: ✅ Completed (2026-04-17)
 * [x] [**T02**: Admin shell in apps/storefront](tasks/T02.md) — Status: ✅ Completed (2026-04-17)
 * [x] [**T03**: Products CRUD](tasks/T03.md) — Status: ✅ Completed (2026-04-17)
-* [ ] [**T04**: Image upload (presigned S3)](tasks/T04.md) — Status: 🟡 Planned
+* [x] [**T04**: Image upload (presigned S3)](tasks/T04.md) — Status: ✅ Completed (2026-04-17)
 * [ ] [**T05**: Orders list + detail (read-first)](tasks/T05.md) — Status: 🟡 Planned
 
 <!-- END PROGRESS SECTION -->
@@ -400,6 +400,47 @@ Out of scope for this plan (follow-up):
 - ✅ **Completed**: Done
 
 ## Change Log
+
+- **2026-04-17**: T04 image upload shipped. Storage backend is Fly Tigris
+  (S3-compatible; `fly storage create --name commercejs-cloud-assets` auto-
+  injected `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_ENDPOINT_URL_S3`/
+  `AWS_REGION`/`BUCKET_NAME` as Fly secrets, and `fly storage update
+  --public` made the bucket publicly gettable — Tigris rejected
+  `PutBucketPolicy` with NotImplemented, so prefix-scoped public-read is
+  deferred to a provider-level capability). New
+  `/api/admin/uploads/presign.post.ts` behind `requireMerchantSession` —
+  Zod-validated body (filename/mimeType/size/optional context),
+  mime allow-list (jpeg/png/webp/gif → 400), 10 MB cap (413), key composed
+  server-side as `merchants/${merchant.id}/${context ?? 'product'}/${uuid}/
+  ${safeFilename}`; client body never supplies prefix so cross-tenant
+  presign is impossible by construction. 15-minute presign expiry,
+  `Content-Type` carried into the SigV4 signature. New
+  `server/utils/s3.ts` — `getS3Config()` reads Fly-native `AWS_*` env
+  vars directly via `process.env` (same pattern as
+  `NEON_CONTROL_DB_URL` in `utils/db.ts`), throws a clear 500 listing
+  missing vars if unconfigured; `publicUrlForKey()` mirrors the provider's
+  virtual-hosted URL math. `AdminProductForm.vue` gained an Images card —
+  drag-drop zone + file picker, previews in a 2/3/4-col grid, per-image
+  alt-text, star-icon "Set primary" button, up/down reorder, trash delete,
+  and auto-primary on first upload. `useAdminProductForm.ts.toPayload()`
+  now maps `form.images` into the `images[]` payload (re-indexed
+  `sortOrder`; falls back to index-0 primary if none marked).
+  `@commercejs/dashboard` gained `@commercejs/storage-s3` workspace dep.
+  Also: fixed an upstream bug in `@commercejs/storage-s3` —
+  `getPresignedUploadUrl`/`getPresignedDownloadUrl` were appending
+  `X-Amz-Expires` to the URL AFTER calling aws4fetch's `sign()`, which
+  invalidated the signature (aws4fetch defaults to 86400 internally when
+  missing at sign time). Fixed by setting `X-Amz-Expires` on the URL
+  before signing. Bucket CORS applied via an ad-hoc aws4fetch-based
+  node script (removed after use); Tigris CORS rejects wildcard-subdomain
+  origins (`https://*.commercejs.cloud` → preflight 403), so the rule
+  settled on `AllowedOrigin: *` + `PUT/GET/HEAD` + `*` headers — acceptable
+  because writes require a presigned URL and reads are already
+  bucket-public. 6/6 smoke acceptance scenarios green on
+  `smoke.commercejs.cloud`: presign happy path, mime reject, size reject,
+  cross-tenant prefix isolation (enforced by handler, verified via path-
+  traversal + context-injection attempts), full PUT → public-GET cycle,
+  CORS preflight.
 
 - **2026-04-17**: T03 products CRUD shipped. Dashboard gained
   `/api/admin/products/{index.get,index.post,[id].get,[id].patch,[id].delete}`
