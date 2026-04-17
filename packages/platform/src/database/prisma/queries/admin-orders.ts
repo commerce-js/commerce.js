@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { getDb } from '../client.js'
+import { parseFromBound, parseToBound } from '../../date-bounds.js'
 
 export async function countOrders(): Promise<number> {
   return getDb().order.count()
@@ -29,8 +30,8 @@ export async function findAllOrders(opts: {
   }
   if (opts.dateFrom || opts.dateTo) {
     where.createdAt = {}
-    if (opts.dateFrom) where.createdAt.gte = opts.dateFrom
-    if (opts.dateTo) where.createdAt.lte = opts.dateTo
+    if (opts.dateFrom) where.createdAt.gte = parseFromBound(opts.dateFrom)
+    if (opts.dateTo) where.createdAt.lte = parseToBound(opts.dateTo)
   }
 
   const [rows, count] = await Promise.all([

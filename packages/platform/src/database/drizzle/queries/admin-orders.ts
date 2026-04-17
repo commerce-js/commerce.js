@@ -5,6 +5,7 @@
 import { eq, sql, and, like, gte, lte, desc } from 'drizzle-orm'
 import { getDb } from '../client.js'
 import * as schema from '../schema/index.js'
+import { parseFromBound, parseToBound } from '../../date-bounds.js'
 
 export async function countOrders(): Promise<number> {
   const result = await getDb().select({ count: sql<number>`count(*)` }).from(schema.orders)
@@ -25,8 +26,8 @@ export async function adminFindAllOrders(opts: {
 
   if (opts.status) conditions.push(eq(schema.orders.status, opts.status as any))
   if (opts.customerId) conditions.push(eq(schema.orders.customerId, opts.customerId))
-  if (opts.dateFrom) conditions.push(gte(schema.orders.createdAt, new Date(opts.dateFrom)))
-  if (opts.dateTo) conditions.push(lte(schema.orders.createdAt, new Date(opts.dateTo)))
+  if (opts.dateFrom) conditions.push(gte(schema.orders.createdAt, parseFromBound(opts.dateFrom)))
+  if (opts.dateTo) conditions.push(lte(schema.orders.createdAt, parseToBound(opts.dateTo)))
   if (opts.search) conditions.push(like(schema.orders.orderNumber, `%${opts.search}%`))
 
   const [rows, countResult] = await Promise.all([
