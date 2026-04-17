@@ -597,6 +597,9 @@ importers:
       '@prisma/client':
         specifier: ^7.6.0
         version: 7.7.0(prisma@7.7.0(@types/react@19.2.13)(better-sqlite3@12.6.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
+      bcrypt-ts:
+        specifier: ^5.0.3
+        version: 5.0.3
     devDependencies:
       tsx:
         specifier: ^4.21.0

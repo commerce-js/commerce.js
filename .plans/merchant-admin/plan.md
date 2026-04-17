@@ -16,7 +16,7 @@
 
 * [x] **Research & Strategy Selection** ✅ Completed (2026-04-17)
 
-* [ ] [**T01**: Merchant auth foundation](tasks/T01.md) — Status: 🟡 Planned
+* [x] [**T01**: Merchant auth foundation](tasks/T01.md) — Status: ✅ Completed (2026-04-17)
 * [ ] [**T02**: Admin shell in apps/storefront](tasks/T02.md) — Status: 🟡 Planned
 * [ ] [**T03**: Products CRUD](tasks/T03.md) — Status: 🟡 Planned
 * [ ] [**T04**: Image upload (presigned S3)](tasks/T04.md) — Status: 🟡 Planned
@@ -406,4 +406,27 @@ Out of scope for this plan (follow-up):
   in storefront + `/api/admin/**` in dashboard, namespace = `/api/admin/*` reusing tenant
   middleware, image upload = shared S3 bucket with per-merchant prefix). T01–T05 task stubs
   created; implementation deferred to next session.
+- **2026-04-17**: T01 merchant auth foundation implemented. New
+  `apps/dashboard/server/utils/merchant-session.ts` (sealed h3 cookie,
+  `cjs-merchant-session`, host-scoped), `utils/merchant-auth.ts`
+  (`requireMerchantSession(event)` with cross-tenant replay check), and three routes:
+  `/api/admin/auth/{login.post,logout.post,session.get}.ts`. Login handler includes the
+  first-login bootstrap — if the merchant's branch has zero `admin_users` rows, it seeds the
+  `owner` row from the control-DB `Merchant.email`/`passwordHash`. Removed `/api/admin` from
+  tenant middleware's `SKIP_PREFIXES` so `/api/admin/*` routes now get tenant resolution +
+  `event.context.admin`. Dashboard build green. T02 (admin shell + `requireMerchantSession`
+  wired into first guarded route) is the next step.
+- **Pre-production carry-over (flagged from 2026-04-17T1800 checkpoint)**: dashboard's
+  tenant middleware still uses the legacy `bindDb()` + `initPrisma()` fallback path for
+  merchant Prisma client resolution. The hosted-checkout app already uses the new per-event
+  pattern (`registerEventResolver()` + `event.context.db` — shipped in commit `7d3d5af`).
+  Now that T01 activates `/api/admin/*` through the same dashboard middleware, the legacy
+  path is race-prone under **concurrent different-merchant traffic**. Fine for smoke /
+  single-merchant development — not fine for production multi-merchant traffic. Fix lives in
+  its own focused commit after merchant-admin is shipped end-to-end: migrate
+  `apps/dashboard/server/plugins/` to register the resolver, update
+  `apps/dashboard/server/middleware/tenant.ts` to set `event.context.db` per request, and
+  verify `ensureAdapter()` no longer relies on `initPrisma()`'s module-level `_db`. Scope-
+  matched to how hosted-checkout did it. Do NOT fold this into merchant-admin tasks — it's a
+  platform-wide fix that the storefront-EaaS plan also benefits from.
 <!-- META_INFORMATION -->

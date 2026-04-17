@@ -37,7 +37,9 @@ import type { MerchantContext } from '../utils/tenant'
 // ---------------------------------------------------------------------------
 const SKIP_PREFIXES = [
   '/api/merchants', // Control DB CRUD (Step 2)
-  '/api/admin', // Legacy admin proxy (Step 7 will replace)
+  // '/api/admin' was here as a legacy proxy placeholder. Removed in merchant-admin T01:
+  // /api/admin/* routes are now merchant-scoped and need tenant middleware to populate
+  // event.context.admin. See .plans/merchant-admin/plan.md.
   '/api/auth', // Dashboard user auth
   '/api/armada', // Integration studio hooks
   '/api/_health', // Fly.io health probe (fly.toml)

@@ -59,7 +59,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 | Operator dashboard (merchants CRUD, async provisioning, danger-zone delete) | ✅ | `apps/dashboard/` |
 | Storefront EaaS (T01 API routes + T02 remote mode + T03 node-server + T04 hosted SSR + composable rewrite) | ✅ | [`storefront-eaas/plan.md`](storefront-eaas/plan.md) |
 | Hosted checkout card payments (Tap SDK + COD, co-supervised on `:3002`) | ✅ | `apps/hosted-checkout/` |
-| **Merchant admin UI (T01–T05)** | 🔲 | [`merchant-admin/plan.md`](merchant-admin/plan.md) ← **current gate** |
+| **Merchant admin UI (T01–T05)** | 🟡 | [`merchant-admin/plan.md`](merchant-admin/plan.md) ← **current gate** (T01 ✅; T02 next) |
 | Tap subscription billing (merchant SaaS plan charges) | 🔲 | No plan doc yet; `Merchant.tapCustomerId` column plumbed |
 | Transactional emails (order confirmations, password resets, trial-ending) | 🔲 | No plan doc yet; `handleSendEmail` stub in `worker.ts` |
 
@@ -67,7 +67,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 
 ## 🎯 What's Next
 
-**The gate.** Merchants can sign up and get provisioned, the storefront renders, the checkout takes cards and COD — but merchants have no way to populate their catalog or view orders. Merchant-admin **T01 (auth foundation)** is the entry point: a `cjs-merchant-session` cookie util, `/api/admin/auth/*` routes, first-login bootstrap from the `Merchant` row, plus removing `/api/admin` from the tenant middleware's `SKIP_PREFIXES`. Detail → [`merchant-admin/plan.md`](merchant-admin/plan.md).
+**The gate.** Merchants can sign up and get provisioned, the storefront renders, the checkout takes cards and COD — but merchants have no way to populate their catalog or view orders. Merchant-admin **T01 (auth foundation) shipped 2026-04-17**: `cjs-merchant-session` cookie util, `/api/admin/auth/{login,logout,session}` routes, first-login bootstrap from the `Merchant` row, `/api/admin` removed from `SKIP_PREFIXES`. Next up: **T02 (admin shell in `apps/storefront`)** — protected `/admin` layout that redirects unauthenticated to `/admin/login` and shows a dashboard landing for authed. Detail → [`merchant-admin/plan.md`](merchant-admin/plan.md).
 
 **Parallel (non-blocking) track.** Migrate the dashboard's tenant middleware from the legacy `bindDb()` + `initPrisma()` fallback to the per-event `registerEventResolver()` + `useEvent()` pattern that `apps/hosted-checkout` now uses. Race-prone under concurrent different-merchant traffic; currently masked because the smoke tenant is the only one in play. Must land before the merchant admin UI sees multi-merchant production traffic. Detail → the latest checkpoint's "Carry-Overs" section.
 
@@ -90,14 +90,18 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 ─────────────────────────────────────────────────────────
   Active branch:         fly/eaas
   Latest checkpoint:     .memory/checkpoints/2026-04-17T1800.md
-  Last major milestone:  Hosted checkout on :3002 + per-event
-                         Prisma binding (commit 7d3d5af)
-  Current blocker:       Merchant admin UI — merchants can't
-                         CRUD products yet (T01 is the entry)
+  Last major milestone:  Merchant-admin T01 (auth foundation)
+                         shipped — /api/admin/auth/{login,
+                         logout,session} live on Fly, three
+                         acceptance curls green
+  Current blocker:       T02 — admin shell in apps/storefront
+                         (protected /admin layout wired to the
+                         cjs-merchant-session cookie)
   Open carry-overs:      Dashboard still on bindDb()+_db fallback
-                         (pending per-event migration). NUXT_*
-                         prefix gotcha has bitten 3× — keep near
-                         the top of .memory/gotchas.md.
+                         (pending per-event migration — now
+                         carries /api/admin/* traffic too).
+                         NUXT_* prefix gotcha has bitten 3× —
+                         keep near the top of .memory/gotchas.md.
   Last updated:          2026-04-17
 ─────────────────────────────────────────────────────────
 ```
@@ -138,4 +142,5 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 
 ## Change Log
 
+- **2026-04-17** — Merchant-admin T01 shipped. Phase 7 → Merchant admin workstream flips from 🔲 → 🟡 (T01 ✅, T02 next). State Snapshot bumped: last major milestone now points to the T01 deploy; blocker rolled forward to T02 (admin shell in `apps/storefront`).
 - **2026-04-17** — Initial grand plan. Consolidates the three-pillar vision (previously only in `.research/best-ecommerce-strategy.md`) with the phase-based roadmap, current deployment state, and navigation to every other planning doc. Added to `CLAUDE.md` as the mandatory first-read at session start.
