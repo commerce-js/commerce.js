@@ -74,3 +74,35 @@ export const listProductsQuerySchema = z.object({
   sortField: z.string().optional(),
   sortDirection: z.enum(['asc', 'desc']).optional(),
 })
+
+// ---- Orders ----
+
+const orderStatusEnum = z.enum([
+  'pending',
+  'processing',
+  'shipped',
+  'delivered',
+  'cancelled',
+  'refunded',
+  'returned',
+])
+
+export const listOrdersQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional(),
+  perPage: z.coerce.number().int().positive().max(100).optional(),
+  status: orderStatusEnum.optional(),
+  customerId: z.string().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  search: z.string().optional(),
+})
+
+export const fulfillOrderSchema = z.object({
+  trackingNumber: z.string().optional(),
+  trackingUrl: z.string().url('Must be a valid URL').optional(),
+  note: z.string().optional(),
+})
+
+export const refundOrderSchema = z.object({
+  note: z.string().optional(),
+})

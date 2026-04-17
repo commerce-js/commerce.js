@@ -20,7 +20,7 @@
 * [x] [**T02**: Admin shell in apps/storefront](tasks/T02.md) — Status: ✅ Completed (2026-04-17)
 * [x] [**T03**: Products CRUD](tasks/T03.md) — Status: ✅ Completed (2026-04-17)
 * [x] [**T04**: Image upload (presigned S3)](tasks/T04.md) — Status: ✅ Completed (2026-04-17)
-* [ ] [**T05**: Orders list + detail (read-first)](tasks/T05.md) — Status: 🟡 Planned
+* [x] [**T05**: Orders list + detail (read-first)](tasks/T05.md) — Status: ✅ Completed (2026-04-17)
 
 <!-- END PROGRESS SECTION -->
 
@@ -401,6 +401,37 @@ Out of scope for this plan (follow-up):
 
 ## Change Log
 
+- **2026-04-17**: T05 orders list + detail shipped (read-first). Four new
+  `/api/admin/orders/*` routes under the dashboard (`index.get`, `[id].get`,
+  `[id]/fulfill.post`, `[id]/refund.post`), all gated by
+  `requireMerchantSession` and wrapping `event.context.admin.listOrders /
+  getOrder / fulfillOrder / refundOrder`. Zod schemas added to
+  `admin-schemas.ts` (`listOrdersQuerySchema`, `fulfillOrderSchema`,
+  `refundOrderSchema`). Two new merchant-facing pages:
+  `apps/storefront/app/pages/admin/orders/index.vue` (UTable with status
+  chip + paginated list + filter bar — status dropdown, date-from,
+  date-to, 300 ms debounced search by order# or email, URL-sync'd query
+  state, clickable row → detail) and `apps/storefront/app/pages/admin/
+  orders/[id].vue` (six panels: Order summary, Items with thumbnails +
+  qty/price, Customer, Shipping w/ RTL-safe address + tracking, Billing,
+  Actions). Action modals: "Mark fulfilled" with optional tracking# /
+  tracking URL / note, and "Refund" with optional note — each disabled
+  based on current order status (fulfill requires pending/processing;
+  refund requires processing/shipped/delivered), server re-enforces via
+  platform errors. **Gate decision** on entry: `admin.getOrder` returns
+  `Order` only (no history/audit trail exposed on `AdminAPI` — the
+  platform's `getOrderHistory` is domain-layer, deliberately not
+  surfaced), so the History panel from the T05 spec was SKIPPED per
+  plan rule (don't extend the platform API in this task). **Status enum
+  note**: platform uses `pending | processing | shipped | delivered |
+  cancelled | refunded | returned` — no `paid` / `fulfilled`. The UI
+  renders the actual enum; "Mark Fulfilled" writes status='shipped'
+  (platform's fulfilled state). Chip colour map: pending=neutral,
+  processing=info, shipped/delivered=success, refunded=warning,
+  cancelled/returned=error. Build green on both dashboard and
+  storefront; all four route chunks emitted. Pre-existing typecheck
+  noise (h3 module resolution in server/utils) applies identically to
+  every admin route — not a T05 regression.
 - **2026-04-17**: T04 image upload shipped. Storage backend is Fly Tigris
   (S3-compatible; `fly storage create --name commercejs-cloud-assets` auto-
   injected `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_ENDPOINT_URL_S3`/
