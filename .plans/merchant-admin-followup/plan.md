@@ -24,7 +24,7 @@
 * [x] **Research & Strategy Selection** ✅ Completed (2026-04-18)
 
 * [x] [**T06**: Store Settings](tasks/T06.md) — Status: ✅ Completed (2026-04-19)
-* [ ] [**T07**: Customers (list + detail, read-first)](tasks/T07.md) — Status: 🟡 Planned
+* [x] [**T07**: Customers (list + detail, read-first)](tasks/T07.md) — Status: ✅ Completed (2026-04-19)
 * [ ] [**T08**: Categories CRUD UI](tasks/T08.md) — Status: 🟡 Planned
 * [ ] [**T09**: Staff management (local-password)](tasks/T09.md) — Status: 🟡 Planned
 * [ ] [**T10**: Inventory inline + low-stock](tasks/T10.md) — Status: 🟡 Planned
@@ -278,6 +278,24 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-19**: T07 Customers (list + detail, read-first) shipped. Three
+  new dashboard routes under `apps/dashboard/server/api/admin/customers/`
+  (`index.get.ts` wraps `admin.listCustomers({ page, perPage, search, sort })`,
+  `[id].get.ts` wraps `admin.getCustomer` and maps thrown not-found → 404,
+  `[id].delete.ts` wraps `admin.deleteCustomer` — 204 on success, 404 on
+  `/not found/`-matching platform errors, 400 otherwise so FK-block reasons
+  from customers-with-orders surface in the toast). `listCustomersQuerySchema`
+  added to `admin-schemas.ts` (page/perPage/search/sortField/sortDirection).
+  Two new storefront pages — `apps/storefront/app/pages/admin/customers/index.vue`
+  (debounced search + `UTable` of email/name/phone/joined + `UPagination`,
+  mirrors T05 orders list shell) and `.../[id].vue` (four panels: Profile,
+  Addresses with default-highlight, Orders via a second useFetch to
+  `/api/admin/orders?customerId=:id` linked to existing `/admin/orders/:id`,
+  Danger-zone delete with confirm modal that quotes the email + warns about
+  FK-block). Muted helper line notes the page is read-only (customer profile
+  edits stay on buyer-facing storefront). Sidebar restores the "Customers"
+  link between Orders and Settings. No platform API changes. Pending deploy
+  + live acceptance on `smoke.commercejs.cloud` (explicit-go gate).
 - **2026-04-19**: T06 Store Settings shipped. Three new dashboard files —
   `apps/dashboard/server/utils/admin-schemas.ts` gains
   `updateStoreSettingsSchema` (mirrors `UpdateStoreInput` with

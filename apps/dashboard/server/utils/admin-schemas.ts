@@ -107,6 +107,16 @@ export const refundOrderSchema = z.object({
   note: z.string().optional(),
 })
 
+// ---- Customers ----
+
+export const listCustomersQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional(),
+  perPage: z.coerce.number().int().positive().max(100).optional(),
+  search: z.string().optional(),
+  sortField: z.string().optional(),
+  sortDirection: z.enum(['asc', 'desc']).optional(),
+})
+
 // ---- Store settings ----
 
 // Mirrors UpdateStoreInput in @commercejs/platform/admin. Empty-string
