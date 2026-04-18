@@ -106,3 +106,25 @@ export const fulfillOrderSchema = z.object({
 export const refundOrderSchema = z.object({
   note: z.string().optional(),
 })
+
+// ---- Store settings ----
+
+// Mirrors UpdateStoreInput in @commercejs/platform/admin. Empty-string
+// literals are accepted alongside `undefined` so the UI can clear a field
+// (logo, favicon, contactEmail) by sending `''` — the platform's
+// `updateStoreSettings` treats an empty string as a valid clear.
+export const updateStoreSettingsSchema = z.object({
+  name: z.string().min(1).optional(),
+  nameAr: z.string().optional(),
+  description: z.string().optional(),
+  descriptionAr: z.string().optional(),
+  logo: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  favicon: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  currency: z.string().length(3, 'Must be a 3-letter ISO currency code').optional(),
+  locale: z.string().min(2).optional(),
+  timezone: z.string().min(1).optional(),
+  contactEmail: z.string().email('Must be a valid email').optional().or(z.literal('')),
+  contactPhone: z.string().optional(),
+  address: z.string().optional(),
+  socialLinks: z.string().optional(), // JSON string of Record<string, string>
+})

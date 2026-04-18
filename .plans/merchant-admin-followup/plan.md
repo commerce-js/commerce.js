@@ -23,7 +23,7 @@
 
 * [x] **Research & Strategy Selection** ✅ Completed (2026-04-18)
 
-* [ ] [**T06**: Store Settings](tasks/T06.md) — Status: 🟡 Planned
+* [x] [**T06**: Store Settings](tasks/T06.md) — Status: ✅ Completed (2026-04-19)
 * [ ] [**T07**: Customers (list + detail, read-first)](tasks/T07.md) — Status: 🟡 Planned
 * [ ] [**T08**: Categories CRUD UI](tasks/T08.md) — Status: 🟡 Planned
 * [ ] [**T09**: Staff management (local-password)](tasks/T09.md) — Status: 🟡 Planned
@@ -278,6 +278,23 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-19**: T06 Store Settings shipped. Three new dashboard files —
+  `apps/dashboard/server/utils/admin-schemas.ts` gains
+  `updateStoreSettingsSchema` (mirrors `UpdateStoreInput` with
+  `z.string().url()` on logo/favicon, `.email()` on contactEmail,
+  `.length(3)` on currency, `.or(z.literal(''))` for clearing); two
+  thin route wrappers at `apps/dashboard/server/api/admin/settings.{get,patch}.ts`
+  wrap `admin.getStoreSettings` / `updateStoreSettings` under
+  `requireMerchantSession` + `parseOrThrow`. One new storefront file —
+  `apps/storefront/app/pages/admin/settings.vue` renders a grouped form
+  (Brand / Locale / Contact / Social) with logo + favicon uploads reusing
+  T04's presign flow (`context: 'store-logo'`), social-link asymmetry
+  (platform returns `Record<string,string>` → form rows → JSON string
+  on PATCH), and the caveat alert that currency/locale changes don't
+  retroactively convert product prices. `apps/storefront/app/layouts/admin.vue`
+  restores the "Settings" sidebar link (removed in 0804c3b). No platform
+  API changes. Pending deploy + 8-scenario live acceptance on
+  `smoke.commercejs.cloud` (explicit-go gate).
 - **2026-04-18**: Plan created. Research completed (Option A selected);
   eight tasks (T06–T13) defined to close out merchant-admin scope.
   Deferred items documented with forward-references to owning plans.
