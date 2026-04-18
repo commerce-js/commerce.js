@@ -374,19 +374,103 @@ Out of scope for this plan (follow-up):
 
 ## Lessons Learned (Post-Implementation)
 
-> Fill this section out after completing T01–T05.
+Filled 2026-04-18 when the merchant-admin-followup plan was drafted —
+T01–T05 all shipped 2026-04-17 on `smoke.commercejs.cloud`.
 
 ### What Went Well
-- [TBD]
+
+- **One-task-one-commit rhythm.** Each of T01–T05 landed as a single
+  commit with its own smoke acceptance run. Scope never drifted and
+  bisecting any regression is trivial. Kept verbatim as the rule for
+  the follow-up plan.
+- **The "HTTP wrapper + UI" shape is repeatable.** Once T03 established
+  it (Zod schema in `admin-schemas.ts`, `parseOrThrow`,
+  `requireMerchantSession`, page mirroring the list/detail pair), T04
+  and T05 were mechanical. T06+T07+T08 in the follow-up plan
+  reuse it as-is.
+- **`requireMerchantSession` double-defends cross-tenant replay.** The
+  tenant middleware already resolves the merchant from the host, and
+  `requireMerchantSession` cross-checks `session.merchantId === tenant.id`
+  before any handler runs. Zero cross-tenant bleed observed in T05's
+  acceptance run (S7 scenario).
+- **Upstream bug surfaced and fixed in-session.** T04 found a signature
+  bug in the published `@commercejs/storage-s3` v0.2.0 (`X-Amz-Expires`
+  appended post-sign) and shipped a 0.2.1 patch changeset in the same
+  commit. Good example of flagging out-of-scope issues separately —
+  the fix landed beside T04 but with its own changeset description.
 
 ### What Could Be Improved
-- [TBD]
+
+- **Reka UI `<SelectItem>` empty-value trap.** T05's status dropdown
+  used `value: ''` for "All statuses" and crashed at render time —
+  Reka UI reserves empty strings for "clear selection". The fix was
+  a one-line sentinel (`'all'`). Add to `.memory/gotchas.md` so a
+  future task doesn't repeat.
+- **Date-only strings aren't Prisma-valid timestamps.** T05's date-range
+  filter 500'd on `dateFrom=2026-04-16` because Prisma rejected the
+  date-only string. The cross-driver fix (`parseFromBound` /
+  `parseToBound` in `packages/platform/src/database/date-bounds.ts`)
+  also fixed a Drizzle silent-exclusion edge on `dateTo`. Both backends
+  now share the helper.
+- **Double-fulfill / pending-refund guards were missing.** The platform's
+  `admin.fulfillOrder` + `refundOrder` had no state-transition guards
+  — you could re-fulfill an already-shipped order, or refund a pending
+  one that was never paid. Fixed after T05 shipped
+  (`packages/platform/src/admin/orders.ts`) with Set-based forbidden-
+  status checks and 16 unit tests. Surfacing the gap required curl-
+  testing the platform directly; the UI had already client-side-gated
+  both. Worth a "dig into platform domain guarantees" pass before every
+  new admin surface.
+- **Tenant-middleware race window was real.** T01–T05 routes rode
+  `bindDb()` + `initPrisma()` fallback which was brittle across
+  Nitro's middleware→handler async boundary. Migrated 2026-04-17
+  (commit `01ee8c3`) to the per-event `registerEventResolver()` +
+  `useEvent()` pattern that `apps/hosted-checkout` was already using.
+  The follow-up plan benefits from day-one concurrency safety.
+- **Parent-plan scope note was too terse.** The one-line "Settings, staff
+  invites, customer management, analytics, and storefront theming are
+  deferred to a follow-up plan" gave no indication of which items were
+  cheap vs. expensive. Follow-up plan's Research section was the
+  natural place to elaborate (Option A/B/C table) — consider writing
+  Out-of-scope lists with effort hints next time.
 
 ### Unexpected Challenges
-- [TBD]
+
+- **Storefront public API URL mismatch during T05 acceptance.** Initial
+  acceptance run hit `/api/_commerce/products` which doesn't exist;
+  real path is `/api/storefront/products`. False 500 that took a curl
+  pass to disambiguate. Documented in the session's acceptance script.
+- **Pre-existing typecheck noise.** Every `/api/admin/*` route reports
+  `Cannot find module 'h3'` + `event: any` under `pnpm --filter
+  dashboard typecheck`. Pre-existed T01 and applies identically to all
+  T01–T05 routes — a tooling issue, not a regression. Skipped as a
+  fix-later item; doesn't block builds.
+- **The generated Prisma client can't be loaded by vitest alone.** The
+  full platform suite errors with `Cannot find package
+  '@prisma/client/runtime/client'` because `prisma generate` hasn't
+  been run in the checkout. Works around by running only the targeted
+  test files via `vitest run <path>` — the new `date-bounds.test.ts`
+  and `admin-orders-guards.test.ts` both pass that way.
 
 ### Recommendations for Future Features
-- [TBD]
+
+- **Before building a new admin surface, grep `packages/platform/src/
+  admin/` for the matching AdminAPI methods.** In T06–T10 of the
+  follow-up plan, the methods are already there — saves a
+  classification pass each time.
+- **Write state-transition guards at the platform layer, not the UI
+  layer.** The UI is convenience; the platform is the source of truth.
+  T13's `admin.fulfillOrder` / `refundOrder` guards are the precedent.
+- **For any new admin mutation, add a `recordActivity` call at the
+  dashboard route layer.** T13 of the follow-up plan establishes the
+  pattern; future plans (email, billing, etc.) should adopt it so
+  every state change is attributed to an actor.
+- **Keep the T06+T07+T08 rhythm — three Smalls can be acceptance-tested
+  in one go on smoke** (reducing deploy count) even though each ships
+  as its own commit. T05 verified one-at-a-time with one deploy per
+  commit; for the follow-up's cheap batch, amortize the deploy cost by
+  testing all three after the third commit lands, still with one commit
+  per task.
 
 ---
 
