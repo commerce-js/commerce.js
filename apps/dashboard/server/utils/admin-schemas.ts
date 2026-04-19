@@ -117,6 +117,24 @@ export const listCustomersQuerySchema = z.object({
   sortDirection: z.enum(['asc', 'desc']).optional(),
 })
 
+// ---- Categories ----
+
+// Mirrors CreateCategoryInput in @commercejs/platform/admin. Empty `slug`
+// is coerced to `undefined` so the platform's slugify-on-create path fires
+// rather than persisting an empty string.
+export const createCategorySchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  nameAr: z.string().optional(),
+  slug: z.string().optional().transform(v => (v === '' ? undefined : v)),
+  description: z.string().optional(),
+  descriptionAr: z.string().optional(),
+  image: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  parentId: z.string().optional().transform(v => (v === '' ? undefined : v)),
+  sortOrder: z.number().int().optional(),
+})
+
+export const updateCategorySchema = createCategorySchema.partial()
+
 // ---- Store settings ----
 
 // Mirrors UpdateStoreInput in @commercejs/platform/admin. Empty-string

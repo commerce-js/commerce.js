@@ -25,7 +25,7 @@
 
 * [x] [**T06**: Store Settings](tasks/T06.md) — Status: ✅ Completed (2026-04-19)
 * [x] [**T07**: Customers (list + detail, read-first)](tasks/T07.md) — Status: ✅ Completed (2026-04-19)
-* [ ] [**T08**: Categories CRUD UI](tasks/T08.md) — Status: 🟡 Planned
+* [x] [**T08**: Categories CRUD UI](tasks/T08.md) — Status: ✅ Completed (2026-04-19)
 * [ ] [**T09**: Staff management (local-password)](tasks/T09.md) — Status: 🟡 Planned
 * [ ] [**T10**: Inventory inline + low-stock](tasks/T10.md) — Status: 🟡 Planned
 * [ ] [**T11**: Analytics expansion](tasks/T11.md) — Status: 🟡 Planned
@@ -278,6 +278,35 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-19**: T08 Categories CRUD UI shipped. Platform gains a one-liner
+  `AdminAPI.getCategory(id)` (wraps existing `findCategoryById` + the
+  domain's `mapCategory`). Dashboard restructures the flat
+  `api/admin/categories.get.ts` into a directory:
+  `categories/index.get.ts` (unchanged `listCategories(parentId?)` —
+  consumer URL `/api/admin/categories` is preserved so T03's product form
+  dropdown keeps working), `index.post.ts` (`admin.createCategory`),
+  `[id].get.ts` (`admin.getCategory`, maps platform "not found" → 404),
+  `[id].patch.ts` (`admin.updateCategory`), and `[id].delete.ts`
+  (`admin.deleteCategory` — surfaces platform orphan-prevention 4xx
+  message so the UI toast can quote it; 404 on /not found/ match, 400
+  otherwise). `admin-schemas.ts` gains `createCategorySchema` +
+  `updateCategorySchema`; empty `slug`/`parentId` strings transform to
+  `undefined` so the platform's slugify-on-create path fires and a blank
+  parent stays root. New storefront shared component
+  `AdminCategoryForm.vue` (name, nameAr, slug, description, descriptionAr,
+  image via T04 presign with `context:'category'`, parent dropdown using
+  a `'__root__'` sentinel to dodge Reka UI's empty-string crash,
+  sortOrder). Three pages: `/admin/categories/index.vue` (flat UTable
+  with name EN+AR, slug monospace, parent, product count, Edit/Delete),
+  `/admin/categories/new.vue`, `/admin/categories/[id]/edit.vue` (same
+  form, `exclude-id` keeps a category out of its own parent options).
+  Sidebar `apps/storefront/app/layouts/admin.vue` gets a "Categories"
+  link (tag icon) between Products and Orders. Build green on platform
+  + dashboard + storefront. Pending deploy + live acceptance on
+  smoke.commercejs.cloud (explicit-go gate). Scope stayed on T08 —
+  parent-loop protection + products-attached orphan prevention still
+  look unenforced on the platform; flagged as follow-up rather than
+  folded into T08.
 - **2026-04-19**: T07 deployed to smoke.commercejs.cloud and verified —
   8/8 acceptance scenarios green (list 200 + empty envelope; registered
   a buyer via `/api/storefront/auth/register`, list → total=1; search

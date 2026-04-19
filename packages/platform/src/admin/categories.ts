@@ -43,6 +43,12 @@ export function createAdminCategoriesDomain() {
       return rows.map(mapCategory)
     },
 
+    async getCategory(id: string): Promise<Category> {
+      const row = await findCategoryById(id)
+      if (!row) throw new Error(`Category not found: ${id}`)
+      return mapCategory(row)
+    },
+
     async createCategory(input: CreateCategoryInput): Promise<Category> {
       const id = crypto.randomUUID()
       const slug = input.slug ?? slugify(input.name)

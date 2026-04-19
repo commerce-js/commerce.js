@@ -55,6 +55,7 @@ export function createAdminAPI(currency: string): AdminAPI {
 
     // Categories
     listCategories: categories.listCategories,
+    getCategory: categories.getCategory,
     createCategory: categories.createCategory,
     updateCategory: categories.updateCategory,
     deleteCategory: categories.deleteCategory,

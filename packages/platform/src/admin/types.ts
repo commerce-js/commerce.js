@@ -199,6 +199,7 @@ export interface AdminAPI {
 
   // Categories
   listCategories(parentId?: string): Promise<Category[]>
+  getCategory(id: string): Promise<Category>
   createCategory(input: CreateCategoryInput): Promise<Category>
   updateCategory(id: string, input: UpdateCategoryInput): Promise<Category>
   deleteCategory(id: string): Promise<void>
