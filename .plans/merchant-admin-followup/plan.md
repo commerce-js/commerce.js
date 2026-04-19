@@ -246,6 +246,19 @@ plan. Each has a forward-reference to the plan that owns it.
   analytics-tracking workstream (unscheduled). T11's analytics page
   will render a visible "Conversion rate: not yet tracked" tile to
   signal the gap.
+- **Platform categories hardening** (surfaced during T08) — three gaps in
+  `packages/platform/src/admin/categories.ts` / `packages/types/src/category.ts`:
+  (1) `deleteCategory` only blocks when `findCategoryChildren` is
+  non-empty — categories with attached products delete silently,
+  orphaning product↔category links. (2) `updateCategory` accepts any
+  `parentId` — no check against self-parent or descendant cycles, so the
+  tree can be broken by setting A's parent to A (or to a descendant of
+  A). (3) `Category` type omits `sortOrder`, so `mapCategory` can't
+  return it; T08's list page had to drop the sort column and T08's form
+  keeps `sortOrder` as a write-only field. Owner: unscheduled platform-
+  hardening follow-up (own plan). Not folded into T09-T13 because those
+  are admin-UI scope; fixing these sooner is better but not blocking.
+  T08 confirms the UI contract tolerates the current platform behavior.
 
 ---
 
