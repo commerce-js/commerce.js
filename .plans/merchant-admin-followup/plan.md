@@ -278,6 +278,16 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-19**: T07 deployed to smoke.commercejs.cloud and verified —
+  8/8 acceptance scenarios green (list 200 + empty envelope; registered
+  a buyer via `/api/storefront/auth/register`, list → total=1; search
+  narrows; detail 200 with profile+addresses; delete → 204 + subsequent
+  GET → 404; unauth → 401; cross-tenant cookie replay → 404; bogus id →
+  404). FK-block path wired but not exercised (no customer-with-orders
+  on smoke). Heads-up for future sessions: smoke's 8 pre-existing COD
+  orders were all guest checkouts (`customerId = null`, no
+  `shippingAddress.email`), so the Customers list only populates once a
+  real buyer registers or a COD flow captures an email.
 - **2026-04-19**: T07 Customers (list + detail, read-first) shipped. Three
   new dashboard routes under `apps/dashboard/server/api/admin/customers/`
   (`index.get.ts` wraps `admin.listCustomers({ page, perPage, search, sort })`,
