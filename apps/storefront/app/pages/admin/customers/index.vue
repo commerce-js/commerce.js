@@ -1,11 +1,23 @@
 <script setup lang="ts">
 // ---------------------------------------------------------------------------
-// /admin/customers — list page. Server-paginated + free-text search on
-// email / name. CSR-only — $fetch lands on the dashboard Nitro (:3000)
-// via the storefront-proxy rule.
+// /admin/customers — merchant customers list. Two sources merged into one
+// table:
+//
+//   1. Registered customers — fetched from /api/admin/customers. These are
+//      buyers who created an account on the storefront. Clickable, deletable.
+//
+//   2. Guest buyers — derived client-side from /api/admin/orders (orders
+//      with customerId == null). Grouped by email||phone so repeat guests
+//      dedupe. Read-only rows with a "Guest" badge and a link to their
+//      latest order.
+//
+// Why client-side: the platform doesn't model guest buyers as first-class
+// records — they live inside order.shippingAddress/billingAddress JSON.
+// For smoke + small merchants this is cheap; at scale we'll promote guests
+// to a platform-side query (or create a Customer on checkout).
 // ---------------------------------------------------------------------------
 
-import type { Customer, PaginatedResult } from '@commercejs/types'
+import type { Customer, Order, PaginatedResult } from '@commercejs/types'
 import { refDebounced } from '@vueuse/core'
 
 definePageMeta({
@@ -14,52 +26,178 @@ definePageMeta({
   ssr: false,
 })
 
+interface RegisteredRow {
+  source: 'registered'
+  id: string
+  email: string
+  firstName: string | null
+  lastName: string | null
+  phone: string | null
+  createdAt: string
+  orderCount: null
+  latestOrderId: null
+}
+
+interface GuestRow {
+  source: 'guest'
+  id: string
+  email: string
+  firstName: string | null
+  lastName: string | null
+  phone: string | null
+  createdAt: string
+  orderCount: number
+  latestOrderId: string
+}
+
+type Row = RegisteredRow | GuestRow
+
 const route = useRoute()
 const router = useRouter()
 
 const search = ref((route.query.q as string) || '')
 const searchDebounced = refDebounced(search, 300)
-const page = ref(Number(route.query.page) || 1)
-const perPage = 20
-
-watch(searchDebounced, () => { page.value = 1 })
 
 watchEffect(() => {
   const q: Record<string, string> = {}
   if (searchDebounced.value) q.q = searchDebounced.value
-  if (page.value > 1) q.page = String(page.value)
   router.replace({ query: q })
 })
 
-const queryParams = computed(() => {
-  const p: Record<string, string | number> = { page: page.value, perPage }
+// ---- Registered customers -------------------------------------------------
+
+const registeredQuery = computed(() => {
+  const p: Record<string, string | number> = { perPage: 100 }
   if (searchDebounced.value) p.search = searchDebounced.value
   return p
 })
 
-const { data, pending, error } = await useFetch<PaginatedResult<Customer>>(
-  '/api/admin/customers',
+const { data: registeredData, pending: registeredPending, error: registeredError }
+  = await useFetch<PaginatedResult<Customer>>(
+    '/api/admin/customers',
+    {
+      credentials: 'include',
+      server: false,
+      query: registeredQuery,
+      key: 'admin-customers-registered',
+    },
+  )
+
+// ---- Guest buyers (derived from orders) -----------------------------------
+
+const { data: ordersData, pending: ordersPending } = await useFetch<PaginatedResult<Order>>(
+  '/api/admin/orders',
   {
     credentials: 'include',
     server: false,
-    query: queryParams,
-    key: 'admin-customers-list',
+    query: { perPage: 500 },
+    key: 'admin-customers-orders',
   },
 )
 
-const items = computed(() => data.value?.items ?? [])
-const total = computed(() => data.value?.total ?? 0)
+function readAddrField(addr: any, key: string): string {
+  if (!addr || typeof addr !== 'object') return ''
+  const v = addr[key]
+  return typeof v === 'string' ? v.trim() : ''
+}
+
+const guestRows = computed<GuestRow[]>(() => {
+  const byKey = new Map<string, GuestRow>()
+  const orders = ordersData.value?.items ?? []
+
+  for (const o of orders) {
+    if (o.customerId) continue
+
+    const email = readAddrField(o.billingAddress, 'email') || readAddrField(o.shippingAddress, 'email')
+    const phone = readAddrField(o.shippingAddress, 'phone') || readAddrField(o.billingAddress, 'phone')
+    const firstName = readAddrField(o.shippingAddress, 'firstName') || readAddrField(o.billingAddress, 'firstName')
+    const lastName = readAddrField(o.shippingAddress, 'lastName') || readAddrField(o.billingAddress, 'lastName')
+
+    const key = email || phone
+    if (!key) continue
+
+    const existing = byKey.get(key)
+    if (existing) {
+      existing.orderCount += 1
+      // Keep the most-recent order's createdAt + id
+      if (o.createdAt > existing.createdAt) {
+        existing.createdAt = o.createdAt
+        existing.latestOrderId = o.id
+      }
+      // Fill missing identity fields from later orders
+      if (!existing.email && email) existing.email = email
+      if (!existing.phone && phone) existing.phone = phone
+      if (!existing.firstName && firstName) existing.firstName = firstName
+      if (!existing.lastName && lastName) existing.lastName = lastName
+    }
+    else {
+      byKey.set(key, {
+        source: 'guest',
+        id: `guest:${key}`,
+        email: email || '',
+        firstName: firstName || null,
+        lastName: lastName || null,
+        phone: phone || null,
+        createdAt: o.createdAt,
+        orderCount: 1,
+        latestOrderId: o.id,
+      })
+    }
+  }
+
+  const all = Array.from(byKey.values())
+
+  // Client-side search across guests (since they're not backed by the
+  // server-side search param).
+  const q = searchDebounced.value.trim().toLowerCase()
+  if (!q) return all
+  return all.filter((g) => {
+    const name = [g.firstName, g.lastName].filter(Boolean).join(' ').toLowerCase()
+    return (
+      g.email.toLowerCase().includes(q)
+      || name.includes(q)
+      || (g.phone || '').toLowerCase().includes(q)
+    )
+  })
+})
+
+// ---- Merged rows ----------------------------------------------------------
+
+const rows = computed<Row[]>(() => {
+  const registered: RegisteredRow[] = (registeredData.value?.items ?? []).map(c => ({
+    source: 'registered' as const,
+    id: c.id,
+    email: c.email,
+    firstName: c.firstName,
+    lastName: c.lastName,
+    phone: c.phone,
+    createdAt: c.createdAt,
+    orderCount: null,
+    latestOrderId: null,
+  }))
+  return [...registered, ...guestRows.value].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+})
+
+const totalRegistered = computed(() => registeredData.value?.total ?? 0)
+const totalGuests = computed(() => guestRows.value.length)
+const totalCombined = computed(() => rows.value.length)
+
+const pending = computed(() => registeredPending.value || ordersPending.value)
+const error = computed(() => registeredError.value)
+
+// ---- Table ---------------------------------------------------------------
 
 const columns = [
   { accessorKey: 'email', header: 'Email' },
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'phone', header: 'Phone' },
-  { accessorKey: 'createdAt', header: 'Joined' },
-  { accessorKey: 'actions', header: '', size: 100 },
+  { accessorKey: 'orders', header: 'Orders' },
+  { accessorKey: 'createdAt', header: 'Last activity' },
+  { accessorKey: 'actions', header: '', size: 120 },
 ]
 
-function customerName(c: Customer): string {
-  return [c.firstName, c.lastName].filter(Boolean).join(' ').trim() || '—'
+function rowName(r: Row): string {
+  return [r.firstName, r.lastName].filter(Boolean).join(' ').trim() || '—'
 }
 
 function formatDate(iso: string): string {
@@ -80,7 +218,10 @@ function formatDate(iso: string): string {
           Customers
         </h1>
         <p class="text-sm text-muted mt-1">
-          {{ total }} total
+          {{ totalCombined }} total
+          <span v-if="totalGuests > 0" class="text-dimmed">
+            · {{ totalRegistered }} registered · {{ totalGuests }} guest{{ totalGuests === 1 ? '' : 's' }}
+          </span>
         </p>
       </div>
     </header>
@@ -89,7 +230,7 @@ function formatDate(iso: string): string {
       <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3">
         <UInput
           v-model="search"
-          placeholder="Search email or name"
+          placeholder="Search email, name, or phone"
           icon="i-heroicons-magnifying-glass-20-solid"
           class="sm:w-80"
         />
@@ -105,7 +246,7 @@ function formatDate(iso: string): string {
       icon="i-heroicons-exclamation-triangle-20-solid"
     />
 
-    <UCard v-if="!pending && items.length === 0">
+    <UCard v-if="!pending && rows.length === 0">
       <div class="flex flex-col items-center text-center py-10 gap-3">
         <UIcon name="i-heroicons-users-20-solid" class="text-4xl text-dimmed" />
         <div>
@@ -120,21 +261,45 @@ function formatDate(iso: string): string {
     </UCard>
 
     <UCard v-else>
-      <UTable :data="items" :columns="columns" :loading="pending">
+      <UTable :data="rows" :columns="columns" :loading="pending">
         <template #email-cell="{ row }">
-          <NuxtLink
-            :to="`/admin/customers/${row.original.id}`"
-            class="font-medium text-highlighted hover:text-primary"
-            dir="auto"
-          >
-            {{ row.original.email }}
-          </NuxtLink>
+          <div class="flex items-center gap-2 min-w-0">
+            <NuxtLink
+              v-if="row.original.source === 'registered'"
+              :to="`/admin/customers/${row.original.id}`"
+              class="font-medium text-highlighted hover:text-primary truncate"
+              dir="auto"
+            >
+              {{ row.original.email }}
+            </NuxtLink>
+            <span
+              v-else
+              class="font-medium text-highlighted truncate"
+              dir="auto"
+            >
+              {{ row.original.email || '—' }}
+            </span>
+            <UBadge
+              v-if="row.original.source === 'guest'"
+              color="neutral"
+              variant="subtle"
+              size="xs"
+              class="shrink-0"
+            >
+              Guest
+            </UBadge>
+          </div>
         </template>
         <template #name-cell="{ row }">
-          <span class="text-sm" dir="auto">{{ customerName(row.original) }}</span>
+          <span class="text-sm" dir="auto">{{ rowName(row.original) }}</span>
         </template>
         <template #phone-cell="{ row }">
           <span class="text-sm text-muted">{{ row.original.phone || '—' }}</span>
+        </template>
+        <template #orders-cell="{ row }">
+          <span class="text-sm text-muted">
+            {{ row.original.orderCount ?? '—' }}
+          </span>
         </template>
         <template #createdAt-cell="{ row }">
           <span class="text-sm text-muted">{{ formatDate(row.original.createdAt) }}</span>
@@ -142,6 +307,7 @@ function formatDate(iso: string): string {
         <template #actions-cell="{ row }">
           <div class="flex items-center justify-end gap-1">
             <UButton
+              v-if="row.original.source === 'registered'"
               :to="`/admin/customers/${row.original.id}`"
               variant="ghost"
               color="neutral"
@@ -149,17 +315,20 @@ function formatDate(iso: string): string {
             >
               View
             </UButton>
+            <UButton
+              v-else
+              :to="`/admin/orders/${row.original.latestOrderId}`"
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              icon="i-heroicons-shopping-bag-20-solid"
+              trailing
+            >
+              Latest order
+            </UButton>
           </div>
         </template>
       </UTable>
-
-      <div v-if="total > perPage" class="flex justify-center mt-4">
-        <UPagination
-          v-model:page="page"
-          :total="total"
-          :items-per-page="perPage"
-        />
-      </div>
     </UCard>
   </div>
 </template>
