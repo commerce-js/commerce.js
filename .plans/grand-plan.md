@@ -60,6 +60,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 | Storefront EaaS (T01 API routes + T02 remote mode + T03 node-server + T04 hosted SSR + composable rewrite) | ✅ | [`storefront-eaas/plan.md`](storefront-eaas/plan.md) |
 | Hosted checkout card payments (Tap SDK + COD, co-supervised on `:3002`) | ✅ | `apps/hosted-checkout/` |
 | Merchant admin UI (T01–T05) | ✅ | [`merchant-admin/plan.md`](merchant-admin/plan.md) — all five tasks shipped (T01 ✅, T02 ✅, T03 ✅, T04 ✅, T05 ✅) |
+| Merchant admin follow-up (T06–T13) | ✅ | [`merchant-admin-followup/plan.md`](merchant-admin-followup/plan.md) — all eight tasks shipped (T06 ✅ settings, T07 ✅ customers, T08 ✅ categories, T09 ✅ staff, T10 ✅ inventory, T11 ✅ analytics, T12 ✅ theming, T13 ✅ audit log) — merchant-admin scope CLOSED |
 | Tap subscription billing (merchant SaaS plan charges) | 🔲 | No plan doc yet; `Merchant.tapCustomerId` column plumbed |
 | Transactional emails (order confirmations, password resets, trial-ending) | 🔲 | No plan doc yet; `handleSendEmail` stub in `worker.ts` |
 
@@ -67,7 +68,26 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 
 ## 🎯 What's Next
 
-**The gate just closed.** Merchant-admin **T01 + T02 + T03 + T04 + T05 shipped 2026-04-17** — all five tasks from the merchant-admin plan are ✅. Merchants can sign up, get provisioned, log in to `/admin`, CRUD products with image uploads (Fly Tigris, per-merchant prefix), and now view + fulfill + refund orders. T05 added `/api/admin/orders/{index,[id],[id]/fulfill,[id]/refund}` under the dashboard (all `requireMerchantSession`-gated, Zod-validated, wrapping `admin.listOrders/getOrder/fulfillOrder/refundOrder`), plus `/admin/orders/{index,[id]}.vue` in the storefront (filterable list + six-panel detail + fulfill/refund modals). History panel was deliberately skipped (AdminAPI doesn't expose `getOrderHistory`; don't extend the platform API in T05). Status enum is the platform's actual `pending | processing | shipped | delivered | cancelled | refunded | returned` — "Mark fulfilled" writes `status='shipped'`. Build green on both apps. Next **up to the user** (no follow-up gate in this plan — Settings, staff invites, customer management, analytics, and theming are the follow-up plan). Immediate carry-over: deploy T05 to `smoke.commercejs.cloud` when given the go.
+**Merchant-admin scope CLOSED.** T06–T13 follow-up workstream shipped over
+2026-04-19 → 2026-04-20 (eight commits, eight deploys, 8×N live acceptance
+scenarios all green on `smoke.commercejs.cloud`). Every parent-deferred item
+from the T01–T05 plan is now live: settings (T06), customers (T07), categories
+CRUD (T08), staff management with local password (T09), inventory inline +
+low-stock (T10), analytics expansion with revenue series + top products/
+customers + AOV + refund rate (T11), storefront theming via CSS custom
+properties (T12), and activity log / audit trail (T13). Merchants on
+CommerceJS Cloud now have a self-service admin comparable to Shopify /
+Salla at the feature set a real SMB store needs. No remaining admin-UI gap.
+T13 also established the first live `CREATE TABLE IF NOT EXISTS` lazy-migrate
+against a pre-existing Neon branch, confirming the pattern generalizes
+beyond the `ADD COLUMN` case T09/T12 previously proved. **Next up to the
+user** — the obvious next workstreams are (1) Tap subscription billing for
+merchant SaaS plan charges (no plan doc yet; `Merchant.tapCustomerId` column
+plumbed), (2) transactional emails (order confirmations + password resets
++ trial-ending; `handleSendEmail` stub in `worker.ts`), or (3) Step 9 of
+the Fly migration plan (self-service signup + plan enforcement). T13
+optionally enables a shared USelect-sentinel helper cleanup; see the
+merchant-admin-followup Lessons Learned.
 
 **Parallel (non-blocking) track.** ✅ Landed 2026-04-17 alongside T05 — the dashboard's tenant middleware now uses the per-event `registerEventResolver()` + `useEvent()` pattern that `apps/hosted-checkout` already runs. `event.context.db = prismaClient` is set in the middleware before `ensureAdapter()`, and a Nitro plugin wires the platform's `getDb()` to read from there. The race-prone `bindDb()` + `initPrisma()` fallback is gone from the dashboard request path (worker + provisioner still use explicit `runWithDb()` callbacks, which are unaffected). Verified live on `smoke.commercejs.cloud` — login, admin.listOrders, admin.listProducts, admin.stats, storefront catalog/store, and SSR homepage all still 200. Multi-merchant concurrent prod traffic is now safe.
 
@@ -89,52 +109,78 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
   State Snapshot · 2026-04-20
 ─────────────────────────────────────────────────────────
   Active branch:         fly/eaas
-  Latest checkpoint:     .memory/checkpoints/2026-04-17T1800.md
-  Last major milestone:  Merchant-admin-followup T12 (storefront theming
-                         v1, CSS custom properties) shipped + deployed +
-                         12/12 acceptance green on smoke.commercejs.cloud.
-                         Platform: 6 new columns on store_info
-                         (primary/accent color, font-family, hero image
-                         URL, hero heading EN+AR) with idempotent
-                         lazy-migrate on both Prisma + Drizzle sides —
-                         pre-existing merchant Neon branches pick them
-                         up on first request. New StoreTheme interface
-                         on @commercejs/types; StoreInfo.theme is null
-                         when every token is unset, a populated object
-                         otherwise. Admin StoreSettings + UpdateStoreInput
-                         extend with 6 flat fields; empty-string is a
-                         valid clear, undefined leaves the column
-                         untouched. 7 unit tests cover the round-trip.
-                         Storefront app.vue injects :root { --cjs-*: …}
-                         via useHead from useStoreInfo().store.theme —
-                         one <style> tag in <head> per SSR render, no
-                         extra fetch (deviates from T12.md's Nitro
-                         render:html plugin because the storefront is
-                         remote-mode with no event.context.db — same
-                         rendered output, simpler). Homepage hero
-                         conditionally renders a full-bleed themed hero
-                         when heroImageUrl is set (Arabic heading picked
-                         by default locale), otherwise a gradient hero
-                         with the merchant's heading substituted in.
-                         Shop Now CTA uses var(--cjs-primary,
-                         var(--ui-primary)) — one high-visibility
-                         touchpoint demonstrating the CSS-var system.
-                         New /admin/theme.vue page: native color pickers
-                         paired with text inputs, curated font dropdown
-                         with Custom… escape, hero image upload reusing
-                         T04 presign (context: 'theme'), AR heading
-                         input with dir='rtl', sticky live-preview card,
-                         reset-to-defaults, dirty-snapshot + ⌘/Ctrl+S +
-                         beforeunload guards mirroring T06. Sidebar
-                         gets a "Theme" link between Staff and Settings.
-                         Query parity 151/151. Merchant-admin-followup
-                         progress: T06–T12 all ✅; T13 (audit log) still
-                         pending before the workstream closes.
-  Current blocker:       None. Awaiting user direction on T13 (audit
-                         log / activity feed — depends on T09's staff
-                         attribution) or pivoting to a new workstream
-                         (billing, transactional emails, Step 9
-                         self-service signup).
+  Latest checkpoint:     .memory/checkpoint.md
+  Last major milestone:  Merchant-admin-followup T13 (audit log /
+                         activity feed) shipped + deployed + 9/9
+                         acceptance green on smoke.commercejs.cloud —
+                         **closing the merchant-admin-followup
+                         workstream entirely (T06–T13 all ✅)**.
+                         Platform: new activity_events table with
+                         three indexes on (created_at DESC),
+                         (actor_id), (entity_type, entity_id) on both
+                         Prisma + Drizzle; first live test of
+                         `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX
+                         IF NOT EXISTS` via the lazy-migrate pattern
+                         that T09/T12 previously proved for ADD COLUMN.
+                         Smoke's pre-existing Neon branch picked it up
+                         on first /api/admin/activity request — no
+                         manual step. AdminAPI.recordActivity (append-
+                         only) + AdminAPI.listActivity (paginated,
+                         filterable by actorId/entityType/date range,
+                         reuses parseFromBound+parseToBound). Types
+                         (ActivityEvent, RecordActivityInput,
+                         ListActivityParams) live in
+                         packages/platform/src/admin/types.ts rather
+                         than @commercejs/types — platform-admin-only
+                         concern, no cross-package consumer, so
+                         avoided the types→core→platform rebuild
+                         cascade. 9 unit tests. Query parity 153/153.
+                         Dashboard: apps/dashboard/server/utils/audit.ts
+                         fire-and-forget helper reads
+                         getMerchantSession → userId/email snapshot,
+                         blanket try/catch so audit-write failure never
+                         fails the business mutation. 15 existing
+                         mutation routes retrofitted with recordActivity
+                         AFTER the successful platform call (products,
+                         orders, categories, customers, inventory,
+                         settings, staff). Storefront: /admin/activity.vue
+                         timeline grouped by day (Today/Yesterday/
+                         dated), each row shows actor email +
+                         humanized verb + entity badge + entity link +
+                         relative time. Filters match T11 analytics UX
+                         (actor + entityType dropdowns, date-range
+                         preset). useActivityLabel composable with
+                         raw-action fallback. Sidebar "Activity" link
+                         between Theme and Settings. Three commits:
+                         `2131a45` platform + `82645cf` apps +
+                         `963a125` (out-of-scope USelect-sentinel fix
+                         for products/index.vue status filter and
+                         theme.vue font dropdown — same Reka
+                         empty-string pattern T08 already addressed).
+                         Acceptance: (1) fulfill → row with
+                         action='order.fulfilled' + actorEmail=owner;
+                         (2) second admin Alice took an action →
+                         timeline distinguishes actors; (3) filter
+                         actorId narrows to 1; (4) filter
+                         entityType=product narrows to 1; (5)
+                         today-only=3, yesterday-only=0; (6) deleted
+                         Alice → her past row still renders with
+                         snapshot actorEmail; (7) 5 live mutations
+                         all 200 + audit rows landed (fire-and-forget
+                         verified via code + 9 unit tests + live);
+                         (8) unauth=401, cross-tenant=404;
+                         (9) lazy-migrate verified — no manual step.
+                         Lessons Learned filled in with eight
+                         workstream-wide findings (most important:
+                         ship a shared USelect-sentinel helper before
+                         the next admin task — four consumers deep).
+  Current blocker:       None. Merchant-admin-followup workstream
+                         closed. Awaiting user direction on the next
+                         workstream — three obvious candidates:
+                         (1) Tap subscription billing for merchant SaaS
+                         plan charges, (2) transactional emails
+                         (handleSendEmail stub in worker.ts), or (3)
+                         Step 9 self-service signup + plan enforcement.
   Open carry-overs:      (1) Changeset attached but unreleased for
                          @commercejs/storage-s3 v0.2.0 → 0.2.1 presign
                          signature fix — run `pnpm release` to publish.
@@ -147,6 +193,18 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
                          (4) bcrypt.compareSync carry-over on
                          packages/platform/src/admin/auth.ts — swap to
                          async compare (T01-review finding).
+                         (5) T13 UX polish — "deleted" chip only fires
+                         for system actions (actorId null), not deleted
+                         staff whose orphan UUID stays on the row.
+                         (6) USelect sentinel helper — four consumers
+                         (T08 '__root__', T13 'all', T12-fix
+                         '__default__', T03 status filter). One
+                         composable would kill the repetition.
+                         (7) Smoke merchant schema drift
+                         (products.id=UUID vs order_items.product_id=
+                         TEXT) — addressed inline via ::text casts in
+                         analytics; any new raw SQL join needs the
+                         same guard until normalized.
   Last updated:          2026-04-20
 ─────────────────────────────────────────────────────────
 ```
@@ -187,6 +245,7 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 
 ## Change Log
 
+- **2026-04-20** — Merchant-admin-followup T13 (audit log / activity feed) shipped + deployed + 9/9 acceptance green on smoke.commercejs.cloud. **Merchant-admin-followup workstream CLOSED (T06–T13 all ✅).** Phase 7 gains a new row "Merchant admin follow-up (T06–T13) ✅" referencing merchant-admin-followup/plan.md. Platform: activity_events table + 3 indexes on both Prisma + Drizzle drivers, first live test of CREATE TABLE IF NOT EXISTS + CREATE INDEX IF NOT EXISTS via the lazy-migrate pattern (T09/T12 previously proved ADD COLUMN); smoke's pre-existing Neon branch picked up the table on first request with no manual step. New AdminAPI.recordActivity (append-only) + listActivity (paginated + filterable) with types kept inside @commercejs/platform/admin (not @commercejs/types — platform-admin-only concern, avoided cross-package rebuild). 9 unit tests. Query parity 153/153. Dashboard: apps/dashboard/server/utils/audit.ts fire-and-forget helper + /api/admin/activity.get.ts Zod-validated route + 15 existing mutation routes retrofitted with recordActivity after the successful platform call. Storefront: /admin/activity.vue timeline (day-grouped, actor/entity/date filters mirror T11) + useActivityLabel composable + sidebar "Activity" link. Three commits on fly/eaas: `2131a45` (platform) + `82645cf` (apps) + `963a125` (out-of-scope USelect-sentinel fixes on products/index.vue + theme.vue — fourth and fifth appearances of the Reka empty-string-crash pattern). Eight-workstream Lessons Learned filled in at merchant-admin-followup/plan.md; most actionable next step is a shared USelect-sentinel helper. State Snapshot rewritten; "What's Next" rewritten to reflect workstream closure; three obvious next candidates surfaced (Tap billing / transactional emails / Step 9 self-service signup). No remaining admin-UI gap on CommerceJS Cloud merchants.
 - **2026-04-20** — Merchant-admin-followup T12 (storefront theming v1) shipped + deployed + 12/12 acceptance green on smoke.commercejs.cloud. Platform gains 6 theme columns on store_info (Prisma + Drizzle), idempotent lazy-migrate on both sides; `StoreTheme` added to @commercejs/types and surfaced on `StoreInfo.theme`; admin `StoreSettings` + `UpdateStoreInput` gain 6 flat fields. Storefront injects `:root { --cjs-* }` via `useHead` in app.vue from `useStoreInfo().store.theme` (deviates from T12.md's Nitro render:html plugin — the storefront is remote-mode with no `event.context.db`; `useHead` on the already-fetched store info gives the same rendered output with one less round-trip). Homepage hero conditionally renders a full-bleed themed hero when `heroImageUrl` is set, otherwise gradient hero with the merchant's heading substituted in; Shop Now CTA uses `var(--cjs-primary, var(--ui-primary))`. New `/admin/theme.vue` page with native color pickers + curated font dropdown + hero image upload reusing T04 presign (`context: 'theme'`) + sticky live-preview card. Sidebar gets a "Theme" link between Staff and Settings. Query parity green 151/151. 7 unit tests added. Two commits: platform (`76d9cb7`) + apps (`d438d70`). State Snapshot bumped; merchant-admin-followup plan T12 ✅ (T06–T12 done; T13 still pending).
 - **2026-04-17** — Dashboard tenant middleware migrated to per-event Prisma binding. New Nitro plugin at `apps/dashboard/server/plugins/platform-event-resolver.ts` registers `useEvent()` with `@commercejs/platform`. `apps/dashboard/server/middleware/tenant.ts` now sets `event.context.db = prismaClient` before `ensureAdapter()` and drops the `bindDb()` call. Mirror of the pattern that `apps/hosted-checkout` has been running in prod. The "Parallel (non-blocking) track" row in "What's Next" flipped from pending → shipped, and the matching open carry-over was cleared from State Snapshot. No API surface change — all 22 admin/storefront handlers continue reading `event.context.adapter`/`admin`/`merchant`. Verified live on smoke.commercejs.cloud: login, admin.listOrders, admin.listProducts, admin.stats, storefront catalog/store, and SSR homepage all still return 200.
 - **2026-04-17** — Merchant-admin T05 shipped (orders list + detail, read-first). Phase 7 → Merchant admin workstream flips 🟡 → ✅ (T01 + T02 + T03 + T04 + T05 all ✅; merchant-admin plan fully closed). State Snapshot bumped: last major milestone points to T05 (four new `/api/admin/orders/*` routes + two pages wrapping `admin.listOrders/getOrder/fulfillOrder/refundOrder`); current blocker cleared — the only remaining item is the explicit-go `fly deploy` + 8-scenario acceptance on `smoke.commercejs.cloud`. "What's Next" section revised to reflect plan closure. **Gate decision documented**: History panel SKIPPED because `AdminAPI.getOrder` returns `Order` without an audit trail (the platform's domain-layer `getOrderHistory` is intentionally not surfaced on the admin API — per T05 gate rule, don't extend the platform API in this task). **Status enum clarification**: platform uses `pending | processing | shipped | delivered | cancelled | refunded | returned` — no `paid` / `fulfilled`; "Mark fulfilled" writes `status='shipped'`.

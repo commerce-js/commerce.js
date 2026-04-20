@@ -1,112 +1,100 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-17T1800.md`](checkpoints/2026-04-17T1800.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-16T1900.md`](checkpoints/2026-04-16T1900.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-20T1600.md`](checkpoints/2026-04-20T1600.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-17T1800.md`](checkpoints/2026-04-17T1800.md)
 
 ## Current Phase
 
-**Phase 7 merchant-admin T01 — code complete + reviewed + build green. Uncommitted on working tree; awaiting smoke-password verification + deploy + live curl test to close.** Previously: T01–T04 storefront EaaS + phase-1 composables + smoke seed + hosted-checkout card payments all SHIPPED and browser-verified.
+**Merchant-admin-followup workstream CLOSED.** T06–T13 all ✅. With the
+earlier T01–T05 merchant-admin plan also ✅, the whole merchant-admin
+scope on CommerceJS Cloud is done — no remaining admin-UI gap. T13
+(audit log / activity feed) shipped + deployed + 9/9 acceptance green
+on `smoke.commercejs.cloud` at 15:50 UTC today.
 
-The Fly.io EaaS pipeline (Steps 1–8) provisions merchant Neon branches in
-~6 seconds. On top of that, the full four-layer storefront architecture
-is now running and browser-verified end-to-end on `smoke.commercejs.cloud`:
+## What Just Landed (T13, 2026-04-20)
 
-- `app.commercejs.cloud` → platform-operator dashboard (T01 API routes at `/api/storefront/*`)
-- `smoke.commercejs.cloud` → merchant storefront, SSR'd on a co-supervised `:3001` process, styled with `@nuxt/ui` v4, asset bundles at `/_storefront/*`, populated with 4 sample products + 6 GCC countries
-- `nonexistent.commercejs.cloud` → generic shell, no cross-tenant bleed
-- `@commercejs/nuxt` composables (`useCart`, `useCheckout`, `useBrands`, `useLocations`) all speak T01's session-based contract; cart badge renders via Nuxt UI v4 `<UChip>`; `/cart` direct-visit works
+Three commits on `fly/eaas`:
 
-Branch: `fly/eaas` · Latest commit lands after this session
+- `2131a45` feat(platform): T13 activity log — AdminAPI.recordActivity +
+  listActivity
+- `82645cf` feat(merchant-admin): T13 activity log — audit helper + route
+  retrofits + timeline UI
+- `963a125` fix(merchant-admin): use sentinels for empty USelect values
+  (out-of-scope USelect empty-value fix on products/index.vue +
+  theme.vue — fourth appearance of the Reka pattern)
 
-## What's Blocking "Real Merchant Onboarding"
+Plus the docs commit flipping plan trackers + grand-plan State Snapshot
++ filling Lessons Learned across the whole T06–T13 workstream.
 
-1. ~~**Credit-card checkout route 404s**~~ ✅ Fixed 2026-04-16 (this session) — `apps/hosted-checkout` now runs as a third co-supervised Fly process on `:3002`. Full card-payment path works end-to-end via Tap.
-2. **No merchant admin UI** → merchants have no way to CRUD products / view orders. The existing `apps/dashboard` is platform-operator-facing (manages merchants), not merchant-facing.
+## What Was Built (T13 in a paragraph)
 
-## Next Step — Close Out T01
+Every mutation on the merchant admin API now writes an append-only row
+to a new `activity_events` table on the merchant's Neon branch.
+AdminAPI.recordActivity + listActivity on both Prisma + Drizzle drivers
+at parity (153/153 exports in sync). The dashboard's audit.ts helper
+reads the current merchant session, snapshots actorId + actorEmail at
+call time, and calls recordActivity with blanket try/catch so an audit
+failure can't break the business mutation. 15 existing mutation routes
+retrofitted to call the helper AFTER the platform call. /admin/activity.vue
+renders a day-grouped timeline with actor + entityType + date-range
+filters (UX matches T11 analytics). Sidebar "Activity" link lands between
+Theme and Settings. Lazy-migrate pattern confirmed for CREATE TABLE IF
+NOT EXISTS (first live test, after T09/T12 proved the ADD COLUMN shape).
+Full task summary in
+[`.plans/merchant-admin-followup/tasks/T13.md`](../.plans/merchant-admin-followup/tasks/T13.md).
 
-T01 code is **code-complete, reviewed, build green**, but still uncommitted on the working tree. To ship it:
+## Carry-Overs Into Future Sessions
 
-1. **Verify smoke merchant `password_hash` is set on control DB** — the bootstrap path reads `Merchant.passwordHash`; if null, the first login returns a generic 401 that will look like a code bug.
+See [`2026-04-20T1600.md`](checkpoints/2026-04-20T1600.md) for the
+full list. New items from T13:
 
-   ```bash
-   pnpm exec tsx scripts/verify-merchant-pw.ts
-   # expect: "hash present: yes" + ".secrets password matches DB hash: true"
-   # if not: pnpm exec tsx scripts/set-merchant-password.ts smoke
-   ```
+1. **USelect sentinel helper** — four consumers deep (T08 '__root__',
+   T13 'all', T12-fix '__default__', T03 status). One composable kills
+   the repetition. Pre-work for the next admin task.
+2. **T13 "deleted" chip UX polish** — only fires for actorId=null
+   (system actions), not for orphaned-after-delete actorId. Cross-check
+   against listAdmins() would fix it. v2 polish.
 
-2. **Optional 3-line race fix** in `apps/dashboard/server/api/admin/auth/login.post.ts`: wrap the `admin.auth.createAdmin(...)` call in a try/catch so two simultaneous first-logins don't surface a 500 on the `admin_users.email` UNIQUE constraint collision — fall through to the normal login path on "already exists".
+Ongoing carry-overs unchanged from 2026-04-17:
 
-3. **Decide on temp scripts** — `scripts/check-merchant.ts` and `scripts/verify-merchant-pw.ts` are labeled "Temporary" at the top. Either rename/re-document as permanent diagnostic utilities or delete them post-test. `scripts/set-merchant-password.ts` is properly documented — keep.
+3. Platform categories hardening (T08-surfaced gaps).
+4. bcrypt.compareSync → async compare (T01-review).
+5. @commercejs/storage-s3 v0.2.1 changeset unreleased.
+6. NUXT_* prefix gotcha — keep top of `.memory/gotchas.md`.
+7. Smoke merchant schema drift — ::text cast pattern for any new raw
+   SQL join.
 
-4. **Deploy + acceptance curl** against `smoke.commercejs.cloud`:
-   ```bash
-   fly deploy --config fly.toml
-   # happy path
-   curl -i -X POST https://smoke.commercejs.cloud/api/admin/auth/login \
-     -H "Content-Type: application/json" \
-     -d "{\"email\":\"$SMOKE_MERCHANT_EMAIL\",\"password\":\"$SMOKE_MERCHANT_PASSWORD\"}" \
-     -c /tmp/cjs-m.txt
-   # expect: 200, Set-Cookie: cjs-merchant-session=...; HttpOnly; Secure; SameSite=Lax
-   # wrong password
-   curl -i -X POST https://smoke.commercejs.cloud/api/admin/auth/login \
-     -H "Content-Type: application/json" \
-     -d '{"email":"'$SMOKE_MERCHANT_EMAIL'","password":"WRONG"}'
-   # expect: 401 generic "Invalid email or password"
-   # cross-tenant replay (should 403)
-   curl -i -b /tmp/cjs-m.txt https://nonexistent.commercejs.cloud/api/admin/auth/session
-   # expect: 404 Merchant not found (blocked by tenant middleware before the handler)
-   ```
+## What's Next (user's call)
 
-5. **Commit** with the working-tree contents as a single commit. Bump `.plans/merchant-admin/plan.md` T01 status to ✅ and bump `.plans/grand-plan.md` State Snapshot in the same commit (per the update policy added with grand-plan).
+Three obvious candidates:
 
-6. **Then T02** — admin shell in `apps/storefront` (`.plans/merchant-admin/tasks/T02.md`). Protected layout at `/admin`, redirects unauthed to `/admin/login`, shows a dashboard landing page for authed.
+1. **Tap subscription billing** — merchant SaaS plan charges. No plan
+   doc yet. `Merchant.tapCustomerId` column plumbed.
+2. **Transactional emails** — `handleSendEmail` stub in worker.ts.
+   Unblocks T09's deferred email-invite flow.
+3. **Step 9 fly-migration-plan** — self-service signup + plan enforcement.
+   The last EaaS pipeline piece before public launch.
 
-## Review findings (worth knowing before shipping)
+Or a "platform polish" commit bundling the USelect sentinel helper +
+categories hardening + bcrypt fix.
 
-Reviewed the T01 working tree 2026-04-17. Code is correct and security-conscious — cross-tenant replay is double-defended, generic 401 hygiene is solid, cookie flags are textbook, first-login bootstrap logic is tight. Build passes; `.output/server/chunks/routes/api/admin/auth/{login,logout,session}` all emitted.
+## Live Deployment
 
-**Filed as follow-ups (not T01 blockers):**
-- `packages/platform/src/admin/auth.ts` uses `compareSync` (blocks event loop ~100 ms per login) — swap to async `compare`. ~5-line fix.
-- `admin.auth.listAdmins()` used just to check emptiness — expose `countAdmins()` instead. Micro-perf.
-- Subdomain enumeration via 404 (unknown merchant) vs 401 (wrong creds) — OWASP-acceptable trade-off for subdomain-based tenancy since subdomains are public-facing by design. Document only.
-
-**Pre-existing carry-over, unchanged:** dashboard tenant middleware still on `bindDb()` + `initPrisma()` fallback. T01 now routes admin traffic through the same race-prone path. Fine for single-merchant smoke; must migrate to `registerEventResolver()` + `useEvent()` before multi-merchant prod traffic. Fix lives in its own commit after merchant-admin ships — see `.memory/checkpoints/2026-04-17T1800.md` "Carry-Overs".
+- App: `commercejs-cloud` (Fly.io, Frankfurt)
+- Image: tip of `fly/eaas` after today's 15:45 UTC deploy
+- Health: `https://commercejs-cloud.fly.dev/api/_health` → 200
+- Smoke merchant: `https://smoke.commercejs.cloud` — admin login
+  working, 5 activity events populated from acceptance run.
 
 ## Where to Look
 
 | Question | File |
 |---|---|
 | Project orientation + current phase (start here) | `.plans/grand-plan.md` |
-| What shipped this session and what's next? | `.memory/checkpoints/2026-04-17T1800.md` |
-| Previous session handoff | `.memory/checkpoints/2026-04-16T1000.md` |
-| Merchant admin UI plan | `.plans/merchant-admin/plan.md` |
-| Storefront EaaS strategy + ranked next-steps | `.plans/storefront-eaas/plan.md` |
-| T01–T04 execution + challenges | `.plans/storefront-eaas/tasks/T01.md` – `T04.md` |
+| What shipped this session + carry-overs (detailed) | `.memory/checkpoints/2026-04-20T1600.md` |
+| T13 task spec + Execution Summary | `.plans/merchant-admin-followup/tasks/T13.md` |
+| T06–T13 workstream Lessons Learned | `.plans/merchant-admin-followup/plan.md` |
 | Architectural decisions (locked) | `.memory/decisions.md` |
 | Hard-won bugs | `.memory/gotchas.md` |
 | Phase 7 roadmap state | `.plans/roadmap.md` |
 | Project-wide Claude instructions | `CLAUDE.md` |
-
-## Strategic Context (unchanged)
-
-- **Goal**: EaaS platform (merchant signs up → gets storefront + admin + API + dedicated DB) AND open-source SDK recognition (like Medusa)
-- **Why Fly.io**: CF Workers hit hard limits — 50 subrequest cap, WASM-only Prisma, no standard Node.js. Fly.io = standard Node.js, no constraints.
-- **OSS story**: The hosted API (T01) + `@commercejs/nuxt` remote mode (T02) means self-hosters get the same shape as EaaS customers — single codebase, two deployment paths.
-- **Market**: MENA-first (Bahrain region, Arabic RTL, Tap/stcpay/Mada/Tabby/Tamara).
-
-## Live Deployment
-
-- **App**: `commercejs-cloud` (Fly.io, Frankfurt)
-- **Machines**: 2 web (co-supervised dashboard + storefront) + 1 worker + 1 standby worker
-- **Image**: latest deployment in `fly deploy` log — check with `fly status --app commercejs-cloud`
-- **Health**: `https://commercejs-cloud.fly.dev/api/_health` → 200
-
-## Session-Starting Checklist
-
-1. Read `.plans/grand-plan.md` → orientation: vision, architecture, current phase
-2. Read this file → current phase + "Next Step — Close Out T01" above
-3. Read `.plans/merchant-admin/tasks/T01.md` → Execution Summary section details what's already implemented
-4. `git log --oneline fly/eaas -10` → scan recent work
-5. `git status` → expect T01 files on working tree (auth routes, merchant-session/merchant-auth utils, tenant.ts edit, scripts, plan-file updates)
-6. Execute the "Next Step — Close Out T01" six-item list above (verify password-hash → optional race fix → temp-script cleanup → deploy → curl-test → single commit bumping plan.md + grand-plan.md)

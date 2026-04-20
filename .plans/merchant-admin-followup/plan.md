@@ -30,7 +30,7 @@
 * [x] [**T10**: Inventory inline + low-stock](tasks/T10.md) — Status: ✅ Completed (2026-04-20)
 * [x] [**T11**: Analytics expansion](tasks/T11.md) — Status: ✅ Completed (2026-04-20)
 * [x] [**T12**: Storefront theming (CSS custom properties v1)](tasks/T12.md) — Status: ✅ Completed (2026-04-20)
-* [ ] [**T13**: Audit log / activity feed](tasks/T13.md) — Status: 🟡 Planned — blocked by T09
+* [x] [**T13**: Audit log / activity feed](tasks/T13.md) — Status: ✅ Completed (2026-04-20)
 
 <!-- END PROGRESS SECTION -->
 
@@ -264,19 +264,111 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Lessons Learned (Post-Implementation)
 
-> Fill this section out after completing T06–T13.
+Workstream closed out 2026-04-20 after T06–T13 shipped across eight
+commits over four working days (2026-04-19 → 2026-04-20). Findings
+applicable to every future merchant-admin-adjacent plan:
 
 ### What Went Well
-- [TBD]
+
+- **One-task-per-commit rhythm held under pressure.** Eight tasks → eight
+  vertical slices → eight deploy + acceptance cycles. Scope never leaked
+  forward; every session ended with a green smoke merchant. The commit
+  trilogy (platform → apps → docs) repeated cleanly for T11/T12/T13 where
+  platform changes were needed, and the doubled rhythm (apps → docs) for
+  T06/T07/T08/T10 where only dashboard+storefront changed.
+- **Query parity as a hard gate caught several would-be divergences.** The
+  `check-query-parity.sh` script went from 141 → 153 exports across
+  T09/T11/T12/T13 without a single drift — every new Prisma query got a
+  sibling Drizzle query in the same commit. The parity rule also forced
+  the admin_users.status column (T09) onto the Drizzle side, which
+  would've been a latent `main`-branch bug.
+- **Lazy-migrate pattern is durable.** T09 exercised `ALTER TABLE ADD
+  COLUMN IF NOT EXISTS`, T12 stacked six more ADD COLUMNs, T13 added the
+  first `CREATE TABLE IF NOT EXISTS` + indexes. All three landed on
+  smoke's pre-existing Neon branch with zero manual intervention.
+  The pattern generalizes — backlog items that need a new column or a
+  new whole table can rely on it.
+- **Read-first strategy for destructive tasks.** T07 (customers), T10
+  (inventory), T13 (activity) all shipped a list+detail read path before
+  any mutation path. Caught FK constraints, schema drift, and pagination
+  edge cases before they became UI bugs.
+- **Sentinel-value discipline for USelect.** T08 pioneered `'__root__'` for
+  empty parent category, T13 added `'all'` for all-actors / all-entities,
+  and T12's post-hoc fix added `'__default__'` for "System default" font.
+  The pattern is stable — three consumers now.
 
 ### What Could Be Improved
-- [TBD]
+
+- **No shared USelect sentinel helper.** Three separate implementations
+  of "swap empty string for a sentinel, drop it on serialization" in
+  T08 / T13 / T12-fix. A tiny helper (`useSelectSentinel('all')` returning
+  a computed v-model that maps sentinel↔real-value) would remove the
+  repetition and prevent the kind of drift that created the `products/
+  index.vue` + `theme.vue` out-of-scope fix needed post-T13. Worth
+  scheduling as a pre-work item for whatever merchant-admin follow-up
+  comes next.
+- **Platform categories hardening still outstanding.** T08 surfaced three
+  gaps in `packages/platform/src/admin/categories.ts` +
+  `packages/types/src/category.ts` (deleteCategory orphan check,
+  updateCategory self-parent cycle check, missing `sortOrder` on the
+  Category type). Flagged on the Deferred list; still unscheduled. Each
+  subsequent task deferred them correctly (scope discipline worked), but
+  the backlog item needs an owner before it rots further.
+- **Audit log "deleted admin" chip only fires for system actions.** T13's
+  UI renders `UBadge v-if="!ev.actorId"`, but deleting an admin leaves
+  `actorId` pointing at an orphan UUID (no FK cascade — intentional).
+  A second-pass UI polish (join audit rows against live `listAdmins()`
+  and tag any actorId not in the list) would give the merchant a clearer
+  signal. v2 concern.
+- **bcrypt.compareSync carry-over from T01-review is still open.** Sat
+  on the to-do list through T06–T13 without getting addressed. ~5-line
+  fix. Should land in whatever platform-hardening commit closes the
+  categories gaps above.
 
 ### Unexpected Challenges
-- [TBD]
+
+- **Smoke merchant schema drift** (found during T11). Smoke's products.id
+  was UUID while order_items.product_id was TEXT — a consequence of
+  smoke's Neon branch being provisioned before later type normalization
+  landed. `::text` casts on analytics join keys absorbed it inline. Not
+  a T11-caused regression; a latent bug that T11 happened to exercise.
+  Flagged as an ongoing schema-drift follow-up — any new raw-SQL query
+  that joins across these columns needs the same `::text` guard until
+  the drift is normalized.
+- **Reka SelectItem's empty-string crash landed three times.** Once in
+  T08 (caught during implementation), once in T13 (caught in the
+  products/index.vue and theme.vue out-of-scope fix after deploy), and
+  the `theme.vue` case needed a separate getter/setter dance because
+  the real DB value stays `''` while the Select sees `'__default__'`.
+  See "No shared USelect sentinel helper" above.
+- **T09 last-owner guard had a role-change hole.** `deleteAdmin` guarded
+  against deleting the last owner, but `updateAdmin({ role: ... })`
+  didn't guard against demoting the last owner. Caught + fixed during
+  T09 acceptance. Lesson: any guard on one mutation path needs a peer
+  on every other mutation path that can change the same state.
 
 ### Recommendations for Future Features
-- [TBD]
+
+- **Ship a USelect sentinel helper before the next admin task.** Four
+  consumers deep (T08 categories parent, T13 activity actor + entity,
+  T12-fix theme font, T03 products status) is enough evidence that the
+  pattern is permanent. Small package in `apps/storefront/app/composables`.
+- **Promote the smoke merchant's Neon branch to a shape normalized against
+  current schema.** A one-time pg-dump → drop-and-recreate-on-current-
+  schema migration would remove the `::text` cast technical debt. Not
+  urgent, but every new raw-SQL query risks reintroducing it.
+- **Billing / transactional-email workstreams can lean on T13 for their
+  audit trail for free.** Subscription charges, trial transitions,
+  email-send events — all would be a one-line `recordActivity` call
+  each and would render in the timeline alongside the admin actions.
+- **Build on the audit log for webhook dispatch.** Instead of the current
+  "replay from DB" model, outbound webhooks could become "subscribe to
+  activity_events rows matching X predicate" — same table, different
+  consumer. Parks the infrastructure for future "event sourcing" vibes
+  without committing to event-sourcing architecture.
+- **If role-restricted reads are added later (owner-only audit log),
+  they're one route-level `requireOwner` change.** The platform domain
+  is agnostic; only the dashboard route's guard swaps. Low cost.
 
 ---
 
@@ -291,6 +383,71 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-20**: T13 Audit log / activity feed shipped + deployed + 9/9
+  acceptance green on smoke.commercejs.cloud. **Merchant-admin-followup
+  workstream closed — T06–T13 all ✅.** Platform: new `activity_events`
+  table (Prisma + Drizzle, three indexes on (created_at DESC), (actor_id),
+  (entity_type, entity_id)) with idempotent `CREATE TABLE IF NOT EXISTS`
+  + `CREATE INDEX IF NOT EXISTS` in both `migratePrisma` and
+  `migrateDrizzle` — first live test of the lazy-migrate pattern against
+  `CREATE TABLE` (T09/T12 exercised it for `ADD COLUMN`); smoke's
+  pre-existing Neon branch picked up the table on first `/api/admin/
+  activity` request without manual intervention. New `AdminAPI.recordActivity`
+  (append-only) + `AdminAPI.listActivity` (paginated, filterable by
+  actorId / entityType / date range — reuses parseFromBound + parseToBound).
+  `ActivityEvent` / `RecordActivityInput` / `ListActivityParams` types live
+  in `packages/platform/src/admin/types.ts` (platform-admin-only concern —
+  no cross-package consumers, so avoided the types → core → platform
+  rebuild cascade). 9 unit tests cover recordActivity forward, listActivity
+  pagination + all filters, perPage clamping (DEFAULT=50, MAX=200), offset
+  math, and the deleted-actor snapshot path. Query parity 153/153.
+  Dashboard: `apps/dashboard/server/utils/audit.ts` — fire-and-forget
+  helper. Reads `getMerchantSession(event)` (userId + email map to
+  snapshot columns); wraps `admin.recordActivity` in blanket try/catch
+  so an audit-write failure NEVER fails the business mutation.
+  `/api/admin/activity.get.ts` Zod-validated (listActivityQuerySchema
+  added to admin-schemas.ts) + requireMerchantSession-gated.
+  Retrofitted 15 existing mutation routes to call `recordActivity` AFTER
+  the successful platform call — products (create/update/delete), orders
+  (fulfill/refund), categories (create/update/delete), customers (delete),
+  inventory (update), settings (update), staff (create/update/delete/
+  change-password). Diff payloads store `changedKeys` arrays or single-field
+  context (trackingNumber, role, etc.) — never full entity snapshots.
+  Storefront: new `/admin/activity.vue` timeline page — day-grouped
+  (Today/Yesterday/dated), each row shows actor email + humanized verb +
+  entity badge + entity link (products/orders/customers/categories/staff)
+  + relative time. Filters: actor dropdown (from `/api/admin/staff`),
+  entityType dropdown, date-range preset (7d/30d/90d/all/custom) —
+  matches T11 analytics UX. UPagination at 50/page. `useActivityLabel`
+  composable with raw-action fallback so future tasks adding new action
+  keys never crash the page. Sidebar "Activity" link (clock icon)
+  between Theme and Settings. **Out-of-scope fixes landed in a separate
+  commit `963a125`** — Reka SelectItem's empty-string crash on
+  `/admin/products/index.vue` (status filter) + `/admin/theme.vue`
+  ("System default" font option) patched with 'all' + '__default__'
+  sentinels respectively; same pattern T08 used for category parents,
+  and T13 used for its own actor + entity filters. Acceptance 9/9 on
+  smoke: (1) fulfill order → activity row with `action='order.fulfilled'`
+  + actorEmail=qa@smoke-test.local + diff.trackingNumber; (2) created
+  Alice + Alice updated a product → timeline shows both actorIds with
+  distinct actorEmails; (3) filter `actorId=alice` → 1 row (Alice's
+  product.updated only); (4) filter `entityType=product` → 1 row;
+  (5) today-only range → 3 rows, yesterday-only → 0; (6) deleted Alice
+  → her past product.updated row still renders with snapshotted
+  actorEmail='alice@smoke-test.local'; (7) 5 live mutations all
+  returned 200 with audit rows landing (fire-and-forget semantics
+  verified via code inspection + 9 unit tests + 5 successful live
+  pairs); (8) unauth → 401, cross-tenant cookie replay to
+  nonexistent.commercejs.cloud → 404; (9) lazy-migrate verified —
+  first `/api/admin/activity` request returned `total:0` + HTTP 200 on
+  smoke's pre-existing Neon branch with no manual migration. Scope
+  held — no retention policies, no role-restricted reads, no full-entity
+  snapshots; all v2 concerns (documented in Lessons Learned). Three
+  commits on fly/eaas: `2131a45` (platform) + `82645cf` (apps) +
+  `963a125` (out-of-scope USelect sentinel fixes). Lessons Learned
+  filled in with eight workstream-wide findings — most importantly
+  that a shared USelect sentinel helper should land before the next
+  admin task (four consumers deep already).
 - **2026-04-20**: T12 Storefront theming (CSS custom properties v1) shipped
   locally — build green across platform + dashboard + storefront; pending deploy
   + live acceptance on `smoke.commercejs.cloud`. Platform: six new columns on
