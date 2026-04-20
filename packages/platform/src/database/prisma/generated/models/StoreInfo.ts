@@ -38,6 +38,12 @@ export type StoreInfoMinAggregateOutputType = {
   contactEmail: string | null
   contactPhone: string | null
   address: string | null
+  primaryColor: string | null
+  accentColor: string | null
+  fontFamily: string | null
+  heroImageUrl: string | null
+  heroHeadingEn: string | null
+  heroHeadingAr: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,6 +62,12 @@ export type StoreInfoMaxAggregateOutputType = {
   contactEmail: string | null
   contactPhone: string | null
   address: string | null
+  primaryColor: string | null
+  accentColor: string | null
+  fontFamily: string | null
+  heroImageUrl: string | null
+  heroHeadingEn: string | null
+  heroHeadingAr: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -77,6 +89,12 @@ export type StoreInfoCountAggregateOutputType = {
   contactPhone: number
   address: number
   socialLinks: number
+  primaryColor: number
+  accentColor: number
+  fontFamily: number
+  heroImageUrl: number
+  heroHeadingEn: number
+  heroHeadingAr: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -97,6 +115,12 @@ export type StoreInfoMinAggregateInputType = {
   contactEmail?: true
   contactPhone?: true
   address?: true
+  primaryColor?: true
+  accentColor?: true
+  fontFamily?: true
+  heroImageUrl?: true
+  heroHeadingEn?: true
+  heroHeadingAr?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -115,6 +139,12 @@ export type StoreInfoMaxAggregateInputType = {
   contactEmail?: true
   contactPhone?: true
   address?: true
+  primaryColor?: true
+  accentColor?: true
+  fontFamily?: true
+  heroImageUrl?: true
+  heroHeadingEn?: true
+  heroHeadingAr?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -136,6 +166,12 @@ export type StoreInfoCountAggregateInputType = {
   contactPhone?: true
   address?: true
   socialLinks?: true
+  primaryColor?: true
+  accentColor?: true
+  fontFamily?: true
+  heroImageUrl?: true
+  heroHeadingEn?: true
+  heroHeadingAr?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -230,6 +266,12 @@ export type StoreInfoGroupByOutputType = {
   contactPhone: string | null
   address: string | null
   socialLinks: runtime.JsonValue | null
+  primaryColor: string | null
+  accentColor: string | null
+  fontFamily: string | null
+  heroImageUrl: string | null
+  heroHeadingEn: string | null
+  heroHeadingAr: string | null
   createdAt: Date
   updatedAt: Date
   _count: StoreInfoCountAggregateOutputType | null
@@ -272,6 +314,12 @@ export type StoreInfoWhereInput = {
   contactPhone?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   address?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   socialLinks?: Prisma.JsonNullableFilter<"StoreInfo">
+  primaryColor?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  accentColor?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  fontFamily?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  heroImageUrl?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  heroHeadingEn?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  heroHeadingAr?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   createdAt?: Prisma.DateTimeFilter<"StoreInfo"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"StoreInfo"> | Date | string
 }
@@ -293,6 +341,12 @@ export type StoreInfoOrderByWithRelationInput = {
   contactPhone?: Prisma.SortOrderInput | Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
   socialLinks?: Prisma.SortOrderInput | Prisma.SortOrder
+  primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  accentColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  fontFamily?: Prisma.SortOrderInput | Prisma.SortOrder
+  heroImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  heroHeadingEn?: Prisma.SortOrderInput | Prisma.SortOrder
+  heroHeadingAr?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -317,6 +371,12 @@ export type StoreInfoWhereUniqueInput = Prisma.AtLeast<{
   contactPhone?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   address?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   socialLinks?: Prisma.JsonNullableFilter<"StoreInfo">
+  primaryColor?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  accentColor?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  fontFamily?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  heroImageUrl?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  heroHeadingEn?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
+  heroHeadingAr?: Prisma.StringNullableFilter<"StoreInfo"> | string | null
   createdAt?: Prisma.DateTimeFilter<"StoreInfo"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"StoreInfo"> | Date | string
 }, "id">
@@ -338,6 +398,12 @@ export type StoreInfoOrderByWithAggregationInput = {
   contactPhone?: Prisma.SortOrderInput | Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
   socialLinks?: Prisma.SortOrderInput | Prisma.SortOrder
+  primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  accentColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  fontFamily?: Prisma.SortOrderInput | Prisma.SortOrder
+  heroImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  heroHeadingEn?: Prisma.SortOrderInput | Prisma.SortOrder
+  heroHeadingAr?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StoreInfoCountOrderByAggregateInput
@@ -365,6 +431,12 @@ export type StoreInfoScalarWhereWithAggregatesInput = {
   contactPhone?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
   address?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
   socialLinks?: Prisma.JsonNullableWithAggregatesFilter<"StoreInfo">
+  primaryColor?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
+  accentColor?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
+  fontFamily?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
+  heroImageUrl?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
+  heroHeadingEn?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
+  heroHeadingAr?: Prisma.StringNullableWithAggregatesFilter<"StoreInfo"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"StoreInfo"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"StoreInfo"> | Date | string
 }
@@ -386,6 +458,12 @@ export type StoreInfoCreateInput = {
   contactPhone?: string | null
   address?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  primaryColor?: string | null
+  accentColor?: string | null
+  fontFamily?: string | null
+  heroImageUrl?: string | null
+  heroHeadingEn?: string | null
+  heroHeadingAr?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -407,6 +485,12 @@ export type StoreInfoUncheckedCreateInput = {
   contactPhone?: string | null
   address?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  primaryColor?: string | null
+  accentColor?: string | null
+  fontFamily?: string | null
+  heroImageUrl?: string | null
+  heroHeadingEn?: string | null
+  heroHeadingAr?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -428,6 +512,12 @@ export type StoreInfoUpdateInput = {
   contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fontFamily?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroHeadingEn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroHeadingAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -449,6 +539,12 @@ export type StoreInfoUncheckedUpdateInput = {
   contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fontFamily?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroHeadingEn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroHeadingAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -470,6 +566,12 @@ export type StoreInfoCreateManyInput = {
   contactPhone?: string | null
   address?: string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  primaryColor?: string | null
+  accentColor?: string | null
+  fontFamily?: string | null
+  heroImageUrl?: string | null
+  heroHeadingEn?: string | null
+  heroHeadingAr?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -491,6 +593,12 @@ export type StoreInfoUpdateManyMutationInput = {
   contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fontFamily?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroHeadingEn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroHeadingAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -512,6 +620,12 @@ export type StoreInfoUncheckedUpdateManyInput = {
   contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   socialLinks?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fontFamily?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroHeadingEn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroHeadingAr?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -533,6 +647,12 @@ export type StoreInfoCountOrderByAggregateInput = {
   contactPhone?: Prisma.SortOrder
   address?: Prisma.SortOrder
   socialLinks?: Prisma.SortOrder
+  primaryColor?: Prisma.SortOrder
+  accentColor?: Prisma.SortOrder
+  fontFamily?: Prisma.SortOrder
+  heroImageUrl?: Prisma.SortOrder
+  heroHeadingEn?: Prisma.SortOrder
+  heroHeadingAr?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -551,6 +671,12 @@ export type StoreInfoMaxOrderByAggregateInput = {
   contactEmail?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   address?: Prisma.SortOrder
+  primaryColor?: Prisma.SortOrder
+  accentColor?: Prisma.SortOrder
+  fontFamily?: Prisma.SortOrder
+  heroImageUrl?: Prisma.SortOrder
+  heroHeadingEn?: Prisma.SortOrder
+  heroHeadingAr?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -569,6 +695,12 @@ export type StoreInfoMinOrderByAggregateInput = {
   contactEmail?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   address?: Prisma.SortOrder
+  primaryColor?: Prisma.SortOrder
+  accentColor?: Prisma.SortOrder
+  fontFamily?: Prisma.SortOrder
+  heroImageUrl?: Prisma.SortOrder
+  heroHeadingEn?: Prisma.SortOrder
+  heroHeadingAr?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -592,6 +724,12 @@ export type StoreInfoSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   contactPhone?: boolean
   address?: boolean
   socialLinks?: boolean
+  primaryColor?: boolean
+  accentColor?: boolean
+  fontFamily?: boolean
+  heroImageUrl?: boolean
+  heroHeadingEn?: boolean
+  heroHeadingAr?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["storeInfo"]>
@@ -613,6 +751,12 @@ export type StoreInfoSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   contactPhone?: boolean
   address?: boolean
   socialLinks?: boolean
+  primaryColor?: boolean
+  accentColor?: boolean
+  fontFamily?: boolean
+  heroImageUrl?: boolean
+  heroHeadingEn?: boolean
+  heroHeadingAr?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["storeInfo"]>
@@ -634,6 +778,12 @@ export type StoreInfoSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   contactPhone?: boolean
   address?: boolean
   socialLinks?: boolean
+  primaryColor?: boolean
+  accentColor?: boolean
+  fontFamily?: boolean
+  heroImageUrl?: boolean
+  heroHeadingEn?: boolean
+  heroHeadingAr?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["storeInfo"]>
@@ -655,11 +805,17 @@ export type StoreInfoSelectScalar = {
   contactPhone?: boolean
   address?: boolean
   socialLinks?: boolean
+  primaryColor?: boolean
+  accentColor?: boolean
+  fontFamily?: boolean
+  heroImageUrl?: boolean
+  heroHeadingEn?: boolean
+  heroHeadingAr?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type StoreInfoOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "nameAr" | "description" | "descriptionAr" | "logo" | "favicon" | "currency" | "locale" | "supportedCurrencies" | "supportedLocales" | "timezone" | "contactEmail" | "contactPhone" | "address" | "socialLinks" | "createdAt" | "updatedAt", ExtArgs["result"]["storeInfo"]>
+export type StoreInfoOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "nameAr" | "description" | "descriptionAr" | "logo" | "favicon" | "currency" | "locale" | "supportedCurrencies" | "supportedLocales" | "timezone" | "contactEmail" | "contactPhone" | "address" | "socialLinks" | "primaryColor" | "accentColor" | "fontFamily" | "heroImageUrl" | "heroHeadingEn" | "heroHeadingAr" | "createdAt" | "updatedAt", ExtArgs["result"]["storeInfo"]>
 
 export type $StoreInfoPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "StoreInfo"
@@ -681,6 +837,12 @@ export type $StoreInfoPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     contactPhone: string | null
     address: string | null
     socialLinks: runtime.JsonValue | null
+    primaryColor: string | null
+    accentColor: string | null
+    fontFamily: string | null
+    heroImageUrl: string | null
+    heroHeadingEn: string | null
+    heroHeadingAr: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["storeInfo"]>
@@ -1122,6 +1284,12 @@ export interface StoreInfoFieldRefs {
   readonly contactPhone: Prisma.FieldRef<"StoreInfo", 'String'>
   readonly address: Prisma.FieldRef<"StoreInfo", 'String'>
   readonly socialLinks: Prisma.FieldRef<"StoreInfo", 'Json'>
+  readonly primaryColor: Prisma.FieldRef<"StoreInfo", 'String'>
+  readonly accentColor: Prisma.FieldRef<"StoreInfo", 'String'>
+  readonly fontFamily: Prisma.FieldRef<"StoreInfo", 'String'>
+  readonly heroImageUrl: Prisma.FieldRef<"StoreInfo", 'String'>
+  readonly heroHeadingEn: Prisma.FieldRef<"StoreInfo", 'String'>
+  readonly heroHeadingAr: Prisma.FieldRef<"StoreInfo", 'String'>
   readonly createdAt: Prisma.FieldRef<"StoreInfo", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"StoreInfo", 'DateTime'>
 }

@@ -2,9 +2,26 @@
 // Store domain — store metadata
 // ---------------------------------------------------------------------------
 
-import type { StoreInfo } from '@commercejs/types'
+import type { StoreInfo, StoreTheme } from '@commercejs/types'
 import { findStoreInfo, createStoreInfo as dbCreateStoreInfo } from '../database/index.js'
 import { localized, img } from './helpers.js'
+
+function mapStoreTheme(row: any): StoreTheme | null {
+  const primaryColor = row.primaryColor ?? null
+  const accentColor = row.accentColor ?? null
+  const fontFamily = row.fontFamily ?? null
+  const heroImageUrl = row.heroImageUrl ?? null
+  const heroHeadingEn = row.heroHeadingEn ?? null
+  const heroHeadingAr = row.heroHeadingAr ?? null
+  // Return a theme object when ANY token is set so the storefront can
+  // consume whatever is defined and fall back on the rest. When every
+  // token is null, skip the object entirely — downstream code treats
+  // that as "use the default palette".
+  if (!primaryColor && !accentColor && !fontFamily && !heroImageUrl && !heroHeadingEn && !heroHeadingAr) {
+    return null
+  }
+  return { primaryColor, accentColor, fontFamily, heroImageUrl, heroHeadingEn, heroHeadingAr }
+}
 
 export function createStoreDomain() {
   return {
@@ -40,6 +57,7 @@ export function createStoreDomain() {
           isDefault: l === row.locale,
         })),
         country: 'SA',
+        theme: mapStoreTheme(row),
       }
     },
   }

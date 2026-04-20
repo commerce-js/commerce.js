@@ -574,6 +574,12 @@ export const StoreInfoScalarFieldEnum = {
   contactPhone: 'contactPhone',
   address: 'address',
   socialLinks: 'socialLinks',
+  primaryColor: 'primaryColor',
+  accentColor: 'accentColor',
+  fontFamily: 'fontFamily',
+  heroImageUrl: 'heroImageUrl',
+  heroHeadingEn: 'heroHeadingEn',
+  heroHeadingAr: 'heroHeadingAr',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

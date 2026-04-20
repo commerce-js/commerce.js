@@ -229,6 +229,12 @@ export async function migratePrisma() {
       contact_phone TEXT,
       address TEXT,
       social_links JSONB,
+      primary_color TEXT,
+      accent_color TEXT,
+      font_family TEXT,
+      hero_image_url TEXT,
+      hero_heading_en TEXT,
+      hero_heading_ar TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`,
@@ -359,6 +365,14 @@ export async function migratePrisma() {
     // statements here (not in CREATE TABLE) when adding a column to a
     // table that already ships on older Neon branches.
     `ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`,
+
+    // T12 — storefront theming (CSS custom properties v1)
+    `ALTER TABLE store_info ADD COLUMN IF NOT EXISTS primary_color TEXT`,
+    `ALTER TABLE store_info ADD COLUMN IF NOT EXISTS accent_color TEXT`,
+    `ALTER TABLE store_info ADD COLUMN IF NOT EXISTS font_family TEXT`,
+    `ALTER TABLE store_info ADD COLUMN IF NOT EXISTS hero_image_url TEXT`,
+    `ALTER TABLE store_info ADD COLUMN IF NOT EXISTS hero_heading_en TEXT`,
+    `ALTER TABLE store_info ADD COLUMN IF NOT EXISTS hero_heading_ar TEXT`,
 
     // -------------------------------------------------------------------
     // Profile family — cross-merchant buyer identity (mirrors

@@ -29,7 +29,7 @@
 * [x] [**T09**: Staff management (local-password)](tasks/T09.md) — Status: ✅ Completed (2026-04-20)
 * [x] [**T10**: Inventory inline + low-stock](tasks/T10.md) — Status: ✅ Completed (2026-04-20)
 * [x] [**T11**: Analytics expansion](tasks/T11.md) — Status: ✅ Completed (2026-04-20)
-* [ ] [**T12**: Storefront theming (CSS custom properties v1)](tasks/T12.md) — Status: 🟡 Planned
+* [x] [**T12**: Storefront theming (CSS custom properties v1)](tasks/T12.md) — Status: ✅ Completed (2026-04-20)
 * [ ] [**T13**: Audit log / activity feed](tasks/T13.md) — Status: 🟡 Planned — blocked by T09
 
 <!-- END PROGRESS SECTION -->
@@ -291,6 +291,58 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-20**: T12 Storefront theming (CSS custom properties v1) shipped
+  locally — build green across platform + dashboard + storefront; pending deploy
+  + live acceptance on `smoke.commercejs.cloud`. Platform: six new columns on
+  `store_info` (`primary_color`, `accent_color`, `font_family`, `hero_image_url`,
+  `hero_heading_en`, `hero_heading_ar`) on both Prisma + Drizzle schemas;
+  idempotent `ALTER TABLE … ADD COLUMN IF NOT EXISTS` in both `migratePrisma`
+  and `migrateDrizzle` so pre-existing merchant Neon branches pick them up on
+  first request (and the dormant Drizzle integration-test DB stays green — the
+  Drizzle migrate also gets the `admin_users.status` ADD COLUMN that T09 had
+  only patched on the Prisma side). `@commercejs/types` gets a new `StoreTheme`
+  interface and `StoreInfo.theme?: Maybe<StoreTheme>`; the public store domain
+  maps it to `null` when every token is unset and to a populated object
+  otherwise. Admin types: `StoreSettings` + `UpdateStoreInput` gain six flat
+  fields (matching T06's flat shape); `admin.updateStoreSettings` treats empty
+  string as a valid clear (persists `null`) and leaves undefined fields
+  untouched. 7 new unit tests cover round-trip, clear, leave-untouched, and
+  the public-domain mapping (null vs populated). Dashboard:
+  `updateStoreSettingsSchema` extended with six zod validators (color strings
+  capped at 64 chars, font at 128, URL check on hero image, headings at 200) —
+  reuses the existing `/api/admin/settings` routes rather than splitting into a
+  separate namespace. Storefront: new Nitro/useHead pattern in
+  `apps/storefront/app/app.vue` — `useStoreInfo().store.theme` drives a
+  per-render `<style>:root { --cjs-primary: …; --cjs-accent: …; --cjs-font:
+  …; } body { font-family: var(--cjs-font), … }</style>` block injected into
+  `<head>` (key `cjs-theme`). Missing tokens are omitted so any CSS using the
+  var can fall back on its second-argument default. `app.vue`'s existing
+  `useStoreInfo` call is reused — no extra upstream round-trip. Homepage
+  `/pages/index.vue` conditionally renders a full-bleed themed hero when
+  `theme.heroImageUrl` is set (background image + Arabic/English headline
+  picked by the merchant's default locale) and otherwise falls back to the
+  original gradient hero with the merchant's heading (if set) substituted in.
+  Both hero variants use `var(--cjs-primary, var(--ui-primary))` on the
+  "Shop Now" CTA — one high-visibility touchpoint demonstrating the
+  CSS-var system without rewiring every color. New admin page
+  `/admin/theme.vue` — two-column layout (form + sticky live-preview card),
+  native `<input type="color">` paired with a text input for each color,
+  curated font-family dropdown with a "Custom…" escape, hero image upload
+  reusing T04's presigned-PUT flow (`context: 'theme'`), EN + AR heading
+  inputs (AR runs `dir="rtl"`), reset-to-defaults button, dirty-snapshot
+  tracking, sticky save bar matching the T06 pattern, ⌘/Ctrl+S shortcut,
+  and beforeunload + route-leave guards. "Theme" link added to the admin
+  sidebar between Staff and Settings (uses the `swatch` icon T06 had
+  reserved). Departures from T12.md: the storefront's CSS-var injection
+  runs through Vue's `useHead` rather than a standalone Nitro `render:html`
+  plugin. Rationale: the storefront is remote-mode (no `event.context.db`
+  — it fetches StoreInfo via `useStoreInfo()` against the dashboard's
+  `/api/storefront/store`), so a Nitro plugin would just be re-fetching the
+  same data the Vue layer already has. Net output (one `<style>` tag in
+  `<head>`) is identical. Scope held — no Tailwind preset compilation, no
+  per-component theme override API. Parity green (151/151). Platform unit
+  tests green (7/7 on the new theme suite). Local builds green on all
+  three apps.
 - **2026-04-20**: T11 Analytics expansion shipped + deployed + all acceptance green
   on smoke.commercejs.cloud. Platform: three new `AdminAPI` methods
   (`getRevenueTimeSeries`, `getTopProducts`, `getTopCustomers`) with Prisma +

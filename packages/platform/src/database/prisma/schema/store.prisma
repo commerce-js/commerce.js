@@ -19,6 +19,12 @@ model StoreInfo {
   contactPhone        String?  @map("contact_phone")
   address             String?
   socialLinks         Json?    @map("social_links")
+  primaryColor        String?  @map("primary_color")
+  accentColor         String?  @map("accent_color")
+  fontFamily          String?  @map("font_family")
+  heroImageUrl        String?  @map("hero_image_url")
+  heroHeadingEn       String?  @map("hero_heading_en")
+  heroHeadingAr       String?  @map("hero_heading_ar")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 

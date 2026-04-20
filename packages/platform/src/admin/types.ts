@@ -142,6 +142,13 @@ export interface UpdateStoreInput {
   contactPhone?: string
   address?: string
   socialLinks?: string
+  // T12 — theming. Empty string clears; undefined leaves untouched.
+  primaryColor?: string
+  accentColor?: string
+  fontFamily?: string
+  heroImageUrl?: string
+  heroHeadingEn?: string
+  heroHeadingAr?: string
 }
 
 export interface StoreSettings {
@@ -160,6 +167,13 @@ export interface StoreSettings {
   contactPhone?: string | null
   address?: string | null
   socialLinks?: Record<string, string> | null
+  // T12 — theming.
+  primaryColor?: string | null
+  accentColor?: string | null
+  fontFamily?: string | null
+  heroImageUrl?: string | null
+  heroHeadingEn?: string | null
+  heroHeadingAr?: string | null
 }
 
 // ---- Inventory ----

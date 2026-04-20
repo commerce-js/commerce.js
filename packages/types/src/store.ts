@@ -25,6 +25,27 @@ export interface StoreLocale {
   isDefault: boolean
 }
 
+/**
+ * Per-merchant theming tokens (v1: CSS custom properties only).
+ * Each field is optional — adapters that don't support theming
+ * omit the whole object, and individual null fields fall back to
+ * the storefront's default palette.
+ */
+export interface StoreTheme {
+  /** Primary brand color (CSS color string, typically hex). */
+  primaryColor: Maybe<string>
+  /** Accent color used for highlights / secondary CTAs. */
+  accentColor: Maybe<string>
+  /** Font-family string (e.g. 'Inter', 'Cairo'); falls back to system-ui. */
+  fontFamily: Maybe<string>
+  /** Absolute URL to a hero-banner image shown on the storefront homepage. */
+  heroImageUrl: Maybe<string>
+  /** Hero headline in English. */
+  heroHeadingEn: Maybe<string>
+  /** Hero headline in Arabic. */
+  heroHeadingAr: Maybe<string>
+}
+
 /** Store-level information */
 export interface StoreInfo {
   /** Store name */
@@ -39,4 +60,6 @@ export interface StoreInfo {
   locales: StoreLocale[]
   /** Store's country (ISO 3166-1 alpha-2) */
   country: string
+  /** Per-merchant theming tokens. Absent when the adapter has no concept of theming. */
+  theme?: Maybe<StoreTheme>
 }

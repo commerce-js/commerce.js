@@ -21,6 +21,12 @@ export const storeInfo = pgTable('store_info', {
   contactPhone: text('contact_phone'),
   address: text('address'),
   socialLinks: jsonb('social_links').$type<Record<string, string>>(),
+  primaryColor: text('primary_color'),
+  accentColor: text('accent_color'),
+  fontFamily: text('font_family'),
+  heroImageUrl: text('hero_image_url'),
+  heroHeadingEn: text('hero_heading_en'),
+  heroHeadingAr: text('hero_heading_ar'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

@@ -54,6 +54,12 @@ function mapStoreSettings(row: any): StoreSettings {
     contactPhone: row.contactPhone ?? null,
     address: row.address ?? null,
     socialLinks,
+    primaryColor: row.primaryColor ?? null,
+    accentColor: row.accentColor ?? null,
+    fontFamily: row.fontFamily ?? null,
+    heroImageUrl: row.heroImageUrl ?? null,
+    heroHeadingEn: row.heroHeadingEn ?? null,
+    heroHeadingAr: row.heroHeadingAr ?? null,
   }
 }
 
@@ -93,6 +99,13 @@ export function createAdminStoreDomain() {
       if (input.contactPhone !== undefined) updates.contactPhone = input.contactPhone
       if (input.address !== undefined) updates.address = input.address
       if (input.socialLinks !== undefined) updates.socialLinks = input.socialLinks
+      // T12 theme fields — empty string clears (nulls the column), undefined leaves untouched.
+      if (input.primaryColor !== undefined) updates.primaryColor = input.primaryColor || null
+      if (input.accentColor !== undefined) updates.accentColor = input.accentColor || null
+      if (input.fontFamily !== undefined) updates.fontFamily = input.fontFamily || null
+      if (input.heroImageUrl !== undefined) updates.heroImageUrl = input.heroImageUrl || null
+      if (input.heroHeadingEn !== undefined) updates.heroHeadingEn = input.heroHeadingEn || null
+      if (input.heroHeadingAr !== undefined) updates.heroHeadingAr = input.heroHeadingAr || null
 
       await updateStoreInfo('default', updates)
 
