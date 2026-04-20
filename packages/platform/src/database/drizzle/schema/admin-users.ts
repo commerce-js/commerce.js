@@ -7,7 +7,8 @@ import { pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 export const adminUsers = pgTable('admin_users', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text('email').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  /** NULL for rows in the 'invited' state (pre-accept). */
+  passwordHash: text('password_hash'),
   name: text('name'),
   role: text('role').notNull().default('admin'),
   status: text('status').notNull().default('active'),

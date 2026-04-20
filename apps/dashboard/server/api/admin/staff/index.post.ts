@@ -26,7 +26,8 @@ export default defineEventHandler(async (event) => {
 
   let created
   try {
-    created = await admin.auth.createAdmin(input)
+    const result = await admin.auth.createAdmin(input)
+    created = result.admin
   }
   catch (err: any) {
     const msg = err?.message ?? 'Could not create staff user'

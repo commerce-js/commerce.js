@@ -5,7 +5,10 @@
 model AdminUser {
   id           String   @id @default(uuid())
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  /// Nullable for rows in the 'invited' state — the new staff member sets
+  /// their own password by consuming a staff_invites token. Rows in
+  /// 'active' or 'disabled' state always have a hash.
+  passwordHash String?  @map("password_hash")
   name         String?
   role         String   @default("admin")
   status       String   @default("active")

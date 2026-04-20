@@ -21,9 +21,11 @@ export async function findAdminById(id: string) {
 export async function createAdminUser(data: {
   id: string
   email: string
-  passwordHash: string
+  /** `null` is accepted for the 'invited' status path. */
+  passwordHash: string | null
   name?: string
   role?: string
+  status?: string
   createdAt?: string | Date
   updatedAt?: string | Date
 }) {

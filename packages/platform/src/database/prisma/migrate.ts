@@ -361,6 +361,20 @@ export async function migratePrisma() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`,
 
+    // Transactional-emails T01 — staff invites (single-use tokens for the
+    // email-invite staff flow). New table; lands fresh on provisioning,
+    // lazy-migrates onto pre-existing merchant branches on first request.
+    `CREATE TABLE IF NOT EXISTS staff_invites (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      admin_user_id UUID NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL UNIQUE,
+      email_snapshot TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`,
+    `CREATE INDEX IF NOT EXISTS staff_invites_admin_user_id_idx ON staff_invites (admin_user_id)`,
+
     // T13 — activity / audit log. New table; lands fresh on provisioning,
     // lazy-migrates onto pre-existing merchant branches on first request.
     `CREATE TABLE IF NOT EXISTS activity_events (
@@ -381,6 +395,9 @@ export async function migratePrisma() {
     // statements here (not in CREATE TABLE) when adding a column to a
     // table that already ships on older Neon branches.
     `ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`,
+    // Transactional-emails T01 — invited rows persist with no password_hash
+    // until the invitee consumes their staff_invites token.
+    `ALTER TABLE admin_users ALTER COLUMN password_hash DROP NOT NULL`,
 
     // T12 — storefront theming (CSS custom properties v1)
     `ALTER TABLE store_info ADD COLUMN IF NOT EXISTS primary_color TEXT`,

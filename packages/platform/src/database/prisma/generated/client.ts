@@ -192,6 +192,11 @@ export type ReturnItem = Prisma.ReturnItemModel
  */
 export type Review = Prisma.ReviewModel
 /**
+ * Model StaffInvite
+ * 
+ */
+export type StaffInvite = Prisma.StaffInviteModel
+/**
  * Model StoreInfo
  * 
  */

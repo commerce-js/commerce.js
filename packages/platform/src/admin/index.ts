@@ -218,4 +218,6 @@ export type {
   ActivityEvent,
   RecordActivityInput,
   ListActivityParams,
+  StaffInviteSecret,
+  StaffInviteVerification,
 } from './types.js'

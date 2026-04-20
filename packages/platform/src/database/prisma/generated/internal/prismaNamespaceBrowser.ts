@@ -81,6 +81,7 @@ export const ModelName = {
   Return: 'Return',
   ReturnItem: 'ReturnItem',
   Review: 'Review',
+  StaffInvite: 'StaffInvite',
   StoreInfo: 'StoreInfo',
   Wishlist: 'Wishlist',
   WishlistItem: 'WishlistItem'
@@ -570,6 +571,19 @@ export const ReviewScalarFieldEnum = {
 } as const
 
 export type ReviewScalarFieldEnum = (typeof ReviewScalarFieldEnum)[keyof typeof ReviewScalarFieldEnum]
+
+
+export const StaffInviteScalarFieldEnum = {
+  id: 'id',
+  adminUserId: 'adminUserId',
+  tokenHash: 'tokenHash',
+  emailSnapshot: 'emailSnapshot',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type StaffInviteScalarFieldEnum = (typeof StaffInviteScalarFieldEnum)[keyof typeof StaffInviteScalarFieldEnum]
 
 
 export const StoreInfoScalarFieldEnum = {

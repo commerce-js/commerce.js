@@ -15,11 +15,14 @@ export async function findAdminById(id: string) {
 export async function createAdminUser(data: {
   id: string
   email: string
-  passwordHash: string
+  /** `null` is accepted for the 'invited' status path — the row is created
+   * with no password_hash and flipped to 'active' + hash on invite accept. */
+  passwordHash: string | null
   name?: string
   role?: string
+  status?: string
 }) {
-  return getDb().adminUser.create({ data })
+  return getDb().adminUser.create({ data: data as any })
 }
 
 export async function updateAdminUser(id: string, data: Record<string, any>) {

@@ -208,6 +208,14 @@ export {
   countAdminUsers,
 } from './admin-users.js'
 
+// Admin — Staff invites (transactional-emails T01)
+export {
+  createStaffInviteRow,
+  findStaffInviteByTokenHash,
+  markStaffInviteUsed,
+  deleteExpiredStaffInvites,
+} from './staff-invites.js'
+
 // Profiles (cross-merchant buyer identity)
 export {
   createProfile,

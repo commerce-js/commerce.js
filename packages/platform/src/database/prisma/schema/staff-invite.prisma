@@ -1,0 +1,23 @@
+// ---------------------------------------------------------------------------
+// StaffInvite model — single-use tokens for the email-invite staff flow
+// ---------------------------------------------------------------------------
+//
+// Written by `admin.auth.createStaffInvite`; consumed by
+// `admin.auth.acceptStaffInvite`. `tokenHash` is sha256(raw), so the raw
+// token exists only in the email URL + the accept request — never in the
+// DB. `emailSnapshot` is denormalized so expired / revoked rows still
+// surface what they were sent to.
+// ---------------------------------------------------------------------------
+
+model StaffInvite {
+  id            String    @id @default(uuid())
+  adminUserId   String    @map("admin_user_id")
+  tokenHash     String    @unique @map("token_hash")
+  emailSnapshot String    @map("email_snapshot")
+  expiresAt     DateTime  @map("expires_at")
+  usedAt        DateTime? @map("used_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([adminUserId])
+  @@map("staff_invites")
+}

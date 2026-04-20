@@ -414,6 +414,7 @@ export const ModelName = {
   Return: 'Return',
   ReturnItem: 'ReturnItem',
   Review: 'Review',
+  StaffInvite: 'StaffInvite',
   StoreInfo: 'StoreInfo',
   Wishlist: 'Wishlist',
   WishlistItem: 'WishlistItem'
@@ -432,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "activityEvent" | "adminUser" | "brand" | "cart" | "cartItem" | "category" | "country" | "customer" | "customerAddress" | "order" | "orderItem" | "orderHistory" | "product" | "productImage" | "productVariant" | "productOption" | "productOptionValue" | "productAttribute" | "productCategory" | "productTag" | "profile" | "profileAddress" | "profilePaymentMethod" | "profileMerchantLink" | "profileOtpCode" | "promotion" | "coupon" | "return" | "returnItem" | "review" | "storeInfo" | "wishlist" | "wishlistItem"
+    modelProps: "activityEvent" | "adminUser" | "brand" | "cart" | "cartItem" | "category" | "country" | "customer" | "customerAddress" | "order" | "orderItem" | "orderHistory" | "product" | "productImage" | "productVariant" | "productOption" | "productOptionValue" | "productAttribute" | "productCategory" | "productTag" | "profile" | "profileAddress" | "profilePaymentMethod" | "profileMerchantLink" | "profileOtpCode" | "promotion" | "coupon" | "return" | "returnItem" | "review" | "staffInvite" | "storeInfo" | "wishlist" | "wishlistItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2656,6 +2657,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    StaffInvite: {
+      payload: Prisma.$StaffInvitePayload<ExtArgs>
+      fields: Prisma.StaffInviteFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StaffInviteFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StaffInviteFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>
+        }
+        findFirst: {
+          args: Prisma.StaffInviteFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StaffInviteFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>
+        }
+        findMany: {
+          args: Prisma.StaffInviteFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>[]
+        }
+        create: {
+          args: Prisma.StaffInviteCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>
+        }
+        createMany: {
+          args: Prisma.StaffInviteCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StaffInviteCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>[]
+        }
+        delete: {
+          args: Prisma.StaffInviteDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>
+        }
+        update: {
+          args: Prisma.StaffInviteUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>
+        }
+        deleteMany: {
+          args: Prisma.StaffInviteDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StaffInviteUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StaffInviteUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>[]
+        }
+        upsert: {
+          args: Prisma.StaffInviteUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffInvitePayload>
+        }
+        aggregate: {
+          args: Prisma.StaffInviteAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStaffInvite>
+        }
+        groupBy: {
+          args: Prisma.StaffInviteGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffInviteGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StaffInviteCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffInviteCountAggregateOutputType> | number
+        }
+      }
+    }
     StoreInfo: {
       payload: Prisma.$StoreInfoPayload<ExtArgs>
       fields: Prisma.StoreInfoFieldRefs
@@ -3387,6 +3462,19 @@ export const ReviewScalarFieldEnum = {
 export type ReviewScalarFieldEnum = (typeof ReviewScalarFieldEnum)[keyof typeof ReviewScalarFieldEnum]
 
 
+export const StaffInviteScalarFieldEnum = {
+  id: 'id',
+  adminUserId: 'adminUserId',
+  tokenHash: 'tokenHash',
+  emailSnapshot: 'emailSnapshot',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type StaffInviteScalarFieldEnum = (typeof StaffInviteScalarFieldEnum)[keyof typeof StaffInviteScalarFieldEnum]
+
+
 export const StoreInfoScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -3699,6 +3787,7 @@ export type GlobalOmitConfig = {
   return?: Prisma.ReturnOmit
   returnItem?: Prisma.ReturnItemOmit
   review?: Prisma.ReviewOmit
+  staffInvite?: Prisma.StaffInviteOmit
   storeInfo?: Prisma.StoreInfoOmit
   wishlist?: Prisma.WishlistOmit
   wishlistItem?: Prisma.WishlistItemOmit

@@ -26,6 +26,26 @@ export interface AdminUser {
 /** Admin user without the password hash — safe for API responses */
 export type AdminUserSafe = Omit<AdminUser, 'passwordHash'>
 
+/**
+ * Output of `admin.auth.createAdmin({ sendInvite: true })` — the raw token
+ * exists once in memory (embedded in the invite email URL) and then only
+ * its sha256 hash is persisted in `staff_invites.token_hash`.
+ */
+export interface StaffInviteSecret {
+  /** Raw base64url token — put in the email URL, never log it. */
+  token: string
+  /** sha256 hex of `token` — the value stored in `staff_invites.token_hash`. */
+  tokenHash: string
+  expiresAt: Date
+}
+
+/** Output of `admin.auth.verifyStaffInviteToken`. */
+export interface StaffInviteVerification {
+  adminUserId: string
+  email: string
+  expiresAt: Date
+}
+
 // ---- Generic ----
 
 export interface AdminListParams extends PaginationParams {
@@ -288,7 +308,22 @@ export interface AdminAPI {
   auth: {
     login(email: string, password: string): Promise<AdminUserSafe>
     changePassword(adminId: string, currentPassword: string, newPassword: string): Promise<void>
-    createAdmin(input: { email: string; password: string; name?: string; role?: 'owner' | 'admin' | 'editor' }): Promise<AdminUserSafe>
+    /**
+     * Create an admin user. Pass `sendInvite: true` to omit the password and
+     * create the row in the `invited` state with a companion `staff_invites`
+     * row — the returned `invite.token` is embedded in the invite email URL.
+     */
+    createAdmin(input: {
+      email: string
+      password?: string
+      name?: string
+      role?: 'owner' | 'admin' | 'editor'
+      sendInvite?: boolean
+    }): Promise<{ admin: AdminUserSafe; invite: StaffInviteSecret | null }>
+    /** Look up a staff invite by its raw (un-hashed) token. */
+    verifyStaffInviteToken(rawToken: string): Promise<StaffInviteVerification | null>
+    /** Consume a staff invite: set the admin's password + flip status='active'. */
+    acceptStaffInvite(rawToken: string, newPassword: string): Promise<AdminUserSafe>
     listAdmins(): Promise<AdminUserSafe[]>
     getAdmin(id: string): Promise<AdminUserSafe>
     updateAdmin(id: string, input: { name?: string | null; role?: 'owner' | 'admin' | 'editor' }): Promise<AdminUserSafe>

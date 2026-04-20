@@ -377,6 +377,18 @@ export async function migrateDrizzle(connectionString?: string) {
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`)
 
+  // Transactional-emails T01 — staff invites
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS staff_invites (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_user_id TEXT NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    email_snapshot TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS staff_invites_admin_user_id_idx ON staff_invites (admin_user_id)`)
+
   // T13 — activity / audit log
   await db.execute(sql`CREATE TABLE IF NOT EXISTS activity_events (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -472,6 +484,8 @@ export async function migrateDrizzle(connectionString?: string) {
   // columns added to tables that already ship on pre-existing Neon
   // branches.
   await db.execute(sql`ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`)
+  // Transactional-emails T01 — password_hash is NULL for invited-state rows
+  await db.execute(sql`ALTER TABLE admin_users ALTER COLUMN password_hash DROP NOT NULL`)
   // T12 — storefront theming
   await db.execute(sql`ALTER TABLE store_info ADD COLUMN IF NOT EXISTS primary_color TEXT`)
   await db.execute(sql`ALTER TABLE store_info ADD COLUMN IF NOT EXISTS accent_color TEXT`)

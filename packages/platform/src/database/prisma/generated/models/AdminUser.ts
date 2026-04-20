@@ -168,7 +168,7 @@ export type AdminUserGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
 export type AdminUserGroupByOutputType = {
   id: string
   email: string
-  passwordHash: string
+  passwordHash: string | null
   name: string | null
   role: string
   status: string
@@ -200,7 +200,7 @@ export type AdminUserWhereInput = {
   NOT?: Prisma.AdminUserWhereInput | Prisma.AdminUserWhereInput[]
   id?: Prisma.StringFilter<"AdminUser"> | string
   email?: Prisma.StringFilter<"AdminUser"> | string
-  passwordHash?: Prisma.StringFilter<"AdminUser"> | string
+  passwordHash?: Prisma.StringNullableFilter<"AdminUser"> | string | null
   name?: Prisma.StringNullableFilter<"AdminUser"> | string | null
   role?: Prisma.StringFilter<"AdminUser"> | string
   status?: Prisma.StringFilter<"AdminUser"> | string
@@ -211,7 +211,7 @@ export type AdminUserWhereInput = {
 export type AdminUserOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
-  passwordHash?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -225,7 +225,7 @@ export type AdminUserWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.AdminUserWhereInput | Prisma.AdminUserWhereInput[]
   OR?: Prisma.AdminUserWhereInput[]
   NOT?: Prisma.AdminUserWhereInput | Prisma.AdminUserWhereInput[]
-  passwordHash?: Prisma.StringFilter<"AdminUser"> | string
+  passwordHash?: Prisma.StringNullableFilter<"AdminUser"> | string | null
   name?: Prisma.StringNullableFilter<"AdminUser"> | string | null
   role?: Prisma.StringFilter<"AdminUser"> | string
   status?: Prisma.StringFilter<"AdminUser"> | string
@@ -236,7 +236,7 @@ export type AdminUserWhereUniqueInput = Prisma.AtLeast<{
 export type AdminUserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
-  passwordHash?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -253,7 +253,7 @@ export type AdminUserScalarWhereWithAggregatesInput = {
   NOT?: Prisma.AdminUserScalarWhereWithAggregatesInput | Prisma.AdminUserScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"AdminUser"> | string
   email?: Prisma.StringWithAggregatesFilter<"AdminUser"> | string
-  passwordHash?: Prisma.StringWithAggregatesFilter<"AdminUser"> | string
+  passwordHash?: Prisma.StringNullableWithAggregatesFilter<"AdminUser"> | string | null
   name?: Prisma.StringNullableWithAggregatesFilter<"AdminUser"> | string | null
   role?: Prisma.StringWithAggregatesFilter<"AdminUser"> | string
   status?: Prisma.StringWithAggregatesFilter<"AdminUser"> | string
@@ -264,7 +264,7 @@ export type AdminUserScalarWhereWithAggregatesInput = {
 export type AdminUserCreateInput = {
   id?: string
   email: string
-  passwordHash: string
+  passwordHash?: string | null
   name?: string | null
   role?: string
   status?: string
@@ -275,7 +275,7 @@ export type AdminUserCreateInput = {
 export type AdminUserUncheckedCreateInput = {
   id?: string
   email: string
-  passwordHash: string
+  passwordHash?: string | null
   name?: string | null
   role?: string
   status?: string
@@ -286,7 +286,7 @@ export type AdminUserUncheckedCreateInput = {
 export type AdminUserUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -297,7 +297,7 @@ export type AdminUserUpdateInput = {
 export type AdminUserUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -308,7 +308,7 @@ export type AdminUserUncheckedUpdateInput = {
 export type AdminUserCreateManyInput = {
   id?: string
   email: string
-  passwordHash: string
+  passwordHash?: string | null
   name?: string | null
   role?: string
   status?: string
@@ -319,7 +319,7 @@ export type AdminUserCreateManyInput = {
 export type AdminUserUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -330,7 +330,7 @@ export type AdminUserUpdateManyMutationInput = {
 export type AdminUserUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -425,7 +425,12 @@ export type $AdminUserPayload<ExtArgs extends runtime.Types.Extensions.InternalA
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     email: string
-    passwordHash: string
+    /**
+     * Nullable for rows in the 'invited' state — the new staff member sets
+     * their own password by consuming a staff_invites token. Rows in
+     * 'active' or 'disabled' state always have a hash.
+     */
+    passwordHash: string | null
     name: string | null
     role: string
     status: string
