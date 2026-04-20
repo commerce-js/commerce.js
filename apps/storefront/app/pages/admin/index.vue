@@ -17,6 +17,8 @@ interface DashboardStats {
   totalCustomers: number
   recentOrders: RecentOrder[]
   ordersByStatus: Record<string, number>
+  avgOrderValue: number
+  refundRate: number
 }
 
 definePageMeta({
@@ -61,6 +63,16 @@ const topCards = computed(() => [
     label: 'Customers',
     value: stats.value?.totalCustomers ?? 0,
     icon: 'i-heroicons-user-group-20-solid',
+  },
+  {
+    label: 'Avg order value',
+    value: formatPrice({ amount: stats.value?.avgOrderValue ?? 0, currency: currency.value }),
+    icon: 'i-heroicons-calculator-20-solid',
+  },
+  {
+    label: 'Refund rate',
+    value: `${Math.round((stats.value?.refundRate ?? 0) * 1000) / 10}%`,
+    icon: 'i-heroicons-arrow-uturn-left-20-solid',
   },
 ])
 

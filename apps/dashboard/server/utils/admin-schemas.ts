@@ -178,6 +178,29 @@ export const lowStockQuerySchema = z.object({
   threshold: z.coerce.number().int().nonnegative().optional(),
 })
 
+// ---- Analytics ----
+
+// Accepts an ISO date (YYYY-MM-DD) or a full ISO timestamp. Platform-side
+// parseFromBound / parseToBound normalize either form into the correct UTC
+// boundary. Granularity is validated by the platform domain as well, but we
+// reject invalid values up-front so the response is 400 instead of 500.
+const isoDateOrTimestamp = z.string().regex(
+  /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:?\d{2})?)?$/,
+  'Must be an ISO date (YYYY-MM-DD) or ISO timestamp',
+)
+
+export const analyticsRangeSchema = z.object({
+  granularity: z.enum(['day', 'week', 'month']),
+  from: isoDateOrTimestamp,
+  to: isoDateOrTimestamp,
+})
+
+export const topAnalyticsQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(100).optional(),
+  from: isoDateOrTimestamp.optional(),
+  to: isoDateOrTimestamp.optional(),
+})
+
 // ---- Store settings ----
 
 // Mirrors UpdateStoreInput in @commercejs/platform/admin. Empty-string
