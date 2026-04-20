@@ -28,7 +28,7 @@
 * [x] [**T08**: Categories CRUD UI](tasks/T08.md) — Status: ✅ Completed (2026-04-19)
 * [x] [**T09**: Staff management (local-password)](tasks/T09.md) — Status: ✅ Completed (2026-04-20)
 * [x] [**T10**: Inventory inline + low-stock](tasks/T10.md) — Status: ✅ Completed (2026-04-20)
-* [ ] [**T11**: Analytics expansion](tasks/T11.md) — Status: 🟡 Planned
+* [x] [**T11**: Analytics expansion](tasks/T11.md) — Status: ✅ Completed (2026-04-20)
 * [ ] [**T12**: Storefront theming (CSS custom properties v1)](tasks/T12.md) — Status: 🟡 Planned
 * [ ] [**T13**: Audit log / activity feed](tasks/T13.md) — Status: 🟡 Planned — blocked by T09
 
@@ -291,6 +291,44 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-20**: T11 Analytics expansion shipped + deployed + all acceptance green
+  on smoke.commercejs.cloud. Platform: three new `AdminAPI` methods
+  (`getRevenueTimeSeries`, `getTopProducts`, `getTopCustomers`) with Prisma +
+  Drizzle queries in parity (151/151 exports green), plus `avgOrderValue` +
+  `refundRate` on `DashboardStats` (computed from existing ordersByStatus — no
+  new DB round-trips). Zero-fill happens in the domain layer so both drivers
+  return the same simple result and charts render without gaps. 14 new unit
+  tests cover zero-fill, limit clamping, AOV math, refund-rate edge cases
+  (including the T09-T10 admin-orders-guards test pattern). Dashboard: three
+  new routes under `apps/dashboard/server/api/admin/analytics/` (all
+  `requireMerchantSession`-gated); `analyticsRangeSchema` +
+  `topAnalyticsQuerySchema` in `admin-schemas.ts` validate ISO date / ISO
+  timestamp inputs up-front. Storefront: `/admin/analytics.vue` with
+  date-range dropdown (7d/30d/90d/custom), granularity selector (day/week/
+  month), four KPI tiles, inline-SVG revenue bar chart (zero deps — UChart
+  doesn't exist in Nuxt UI v4, chart.js would be overkill for one chart),
+  top-10 products table (click → `/admin/products/:id/edit`), top-10
+  customers table (click → `/admin/customers/:id`), and a muted "Conversion
+  rate — not yet tracked" placeholder tile. `/admin/index.vue` automatically
+  picks up AOV + refund-rate tiles. Sidebar gets an "Analytics" link between
+  Customers and Staff. **Live bug caught + fixed during acceptance**: smoke
+  merchant DB has `products.id` as UUID and `order_items.product_id` as TEXT
+  (Neon branch provisioned before later migrations normalized the types),
+  which crashed `top-products` with `operator does not exist: uuid = text`
+  (PG 42883). Patch: `::text` casts on every analytics join key (Prisma +
+  Drizzle). Flagged as schema-drift follow-up but resolved inline because
+  the admin query path is hot. Acceptance 7/7 on smoke: (1) unauth 401 on
+  all three routes; (2) revenue day series returns 20 zero-filled buckets
+  for 2026-04-01 → 2026-04-20; (3) revenue week series returns 4 buckets
+  with 2703 revenue / 7 orders in the week of 2026-04-13; (4) top-products
+  returns 3 real products sorted by revenue (Oud Cologne 1743, Prayer Rug
+  796, Arabic Coffee 89); (5) top-customers returns [] (expected — all
+  8 smoke orders are guest checkouts); (6) dashboard stats shows
+  avgOrderValue 386.14, refundRate 0.125, totalOrders 8, totalRevenue
+  2703; (7) invalid granularity=hour → 400, cross-tenant cookie replay
+  → 404, storefront `/admin/analytics` → 200. Scope held — no drift
+  toward sales-by-category, conversion rate (placeholder instead), or
+  chart.js dep. Query parity green (151/151).
 - **2026-04-20**: T09 Staff management (local-password) shipped + deployed +
   8/8 acceptance green on smoke.commercejs.cloud. Platform: `admin_users.status`
   column (Prisma + Drizzle + idempotent `ALTER TABLE … ADD COLUMN IF NOT EXISTS`
