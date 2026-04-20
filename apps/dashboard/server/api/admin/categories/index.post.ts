@@ -6,6 +6,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { requireMerchantSession } from '../../../utils/merchant-auth'
 import { parseOrThrow } from '../../../utils/admin-validate'
 import { createCategorySchema } from '../../../utils/admin-schemas'
+import { recordActivity } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireMerchantSession(event)
@@ -18,5 +19,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const input = parseOrThrow(createCategorySchema, body)
 
-  return admin.createCategory(input)
+  const category = await admin.createCategory(input)
+  await recordActivity(event, 'category.created', 'category', category.id, { name: input.name })
+  return category
 })

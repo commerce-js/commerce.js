@@ -4,6 +4,7 @@
 
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { requireMerchantSession } from '../../../utils/merchant-auth'
+import { recordActivity } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireMerchantSession(event)
@@ -19,5 +20,6 @@ export default defineEventHandler(async (event) => {
   }
 
   await admin.deleteProduct(id)
+  await recordActivity(event, 'product.deleted', 'product', id)
   return { ok: true }
 })

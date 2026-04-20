@@ -13,6 +13,7 @@ import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { requireMerchantSession } from '../../../../utils/merchant-auth'
 import { parseOrThrow } from '../../../../utils/admin-validate'
 import { fulfillOrderSchema } from '../../../../utils/admin-schemas'
+import { recordActivity } from '../../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireMerchantSession(event)
@@ -40,6 +41,10 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({ statusCode: 400, statusMessage: msg })
   }
+
+  await recordActivity(event, 'order.fulfilled', 'order', id, {
+    trackingNumber: input.trackingNumber ?? null,
+  })
 
   return { ok: true }
 })

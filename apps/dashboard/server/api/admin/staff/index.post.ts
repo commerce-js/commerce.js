@@ -11,6 +11,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { requireOwner } from '../../../utils/require-role'
 import { parseOrThrow } from '../../../utils/admin-validate'
 import { createStaffSchema } from '../../../utils/admin-schemas'
+import { recordActivity } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireOwner(event)
@@ -23,8 +24,9 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const input = parseOrThrow(createStaffSchema, body)
 
+  let created
   try {
-    return await admin.auth.createAdmin(input)
+    created = await admin.auth.createAdmin(input)
   }
   catch (err: any) {
     const msg = err?.message ?? 'Could not create staff user'
@@ -33,4 +35,9 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({ statusCode: 400, statusMessage: 'Bad request', message: msg })
   }
+  await recordActivity(event, 'staff.created', 'staff', created.id, {
+    email: created.email,
+    role: created.role,
+  })
+  return created
 })

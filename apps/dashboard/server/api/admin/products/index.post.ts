@@ -6,6 +6,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { requireMerchantSession } from '../../../utils/merchant-auth'
 import { parseOrThrow } from '../../../utils/admin-validate'
 import { createProductSchema } from '../../../utils/admin-schemas'
+import { recordActivity } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireMerchantSession(event)
@@ -18,5 +19,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const input = parseOrThrow(createProductSchema, body)
 
-  return admin.createProduct(input)
+  const product = await admin.createProduct(input)
+  await recordActivity(event, 'product.created', 'product', product.id, { name: input.name })
+  return product
 })

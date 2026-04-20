@@ -6,6 +6,7 @@ import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { requireMerchantSession } from '../../../utils/merchant-auth'
 import { parseOrThrow } from '../../../utils/admin-validate'
 import { updateCategorySchema } from '../../../utils/admin-schemas'
+import { recordActivity } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireMerchantSession(event)
@@ -23,5 +24,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const input = parseOrThrow(updateCategorySchema, body)
 
-  return admin.updateCategory(id, input)
+  const category = await admin.updateCategory(id, input)
+  await recordActivity(event, 'category.updated', 'category', id, { changedKeys: Object.keys(input) })
+  return category
 })

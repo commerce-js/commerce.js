@@ -12,6 +12,7 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { requireMerchantSession } from '../../../../utils/merchant-auth'
 import { parseOrThrow } from '../../../../utils/admin-validate'
 import { changeStaffPasswordSchema } from '../../../../utils/admin-schemas'
+import { recordActivity } from '../../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = await requireMerchantSession(event)
@@ -39,6 +40,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     await admin.auth.changePassword(id, input.currentPassword, input.newPassword)
+    await recordActivity(event, 'staff.password_changed', 'staff', id)
     return { ok: true }
   }
   catch (err: any) {

@@ -9,6 +9,7 @@
 
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { requireOwner } from '../../../utils/require-role'
+import { recordActivity } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = await requireOwner(event)
@@ -33,6 +34,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     await admin.auth.deleteAdmin(id)
+    await recordActivity(event, 'staff.deleted', 'staff', id)
     return { ok: true }
   }
   catch (err: any) {

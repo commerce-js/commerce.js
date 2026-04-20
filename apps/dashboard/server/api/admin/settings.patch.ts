@@ -6,6 +6,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { requireMerchantSession } from '../../utils/merchant-auth'
 import { parseOrThrow } from '../../utils/admin-validate'
 import { updateStoreSettingsSchema } from '../../utils/admin-schemas'
+import { recordActivity } from '../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireMerchantSession(event)
@@ -18,5 +19,9 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const input = parseOrThrow(updateStoreSettingsSchema, body)
 
-  return admin.updateStoreSettings(input)
+  const settings = await admin.updateStoreSettings(input)
+  await recordActivity(event, 'settings.updated', 'settings', null, {
+    changedKeys: Object.keys(input),
+  })
+  return settings
 })

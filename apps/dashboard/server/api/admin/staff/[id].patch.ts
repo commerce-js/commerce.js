@@ -11,6 +11,7 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { requireOwner } from '../../../utils/require-role'
 import { parseOrThrow } from '../../../utils/admin-validate'
 import { updateStaffSchema } from '../../../utils/admin-schemas'
+import { recordActivity } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireOwner(event)
@@ -28,8 +29,9 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const input = parseOrThrow(updateStaffSchema, body)
 
+  let updated
   try {
-    return await admin.auth.updateAdmin(id, input)
+    updated = await admin.auth.updateAdmin(id, input)
   }
   catch (err: any) {
     const msg = err?.message ?? 'Could not update staff user'
@@ -38,4 +40,6 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({ statusCode: 400, statusMessage: 'Bad request', message: msg })
   }
+  await recordActivity(event, 'staff.updated', 'staff', id, { changedKeys: Object.keys(input) })
+  return updated
 })

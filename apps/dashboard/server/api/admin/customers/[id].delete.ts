@@ -7,6 +7,7 @@
 
 import { defineEventHandler, getRouterParam, createError, setResponseStatus } from 'h3'
 import { requireMerchantSession } from '../../../utils/merchant-auth'
+import { recordActivity } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireMerchantSession(event)
@@ -31,6 +32,8 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({ statusCode: 400, statusMessage: message })
   }
+
+  await recordActivity(event, 'customer.deleted', 'customer', id)
 
   setResponseStatus(event, 204)
   return null

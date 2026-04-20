@@ -201,6 +201,17 @@ export const topAnalyticsQuerySchema = z.object({
   to: isoDateOrTimestamp.optional(),
 })
 
+// ---- Activity log (T13) ----
+
+export const listActivityQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional(),
+  perPage: z.coerce.number().int().positive().max(200).optional(),
+  actorId: z.string().min(1).optional(),
+  entityType: z.string().min(1).optional(),
+  from: isoDateOrTimestamp.optional(),
+  to: isoDateOrTimestamp.optional(),
+})
+
 // ---- Store settings ----
 
 // Mirrors UpdateStoreInput in @commercejs/platform/admin. Empty-string

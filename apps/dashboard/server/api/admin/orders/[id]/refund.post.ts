@@ -11,6 +11,7 @@ import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { requireMerchantSession } from '../../../../utils/merchant-auth'
 import { parseOrThrow } from '../../../../utils/admin-validate'
 import { refundOrderSchema } from '../../../../utils/admin-schemas'
+import { recordActivity } from '../../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await requireMerchantSession(event)
@@ -38,6 +39,10 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({ statusCode: 400, statusMessage: msg })
   }
+
+  await recordActivity(event, 'order.refunded', 'order', id, {
+    note: input.note ?? null,
+  })
 
   return { ok: true }
 })
