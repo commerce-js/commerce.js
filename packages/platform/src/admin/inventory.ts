@@ -14,6 +14,7 @@ import {
   findProductCategoryIds,
   findProductTags,
   findCategoryById,
+  adminFindLowStockProducts,
 } from '../database/index.js'
 import { localized, discountablePrice, img } from '../domains/helpers.js'
 
@@ -148,13 +149,12 @@ export function createAdminInventoryDomain(currency: string) {
     },
 
     async getLowStockProducts(threshold?: number): Promise<Product[]> {
-      const { adminFindLowStockProducts } = await import('../database/drizzle/queries/admin-catalog.js')
       const limit = threshold ?? 10
 
       const rows = await adminFindLowStockProducts(limit, 50)
 
       return Promise.all(
-        rows.map(async (row) => {
+        rows.map(async (row: any) => {
           const related = await fetchProductRelations(row.id)
           return mapProduct(row, related, currency)
         }),
