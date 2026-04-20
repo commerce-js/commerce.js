@@ -73,6 +73,7 @@ export function createCatalogDomain(currency: string) {
         parentId: c.parentId ?? null,
         children: [],
         productCount: null,
+        sortOrder: c.sortOrder ?? 0,
       })),
       inStock: Boolean(row.inStock),
       vatIncluded: Boolean(row.vatIncluded),
@@ -208,6 +209,7 @@ export function createCatalogDomain(currency: string) {
         parentId: row.parentId ?? null,
         children: [],
         productCount: null,
+        sortOrder: row.sortOrder ?? 0,
       }))
     },
   }

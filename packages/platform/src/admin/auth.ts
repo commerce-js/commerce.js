@@ -2,7 +2,7 @@
 // Admin Auth domain — login, password management, user CRUD
 // ---------------------------------------------------------------------------
 
-import { hashSync, compareSync } from 'bcrypt-ts'
+import { hash, compare } from 'bcrypt-ts'
 import {
   findAdminByEmail,
   findAdminById,
@@ -45,7 +45,7 @@ export function createAdminAuthDomain() {
       const row = await findAdminByEmail(email)
       if (!row) throw new Error('Invalid email or password')
 
-      const valid = compareSync(password, row.passwordHash ?? (row as any).password_hash)
+      const valid = await compare(password, row.passwordHash ?? (row as any).password_hash)
       if (!valid) throw new Error('Invalid email or password')
 
       return toSafe(row)
@@ -58,11 +58,11 @@ export function createAdminAuthDomain() {
       const row = await findAdminById(adminId)
       if (!row) throw new Error('Admin user not found')
 
-      const valid = compareSync(currentPassword, row.passwordHash ?? (row as any).password_hash)
+      const valid = await compare(currentPassword, row.passwordHash ?? (row as any).password_hash)
       if (!valid) throw new Error('Current password is incorrect')
 
       await updateAdminUser(adminId, {
-        passwordHash: hashSync(newPassword, 10),
+        passwordHash: await hash(newPassword, 10),
       })
     },
 
@@ -83,7 +83,7 @@ export function createAdminAuthDomain() {
       await createAdminUser({
         id,
         email: input.email,
-        passwordHash: hashSync(input.password, 10),
+        passwordHash: await hash(input.password, 10),
         name: input.name,
         role: input.role || 'admin',
       })
@@ -173,7 +173,7 @@ export function createAdminAuthDomain() {
       await createAdminUser({
         id: crypto.randomUUID(),
         email,
-        passwordHash: hashSync(password, 10),
+        passwordHash: await hash(password, 10),
         name: 'Admin',
         role: 'owner',
       })

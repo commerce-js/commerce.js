@@ -4,9 +4,9 @@
 // /admin/categories/[id]/edit. Emits a CreateCategoryInput-shaped payload on
 // submit. Image upload reuses T04's presigned-PUT flow (context='category').
 //
-// Parent dropdown uses a sentinel ('__root__') for "no parent" because Reka
-// UI's <SelectItem> reserves the empty string for "clear selection" — passing
-// value='' crashes at render. See merchant-admin plan Lessons Learned.
+// `parentId` stores the real domain value (`''` for root). The Select's
+// v-model is wrapped with `useSelectSentinel` so the UI sees `'__root__'`
+// — Reka's SelectItem reserves `value=''` for "clear selection".
 // ---------------------------------------------------------------------------
 
 import type { Category } from '@commercejs/types'
@@ -18,6 +18,7 @@ export interface CategoryFormValue {
   description: string
   descriptionAr: string
   image: string
+  /** Empty string means "no parent" (root category). */
   parentId: string
   sortOrder: number | null
 }
@@ -50,8 +51,8 @@ function initialValue(): CategoryFormValue {
     description: c?.description ? t(c.description) : '',
     descriptionAr: c?.description?.ar || '',
     image: c?.image?.url || '',
-    parentId: c?.parentId || ROOT_SENTINEL,
-    sortOrder: null,
+    parentId: c?.parentId || '',
+    sortOrder: c?.sortOrder ?? null,
   }
 }
 
@@ -60,6 +61,11 @@ const form = reactive<CategoryFormValue>(initialValue())
 watch(() => props.initial, () => {
   Object.assign(form, initialValue())
 })
+
+const parentModel = useSelectSentinel(
+  toRef(form, 'parentId'),
+  { sentinel: ROOT_SENTINEL, empty: '' },
+)
 
 const parentOptions = computed(() => {
   const list: { label: string, value: string }[] = [
@@ -194,7 +200,7 @@ function onSubmit() {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <UFormField label="Parent category" help="Select “— (root)” for a top-level category.">
           <USelect
-            v-model="form.parentId"
+            v-model="parentModel"
             :items="parentOptions"
             value-key="value"
             class="w-full"

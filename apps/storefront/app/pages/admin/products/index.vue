@@ -24,21 +24,27 @@ const router = useRouter()
 
 const search = ref((route.query.q as string) || '')
 const searchDebounced = refDebounced(search, 300)
-// Reka UI's <SelectItem> reserves the empty string for "clear selection", so
-// "all statuses" uses an explicit sentinel and is dropped when building
-// query params / the URL.
-type StatusFilter = 'all' | 'draft' | 'active' | 'archived'
-const status = ref<StatusFilter>((route.query.status as StatusFilter) || 'all')
+// Underlying status storage uses '' for "all" (the real domain value).
+// `useSelectSentinel` exposes 'all' to Reka's SelectItem, which reserves
+// `value=''` for "clear selection".
+type StatusValue = '' | 'draft' | 'active' | 'archived'
+const initialStatus = (route.query.status as string | undefined)
+const statusValue = ref<StatusValue>(
+  initialStatus === 'draft' || initialStatus === 'active' || initialStatus === 'archived'
+    ? initialStatus
+    : '',
+)
+const status = useSelectSentinel(statusValue, { sentinel: 'all', empty: '' as StatusValue })
 const page = ref(Number(route.query.page) || 1)
 const perPage = 20
 
 watch(searchDebounced, () => { page.value = 1 })
-watch(status, () => { page.value = 1 })
+watch(statusValue, () => { page.value = 1 })
 
 watchEffect(() => {
   const q: Record<string, string> = {}
   if (searchDebounced.value) q.q = searchDebounced.value
-  if (status.value !== 'all') q.status = status.value
+  if (statusValue.value) q.status = statusValue.value
   if (page.value > 1) q.page = String(page.value)
   router.replace({ query: q })
 })
@@ -46,7 +52,7 @@ watchEffect(() => {
 const queryParams = computed(() => {
   const p: Record<string, string | number> = { page: page.value, perPage }
   if (searchDebounced.value) p.search = searchDebounced.value
-  if (status.value !== 'all') p.status = status.value
+  if (statusValue.value) p.status = statusValue.value
   return p
 })
 

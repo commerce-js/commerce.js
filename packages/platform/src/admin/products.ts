@@ -84,6 +84,7 @@ function mapProduct(row: any, related: {
       parentId: c.parentId ?? null,
       children: [],
       productCount: null,
+      sortOrder: c.sortOrder ?? 0,
     })),
     inStock: Boolean(row.inStock),
     vatIncluded: Boolean(row.vatIncluded),

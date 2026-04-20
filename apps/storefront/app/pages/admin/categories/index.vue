@@ -27,7 +27,16 @@ const { data, pending, error, refresh } = await useFetch<Category[]>(
   },
 )
 
-const items = computed(() => data.value ?? [])
+// Sort by sortOrder ascending, then name for deterministic ordering among
+// categories sharing a sort value.
+const items = computed(() => {
+  const rows = data.value ?? []
+  return [...rows].sort((a, b) => {
+    const cmp = (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+    if (cmp !== 0) return cmp
+    return t(a.name).localeCompare(t(b.name))
+  })
+})
 const total = computed(() => items.value.length)
 
 const parentNameById = computed(() => {
@@ -36,13 +45,12 @@ const parentNameById = computed(() => {
   return map
 })
 
-// sortOrder is set on create/update but the Category type doesn't expose it
-// back — so it's not rendered as a column. Keep it as a form field only.
 const columns = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'slug', header: 'Slug' },
   { accessorKey: 'parent', header: 'Parent' },
   { accessorKey: 'products', header: 'Products' },
+  { accessorKey: 'sortOrder', header: 'Sort', size: 80 },
   { accessorKey: 'actions', header: '', size: 100 },
 ]
 
@@ -167,6 +175,9 @@ async function confirmDelete() {
         </template>
         <template #products-cell="{ row }">
           <span class="text-sm">{{ row.original.productCount ?? '—' }}</span>
+        </template>
+        <template #sortOrder-cell="{ row }">
+          <span class="text-sm tabular-nums text-muted">{{ row.original.sortOrder }}</span>
         </template>
         <template #actions-cell="{ row }">
           <div class="flex items-center justify-end gap-1">

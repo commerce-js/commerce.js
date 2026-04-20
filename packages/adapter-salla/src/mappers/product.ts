@@ -122,6 +122,7 @@ export function mapSallaProduct(raw: SallaRawProduct, locale: string = 'ar'): Pr
       parentId: null,
       children: [],
       productCount: null,
+      sortOrder: 0,
     })),
     inStock: raw.is_available,
     vatIncluded: true,

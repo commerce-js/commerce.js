@@ -14,4 +14,6 @@ export interface Category {
   parentId: Maybe<Id>
   children: Category[]
   productCount: Maybe<number>
+  /** Lower values sort first; merchants can override to pin priority categories. */
+  sortOrder: number
 }

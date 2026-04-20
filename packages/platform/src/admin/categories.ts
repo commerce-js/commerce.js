@@ -11,6 +11,7 @@ import {
   deleteCategoryById,
   findCategoryChildren,
   findCategories,
+  findProductIdsByCategory,
 } from '../database/index.js'
 import { localized, img } from '../domains/helpers.js'
 
@@ -33,6 +34,7 @@ function mapCategory(row: any): Category {
     parentId: row.parentId ?? null,
     children: [],
     productCount: null,
+    sortOrder: row.sortOrder ?? 0,
   }
 }
 
@@ -81,6 +83,25 @@ export function createAdminCategoriesDomain() {
       if (input.parentId !== undefined) updates.parentId = input.parentId
       if (input.sortOrder != null) updates.sortOrder = input.sortOrder
 
+      // Parent-chain cycle guard. A category pointed at itself or at one of
+      // its own descendants breaks the tree — reject before writing.
+      if (input.parentId != null && input.parentId !== '') {
+        if (input.parentId === id) {
+          throw new Error('Cannot set a category as its own parent')
+        }
+        let cursor: string | null | undefined = input.parentId
+        const seen = new Set<string>()
+        while (cursor) {
+          if (cursor === id) {
+            throw new Error('Cannot set a descendant as the parent (cycle)')
+          }
+          if (seen.has(cursor)) break // broken pre-existing tree — stop walking
+          seen.add(cursor)
+          const parentRow: any = await findCategoryById(cursor)
+          cursor = parentRow?.parentId ?? null
+        }
+      }
+
       await updateCategoryById(id, updates)
 
       const row = await findCategoryById(id)
@@ -88,10 +109,18 @@ export function createAdminCategoriesDomain() {
     },
 
     async deleteCategory(id: string): Promise<void> {
-      // Check for children — prevent orphaning
+      // Prevent orphaning: block delete if any children exist.
       const children = await findCategoryChildren(id)
       if (children.length > 0) {
         throw new Error(`Cannot delete category ${id}: it has ${children.length} child categories`)
+      }
+
+      // Prevent silent orphaning of product ↔ category links.
+      const attachedProductIds = await findProductIdsByCategory(id)
+      if (attachedProductIds.length > 0) {
+        throw new Error(
+          `Cannot delete category ${id}: it has ${attachedProductIds.length} attached product${attachedProductIds.length === 1 ? '' : 's'}`,
+        )
       }
 
       await deleteCategoryById(id)

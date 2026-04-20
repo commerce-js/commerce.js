@@ -5,10 +5,11 @@
 //
 // Append-only feed of who did what, rendered grouped by day. Filters: actor
 // (from admin.auth.listAdmins), entityType, and a from/to date range
-// (matches T11 analytics UX). Pagination through a UPagination. Rows with
-// a null actorId mean the admin was deleted — we still render using the
-// snapshotted actorEmail column and tag the row with a muted "(deleted)"
-// chip.
+// (matches T11 analytics UX). Pagination through a UPagination. Rows
+// flagged as "deleted" fall into two cases: a null actorId (system action
+// against a now-deleted admin) OR an actorId that no longer appears in the
+// live admin list (orphaned after delete). In both cases the snapshotted
+// actorEmail still renders for context.
 // ---------------------------------------------------------------------------
 
 import type { AdminUserSafe } from '@commercejs/platform'
@@ -43,8 +44,13 @@ const { label: actionLabel } = useActivityLabel()
 const page = ref(1)
 const perPage = 50
 
-const actorId = ref<string>('all')
-const entityType = ref<string>('all')
+// Underlying storage uses '' for "all" (the real domain value). The
+// `useSelectSentinel` wrappers expose `'all'` to Reka's SelectItem, which
+// reserves `value=''` for "clear selection".
+const actorIdValue = ref<string>('')
+const entityTypeValue = ref<string>('')
+const actorId = useSelectSentinel(actorIdValue, { sentinel: 'all', empty: '' })
+const entityType = useSelectSentinel(entityTypeValue, { sentinel: 'all', empty: '' })
 
 function daysAgo(n: number): string {
   const d = new Date()
@@ -87,14 +93,14 @@ const entityOptions = [
 ]
 
 // Reset to page 1 when filters change
-watch([actorId, entityType, preset, customFrom, customTo], () => {
+watch([actorIdValue, entityTypeValue, preset, customFrom, customTo], () => {
   page.value = 1
 })
 
 const queryParams = computed(() => {
   const q: Record<string, string | number> = { page: page.value, perPage }
-  if (actorId.value !== 'all') q.actorId = actorId.value
-  if (entityType.value !== 'all') q.entityType = entityType.value
+  if (actorIdValue.value) q.actorId = actorIdValue.value
+  if (entityTypeValue.value) q.entityType = entityTypeValue.value
   const r = effectiveRange.value
   if (r.from) q.from = r.from
   if (r.to) q.to = r.to
@@ -111,6 +117,17 @@ const actorOptions = computed(() => [
   { label: 'All actors', value: 'all' },
   ...((admins.value ?? []).map(a => ({ label: a.email, value: a.id }))),
 ])
+
+// Set of currently-live admin ids, derived from the already-fetched staff
+// list. An event whose actorId isn't in this set is an orphan — the admin
+// was deleted after the row was written. The snapshotted actorEmail still
+// renders for context; the "deleted" chip tags the row so staff can tell
+// the actor is gone.
+const liveAdminIds = computed(() => new Set((admins.value ?? []).map(a => a.id)))
+
+function isOrphanActor(ev: ActivityEvent): boolean {
+  return !!ev.actorId && !liveAdminIds.value.has(ev.actorId)
+}
 
 const { data, pending, error } = await useFetch<PaginatedActivity>('/api/admin/activity', {
   credentials: 'include',
@@ -277,7 +294,7 @@ function diffSummary(diff: Record<string, unknown> | null): string {
                   {{ ev.actorEmail }}
                 </span>
                 <UBadge
-                  v-if="!ev.actorId"
+                  v-if="!ev.actorId || isOrphanActor(ev)"
                   color="neutral"
                   variant="subtle"
                   size="sm"

@@ -25,5 +25,6 @@ export function mapSallaCategory(raw: SallaRawCategory, locale: string = 'ar'): 
     parentId: raw.parent_id ? String(raw.parent_id) : null,
     children: [],
     productCount: raw.products_count,
+    sortOrder: raw.sort_order ?? 0,
   }
 }

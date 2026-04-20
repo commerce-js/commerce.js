@@ -16,5 +16,6 @@ export function mapMedusaCategory(c: MedusaProductCategory): Category {
     parentId: c.parent_category_id ?? null,
     children: (c.category_children ?? []).map(child => mapMedusaCategory(child)),
     productCount: null,
+    sortOrder: c.rank ?? 0,
   }
 }

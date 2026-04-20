@@ -21,7 +21,6 @@ const { data: categories } = await useFetch<Category[]>('/api/admin/categories',
   key: 'admin-categories-parent-options',
 })
 
-const ROOT_SENTINEL = '__root__'
 const submitting = ref(false)
 
 function toPayload(value: CategoryFormValue) {
@@ -32,7 +31,7 @@ function toPayload(value: CategoryFormValue) {
     description: value.description.trim() || undefined,
     descriptionAr: value.descriptionAr.trim() || undefined,
     image: value.image || undefined,
-    parentId: value.parentId && value.parentId !== ROOT_SENTINEL ? value.parentId : undefined,
+    parentId: value.parentId || undefined,
     sortOrder: value.sortOrder ?? undefined,
   }
 }
