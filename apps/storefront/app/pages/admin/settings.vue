@@ -351,10 +351,15 @@ function onDiscard() {
 
 const activeSection = ref(sections[0]!.id)
 let sectionObserver: IntersectionObserver | null = null
+// Guards observer callbacks during programmatic smooth-scroll so the
+// transient sections the scroll passes through don't flicker the nav.
+let scrollLockUntil = 0
 
 function scrollTo(id: string) {
   const el = document.getElementById(id)
   if (!el) return
+  activeSection.value = id
+  scrollLockUntil = Date.now() + 800
   el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
@@ -380,6 +385,7 @@ onMounted(() => {
 
   sectionObserver = new IntersectionObserver(
     (entries) => {
+      if (Date.now() < scrollLockUntil) return
       const visible = entries
         .filter(e => e.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
