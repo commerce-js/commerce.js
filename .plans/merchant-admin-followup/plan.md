@@ -27,7 +27,7 @@
 * [x] [**T07**: Customers (list + detail, read-first)](tasks/T07.md) — Status: ✅ Completed (2026-04-19)
 * [x] [**T08**: Categories CRUD UI](tasks/T08.md) — Status: ✅ Completed (2026-04-19)
 * [x] [**T09**: Staff management (local-password)](tasks/T09.md) — Status: ✅ Completed (2026-04-20)
-* [ ] [**T10**: Inventory inline + low-stock](tasks/T10.md) — Status: 🟡 Planned
+* [x] [**T10**: Inventory inline + low-stock](tasks/T10.md) — Status: ✅ Completed (2026-04-20)
 * [ ] [**T11**: Analytics expansion](tasks/T11.md) — Status: 🟡 Planned
 * [ ] [**T12**: Storefront theming (CSS custom properties v1)](tasks/T12.md) — Status: 🟡 Planned
 * [ ] [**T13**: Audit log / activity feed](tasks/T13.md) — Status: 🟡 Planned — blocked by T09

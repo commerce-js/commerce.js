@@ -20,6 +20,7 @@ const navLinks = [
   { label: 'Dashboard', to: '/admin', icon: 'i-heroicons-squares-2x2-20-solid' },
   { label: 'Products', to: '/admin/products', icon: 'i-heroicons-cube-20-solid' },
   { label: 'Categories', to: '/admin/categories', icon: 'i-heroicons-tag-20-solid' },
+  { label: 'Inventory', to: '/admin/inventory', icon: 'i-heroicons-archive-box-20-solid' },
   { label: 'Orders', to: '/admin/orders', icon: 'i-heroicons-shopping-bag-20-solid' },
   { label: 'Customers', to: '/admin/customers', icon: 'i-heroicons-users-20-solid' },
   { label: 'Staff', to: '/admin/staff', icon: 'i-heroicons-user-group-20-solid' },

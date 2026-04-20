@@ -162,6 +162,22 @@ export const changeStaffPasswordSchema = z.object({
   newPassword: z.string().min(8, 'New password must be at least 8 characters'),
 })
 
+// ---- Inventory ----
+
+// Mirrors UpdateInventoryInput in @commercejs/platform/admin. `adjustment`
+// defaults to 'set' on the platform side; we don't default here so the
+// server passes undefined through unchanged.
+export const updateInventorySchema = z.object({
+  productId: z.string().min(1),
+  variantId: z.string().optional(),
+  quantity: z.number().int(),
+  adjustment: z.enum(['set', 'increment', 'decrement']).optional(),
+})
+
+export const lowStockQuerySchema = z.object({
+  threshold: z.coerce.number().int().nonnegative().optional(),
+})
+
 // ---- Store settings ----
 
 // Mirrors UpdateStoreInput in @commercejs/platform/admin. Empty-string
