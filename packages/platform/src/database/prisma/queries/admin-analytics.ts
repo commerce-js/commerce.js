@@ -81,6 +81,11 @@ export async function findTopProductsByRevenue(opts: AnalyticsRangeOpts & { limi
     units_sold: bigint | number
     revenue: any
   }
+  // NOTE: ::text casts on both sides of the product_id join — some merchant
+  // Neon branches have products.id as uuid and order_items.product_id as
+  // text (schema drift from early provisioning), which crashes the raw query
+  // with `operator does not exist: uuid = text`. Casting both sides makes
+  // the join resilient to either shape.
   const rows = await prisma.$queryRaw<ProductQueryRow[]>(Prisma.sql`
     SELECT
       p.id AS product_id,
@@ -90,8 +95,8 @@ export async function findTopProductsByRevenue(opts: AnalyticsRangeOpts & { limi
       COALESCE(SUM(oi.quantity), 0) AS units_sold,
       COALESCE(SUM(oi.total_price), 0) AS revenue
     FROM order_items oi
-    INNER JOIN orders o ON o.id = oi.order_id
-    INNER JOIN products p ON p.id = oi.product_id
+    INNER JOIN orders o ON o.id::text = oi.order_id::text
+    INNER JOIN products p ON p.id::text = oi.product_id::text
     WHERE o.status NOT IN ('cancelled', 'refunded')
       ${fromClause}
       ${toClause}
@@ -138,7 +143,7 @@ export async function findTopCustomersBySpend(opts: AnalyticsRangeOpts & { limit
       COUNT(o.id) AS order_count,
       COALESCE(SUM(o.total), 0) AS lifetime_value
     FROM customers c
-    INNER JOIN orders o ON o.customer_id = c.id
+    INNER JOIN orders o ON o.customer_id::text = c.id::text
     WHERE o.status NOT IN ('cancelled', 'refunded')
       ${fromClause}
       ${toClause}

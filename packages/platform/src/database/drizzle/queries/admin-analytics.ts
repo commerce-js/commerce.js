@@ -3,7 +3,7 @@
 // top customers. All exclude cancelled + refunded orders from revenue sums.
 // ---------------------------------------------------------------------------
 
-import { sql, and, gte, lte, notInArray, eq, asc } from 'drizzle-orm'
+import { sql, and, gte, lte, notInArray, asc } from 'drizzle-orm'
 import { getDb } from '../client.js'
 import * as schema from '../schema/index.js'
 import { parseFromBound, parseToBound } from '../../date-bounds.js'
@@ -85,9 +85,11 @@ export async function findTopProductsByRevenue(opts: AnalyticsRangeOpts & { limi
       unitsSold: sql<number>`COALESCE(SUM(${schema.orderItems.quantity}), 0)`,
       revenue: sql<string>`COALESCE(SUM(${schema.orderItems.totalPrice}), 0)`,
     })
+    // ::text casts make the joins resilient to merchant DB schema drift
+    // where products.id may be UUID on some branches and text on others.
     .from(schema.orderItems)
-    .innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId))
-    .innerJoin(schema.products, eq(schema.products.id, schema.orderItems.productId))
+    .innerJoin(schema.orders, sql`${schema.orders.id}::text = ${schema.orderItems.orderId}::text`)
+    .innerJoin(schema.products, sql`${schema.products.id}::text = ${schema.orderItems.productId}::text`)
     .where(and(...conditions))
     .groupBy(schema.products.id, schema.products.name, schema.products.nameAr, schema.products.sku)
     .orderBy(sql`COALESCE(SUM(${schema.orderItems.totalPrice}), 0) DESC`, asc(schema.products.name))
@@ -124,7 +126,7 @@ export async function findTopCustomersBySpend(opts: AnalyticsRangeOpts & { limit
       lifetimeValue: sql<string>`COALESCE(SUM(${schema.orders.total}), 0)`,
     })
     .from(schema.customers)
-    .innerJoin(schema.orders, eq(schema.orders.customerId, schema.customers.id))
+    .innerJoin(schema.orders, sql`${schema.orders.customerId}::text = ${schema.customers.id}::text`)
     .where(and(...conditions))
     .groupBy(schema.customers.id, schema.customers.email)
     .orderBy(sql`COALESCE(SUM(${schema.orders.total}), 0) DESC`, asc(schema.customers.email))
