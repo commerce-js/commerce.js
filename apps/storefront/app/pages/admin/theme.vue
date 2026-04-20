@@ -50,8 +50,11 @@ interface FormState {
 const DEFAULT_PRIMARY = '#22c55e'
 const DEFAULT_ACCENT = '#f59e0b'
 
+// Reka UI's <SelectItem> reserves the empty string for "clear selection", so
+// "System default" (no explicit font) ships as a `__default__` sentinel and
+// is translated to '' when persisted on form.fontFamily.
 const FONT_OPTIONS = [
-  { label: 'System default', value: '' },
+  { label: 'System default', value: '__default__' },
   { label: 'Inter', value: 'Inter' },
   { label: 'Cairo', value: 'Cairo' },
   { label: 'Tajawal', value: 'Tajawal' },
@@ -130,7 +133,7 @@ const fontPresetValue = computed<string>({
   get() {
     if (fontMode.value === 'custom') return '__custom__'
     const known = new Set(FONT_OPTIONS.map(o => o.value))
-    return known.has(form.fontFamily) ? form.fontFamily : ''
+    return known.has(form.fontFamily) ? form.fontFamily : '__default__'
   },
   set(v: string) {
     if (v === '__custom__') {
@@ -141,7 +144,7 @@ const fontPresetValue = computed<string>({
     }
     else {
       fontMode.value = 'preset'
-      form.fontFamily = v
+      form.fontFamily = v === '__default__' ? '' : v
     }
   },
 })
