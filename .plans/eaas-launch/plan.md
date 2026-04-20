@@ -34,7 +34,7 @@
 * [ ] **Research & Strategy Selection** ✅ Completed (2026-04-20)
 
 * [x] [**T01**: Platform polish](tasks/T01.md) — Status: ✅ Completed (2026-04-20) — 6 items cleared in a single bundle commit
-* [ ] [**T02**: Transactional emails](tasks/T02.md) — Status: 🟡 Planned — gates T03 + T04
+* [ ] [**T02**: Transactional emails](tasks/T02.md) — Status: 🟢 In Progress — sub-plan spawned 2026-04-20 at [`.plans/transactional-emails/`](../transactional-emails/plan.md); gates T03 + T04
 * [ ] [**T03**: Tap subscription billing](tasks/T03.md) — Status: 🟡 Planned — blocked by T02
 * [ ] [**T04**: Step 9 self-service signup](tasks/T04.md) — Status: 🟡 Planned — blocked by T02 + T03
 * [ ] [**T05**: `fly/eaas → main` branch-swap](tasks/T05.md) — Status: 🟡 Planned — blocked by T01–T04
@@ -213,7 +213,7 @@ a-time discipline; explicit parallel runs are fine.
 
 | Aspect | Decision | Source |
 |---|---|---|
-| Email provider | Resend (`@commercejs/notification-resend` already published) | `packages/notification-resend/` |
+| Email provider | SMTP via `@commercejs/notification-smtp` (nodemailer-backed); SMTP service target chosen in sub-plan T01 | `packages/notification-smtp/`, [`.plans/transactional-emails/`](../transactional-emails/plan.md) |
 | Email queue | BullMQ job on Upstash Redis; handler in `apps/dashboard/worker.ts` | `apps/dashboard/worker.ts` handleSendEmail stub |
 | Email templates | Co-located next to the dispatcher (likely `apps/dashboard/server/emails/*.ts` or a new package — decide in T02) | TBD in T02 sub-plan |
 | Billing provider | Tap Payments (subscription APIs, not one-off charge APIs) | Reuses `apps/hosted-checkout` patterns |
@@ -343,6 +343,21 @@ plan. Each has a forward-reference.
 
 ## Change Log
 
+- **2026-04-20**: T02 sub-plan spawned at `.plans/transactional-emails/`.
+  Research completed (Option A — vertical slices per task, staff-invite
+  first). Seven sub-tasks defined (T01 provider wiring + staff invite;
+  T02 password reset admin + buyer; T03 order confirmation; T04 welcome;
+  T05 email verification; T06 trial-ending with new BullMQ repeatable-job
+  infra; T07 retrofit sweep). T01 sub-task file spawned alongside the
+  master with the first-vertical-slice scope (end-to-end pipeline proof
+  on the T09-deferred staff-invite flow). Provider decision: SMTP via
+  `@commercejs/notification-smtp` (keeps existing `SMTP_*` env-var
+  shape from the stub — no secrets reshuffle). SMTP service target
+  (SES SMTP / Mailgun / Postmark / Resend-SMTP / self-hosted) decided
+  in sub-plan T01. Operator pre-reqs called out (SMTP service chosen,
+  credentials provisioned, DKIM/SPF/DMARC on `commercejs.cloud`,
+  `fly secrets set SMTP_*`). T02 row here flips 🟡 Planned → 🟢 In
+  Progress. `T02 → 🟢`.
 - **2026-04-20**: T01 platform polish shipped in a single bundle commit
   (`beea6d9`). Six items cleared: USelect sentinel helper (new composable
   + 4 consumers converted), bcrypt sync → async, categories hardening
