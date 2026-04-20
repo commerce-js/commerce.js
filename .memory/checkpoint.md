@@ -1,99 +1,94 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-20T1600.md`](checkpoints/2026-04-20T1600.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-17T1800.md`](checkpoints/2026-04-17T1800.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-20T1815.md`](checkpoints/2026-04-20T1815.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-20T1600.md`](checkpoints/2026-04-20T1600.md)
 
 ## Current Phase
 
-**Merchant-admin-followup workstream CLOSED.** T06–T13 all ✅. With the
-earlier T01–T05 merchant-admin plan also ✅, the whole merchant-admin
-scope on CommerceJS Cloud is done — no remaining admin-UI gap. T13
-(audit log / activity feed) shipped + deployed + 9/9 acceptance green
-on `smoke.commercejs.cloud` at 15:50 UTC today.
+**eaas-launch T01 (platform polish) shipped locally 2026-04-20.** Single
+bundle commit `beea6d9` cleared six carry-overs from the T01–T13
+merchant-admin workstream. Live deploy + 9-scenario smoke acceptance
+deferred pending explicit user go-ahead. After acceptance, T02
+transactional emails is next on the eaas-launch critical path
+(emails-first gates T03 billing + T04 signup).
 
-## What Just Landed (T13, 2026-04-20)
+## What Just Landed (T01, 2026-04-20)
 
-Three commits on `fly/eaas`:
+One commit on `fly/eaas`:
 
-- `2131a45` feat(platform): T13 activity log — AdminAPI.recordActivity +
-  listActivity
-- `82645cf` feat(merchant-admin): T13 activity log — audit helper + route
-  retrofits + timeline UI
-- `963a125` fix(merchant-admin): use sentinels for empty USelect values
-  (out-of-scope USelect empty-value fix on products/index.vue +
-  theme.vue — fourth appearance of the Reka pattern)
+- `beea6d9` feat(eaas-launch): T01 platform polish — sentinel helper
+  + bcrypt async + categories hardening
 
-Plus the docs commit flipping plan trackers + grand-plan State Snapshot
-+ filling Lessons Learned across the whole T06–T13 workstream.
+Plus plan + checkpoint + grand-plan docs flip in this same session.
 
-## What Was Built (T13 in a paragraph)
+## What Was Built (T01 in a paragraph)
 
-Every mutation on the merchant admin API now writes an append-only row
-to a new `activity_events` table on the merchant's Neon branch.
-AdminAPI.recordActivity + listActivity on both Prisma + Drizzle drivers
-at parity (153/153 exports in sync). The dashboard's audit.ts helper
-reads the current merchant session, snapshots actorId + actorEmail at
-call time, and calls recordActivity with blanket try/catch so an audit
-failure can't break the business mutation. 15 existing mutation routes
-retrofitted to call the helper AFTER the platform call. /admin/activity.vue
-renders a day-grouped timeline with actor + entityType + date-range
-filters (UX matches T11 analytics). Sidebar "Activity" link lands between
-Theme and Settings. Lazy-migrate pattern confirmed for CREATE TABLE IF
-NOT EXISTS (first live test, after T09/T12 proved the ADD COLUMN shape).
-Full task summary in
-[`.plans/merchant-admin-followup/tasks/T13.md`](../.plans/merchant-admin-followup/tasks/T13.md).
+Six carry-over items resolved in a single 17-file commit. New
+`useSelectSentinel` composable under `apps/storefront/app/composables/`
+wraps Reka's empty-value crash; four consumers converted (products
+status, activity actor, activity entityType, categories parent via
+AdminCategoryForm) — theme font dropdown deliberately skipped due to
+3-mode state machine. bcrypt sync→async across all four call sites in
+platform admin auth. Categories hardening: `deleteCategory` now blocks
+on attached products, `updateCategory` walks the parent chain and
+rejects self-parent + descendant cycles, `Category.sortOrder` promoted
+to required number with 8 mappers updated and the T08 list page gaining
+a Sort column. T13 "deleted" chip now detects orphan actorIds via a
+`liveAdminIds` Set cross-check. Smoke merchant schema drift documented
+(Option B — no normalization). `@commercejs/storage-s3 v0.2.1`
+changeset verified as the presign X-Amz-Expires fix. 10 new unit tests
+(60 admin tests total on the platform package now). 294/294 monorepo
+tests green. Query parity 153/153. Full details in
+[`.plans/eaas-launch/tasks/T01.md`](../.plans/eaas-launch/tasks/T01.md)
+Execution Summary and in
+[`.memory/checkpoints/2026-04-20T1815.md`](checkpoints/2026-04-20T1815.md).
 
 ## Carry-Overs Into Future Sessions
 
-See [`2026-04-20T1600.md`](checkpoints/2026-04-20T1600.md) for the
-full list. New items from T13:
-
-1. **USelect sentinel helper** — four consumers deep (T08 '__root__',
-   T13 'all', T12-fix '__default__', T03 status). One composable kills
-   the repetition. Pre-work for the next admin task.
-2. **T13 "deleted" chip UX polish** — only fires for actorId=null
-   (system actions), not for orphaned-after-delete actorId. Cross-check
-   against listAdmins() would fix it. v2 polish.
-
-Ongoing carry-overs unchanged from 2026-04-17:
-
-3. Platform categories hardening (T08-surfaced gaps).
-4. bcrypt.compareSync → async compare (T01-review).
-5. @commercejs/storage-s3 v0.2.1 changeset unreleased.
-6. NUXT_* prefix gotcha — keep top of `.memory/gotchas.md`.
-7. Smoke merchant schema drift — ::text cast pattern for any new raw
-   SQL join.
+1. **T01 live deploy + 9-scenario smoke acceptance** — explicit-go
+   gated. Scenarios in T01.md Test Scenarios (login latency / category
+   delete with products / self-parent / descendant-cycle / Sort column
+   / orphan deleted chip / system-action chip / no Reka console errors
+   / storage-s3 0.2.1 published).
+2. **@commercejs/storage-s3 v0.2.1 publish** — changeset file
+   verified; publish runs via CI from a publish-capable branch.
+   fly/eaas has no release workflow wired, so this rides the T05
+   branch-swap or an explicit `pnpm changeset publish` from main.
+3. **Smoke merchant schema drift** — Option B in place
+   (`::text` casts in analytics); dedicated
+   `.plans/schema-normalize/` plan if we decide to retire them.
+4. **Pre-existing apps/ typecheck debt** — storefront + dashboard
+   surface ~36 TS errors on unrelated admin pages (h3 resolution,
+   `@vueuse/core`, `Image.altText`, `Address.email/name`, ioredis
+   version dup). Worth a pass before T05 branch-swap.
+5. **NUXT_* prefix gotcha** — keep top of `.memory/gotchas.md`.
 
 ## What's Next (user's call)
 
-Three obvious candidates:
+**After T01 deploy + acceptance**:
 
-1. **Tap subscription billing** — merchant SaaS plan charges. No plan
-   doc yet. `Merchant.tapCustomerId` column plumbed.
-2. **Transactional emails** — `handleSendEmail` stub in worker.ts.
-   Unblocks T09's deferred email-invite flow.
-3. **Step 9 fly-migration-plan** — self-service signup + plan enforcement.
-   The last EaaS pipeline piece before public launch.
-
-Or a "platform polish" commit bundling the USelect sentinel helper +
-categories hardening + bcrypt fix.
+**T02 transactional emails** — the emails-first critical path on
+eaas-launch. Gates T03 billing and T04 signup. Will spawn
+`.plans/transactional-emails/plan.md` on start.
+`@commercejs/notification-resend` provider already published;
+scope is templates + BullMQ wiring + `handleSendEmail` stub
+replacement in `apps/dashboard/worker.ts`.
 
 ## Live Deployment
 
 - App: `commercejs-cloud` (Fly.io, Frankfurt)
-- Image: tip of `fly/eaas` after today's 15:45 UTC deploy
+- Image: tip of `fly/eaas` BEFORE this commit (T01 not yet deployed)
 - Health: `https://commercejs-cloud.fly.dev/api/_health` → 200
-- Smoke merchant: `https://smoke.commercejs.cloud` — admin login
-  working, 5 activity events populated from acceptance run.
 
 ## Where to Look
 
 | Question | File |
 |---|---|
 | Project orientation + current phase (start here) | `.plans/grand-plan.md` |
-| What shipped this session + carry-overs (detailed) | `.memory/checkpoints/2026-04-20T1600.md` |
-| T13 task spec + Execution Summary | `.plans/merchant-admin-followup/tasks/T13.md` |
-| T06–T13 workstream Lessons Learned | `.plans/merchant-admin-followup/plan.md` |
+| eaas-launch master plan (T01–T05) | `.plans/eaas-launch/plan.md` |
+| T01 task spec + Execution Summary | `.plans/eaas-launch/tasks/T01.md` |
+| What shipped this session + carry-overs (detailed) | `.memory/checkpoints/2026-04-20T1815.md` |
+| Previous session (T06–T13 recap) | `.memory/checkpoints/2026-04-20T1600.md` |
 | Architectural decisions (locked) | `.memory/decisions.md` |
 | Hard-won bugs | `.memory/gotchas.md` |
 | Phase 7 roadmap state | `.plans/roadmap.md` |

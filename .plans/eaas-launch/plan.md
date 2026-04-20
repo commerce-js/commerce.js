@@ -33,7 +33,7 @@
 
 * [ ] **Research & Strategy Selection** ✅ Completed (2026-04-20)
 
-* [ ] [**T01**: Platform polish](tasks/T01.md) — Status: 🟡 Planned — independent, ship anytime
+* [x] [**T01**: Platform polish](tasks/T01.md) — Status: ✅ Completed (2026-04-20) — 6 items cleared in a single bundle commit
 * [ ] [**T02**: Transactional emails](tasks/T02.md) — Status: 🟡 Planned — gates T03 + T04
 * [ ] [**T03**: Tap subscription billing](tasks/T03.md) — Status: 🟡 Planned — blocked by T02
 * [ ] [**T04**: Step 9 self-service signup](tasks/T04.md) — Status: 🟡 Planned — blocked by T02 + T03
@@ -343,6 +343,17 @@ plan. Each has a forward-reference.
 
 ## Change Log
 
+- **2026-04-20**: T01 platform polish shipped in a single bundle commit
+  (`beea6d9`). Six items cleared: USelect sentinel helper (new composable
+  + 4 consumers converted), bcrypt sync → async, categories hardening
+  (delete-with-products guard, updateCategory cycle guard, Category type
+  gains required `sortOrder` with 8 mappers updated + T08 list page
+  adopts the Sort column), T13 "deleted" chip now detects orphan
+  actorIds, storage-s3 v0.2.1 changeset verified (publish remains gated
+  on CI / branch-swap — not runnable from fly/eaas). 10 new unit tests;
+  294/294 monorepo tests green; query parity 153/153. Deploy + live
+  acceptance deferred until the user says go — smoke cadence per T01.md
+  "Test Scenarios". `T01 → ✅`.
 - **2026-04-20**: Plan created. Research completed (Option A selected);
   five tasks (T01–T05) defined to close out the EaaS pre-launch scope.
   Master plan at `.plans/eaas-launch/`; T02 + T03 will spawn sub-plans

@@ -68,26 +68,29 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 
 ## 🎯 What's Next
 
-**Merchant-admin scope CLOSED.** T06–T13 follow-up workstream shipped over
-2026-04-19 → 2026-04-20 (eight commits, eight deploys, 8×N live acceptance
-scenarios all green on `smoke.commercejs.cloud`). Every parent-deferred item
-from the T01–T05 plan is now live: settings (T06), customers (T07), categories
-CRUD (T08), staff management with local password (T09), inventory inline +
-low-stock (T10), analytics expansion with revenue series + top products/
-customers + AOV + refund rate (T11), storefront theming via CSS custom
-properties (T12), and activity log / audit trail (T13). Merchants on
-CommerceJS Cloud now have a self-service admin comparable to Shopify /
-Salla at the feature set a real SMB store needs. No remaining admin-UI gap.
-T13 also established the first live `CREATE TABLE IF NOT EXISTS` lazy-migrate
-against a pre-existing Neon branch, confirming the pattern generalizes
-beyond the `ADD COLUMN` case T09/T12 previously proved. **Next up to the
-user** — the obvious next workstreams are (1) Tap subscription billing for
-merchant SaaS plan charges (no plan doc yet; `Merchant.tapCustomerId` column
-plumbed), (2) transactional emails (order confirmations + password resets
-+ trial-ending; `handleSendEmail` stub in `worker.ts`), or (3) Step 9 of
-the Fly migration plan (self-service signup + plan enforcement). T13
-optionally enables a shared USelect-sentinel helper cleanup; see the
-merchant-admin-followup Lessons Learned.
+**eaas-launch T01 (platform polish) locally shipped 2026-04-20.** Single
+bundle commit (`beea6d9`) cleared six carry-overs from the T01–T13
+merchant-admin workstream: `useSelectSentinel` composable + 4 consumers
+(T06 '__default__' theme font deliberately skipped — 3-mode logic
+doesn't fit); bcrypt sync→async on platform admin auth; categories
+hardening (delete-with-products guard, self/descendant-cycle guard,
+`Category.sortOrder` promoted to required + 8 mappers updated + T08
+list gains a Sort column); T13 "deleted" chip now detects orphan
+actorIds against the live admin Set; smoke-merchant schema drift
+defaulted to Option B (documented, not normalized); storage-s3 v0.2.1
+changeset verified. 10 new unit tests; 294/294 monorepo tests green;
+query parity 153/153. **Awaiting explicit-go for `fly deploy` + T01
+live acceptance on `smoke.commercejs.cloud`** — 9 scenarios per
+T01.md Test Scenarios.
+
+**After T01 deploy: the eaas-launch critical path.** T02 transactional
+emails is next (emails-first gates T03 billing + T04 signup). T02 will
+spawn `.plans/transactional-emails/plan.md` on start. Full roadmap +
+dependencies in [`eaas-launch/plan.md`](eaas-launch/plan.md).
+
+**Merchant-admin scope remains CLOSED** (T01–T13 all ✅). T01 platform
+polish shipped as part of the new eaas-launch plan, NOT a reopening of
+the merchant-admin workstream.
 
 **Parallel (non-blocking) track.** ✅ Landed 2026-04-17 alongside T05 — the dashboard's tenant middleware now uses the per-event `registerEventResolver()` + `useEvent()` pattern that `apps/hosted-checkout` already runs. `event.context.db = prismaClient` is set in the middleware before `ensureAdapter()`, and a Nitro plugin wires the platform's `getDb()` to read from there. The race-prone `bindDb()` + `initPrisma()` fallback is gone from the dashboard request path (worker + provisioner still use explicit `runWithDb()` callbacks, which are unaffected). Verified live on `smoke.commercejs.cloud` — login, admin.listOrders, admin.listProducts, admin.stats, storefront catalog/store, and SSR homepage all still 200. Multi-merchant concurrent prod traffic is now safe.
 
@@ -110,7 +113,61 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 ─────────────────────────────────────────────────────────
   Active branch:         fly/eaas
   Latest checkpoint:     .memory/checkpoint.md
-  Last major milestone:  Merchant-admin-followup T13 (audit log /
+  Last major milestone:  eaas-launch T01 (platform polish) shipped in a
+                         single bundle commit `beea6d9` — six carry-over
+                         items cleared in one pass. (1) New
+                         `useSelectSentinel` composable under
+                         `apps/storefront/app/composables/` bridging
+                         Reka's empty-string ban. 4 consumers converted
+                         (5 call sites): products status, categories
+                         parent (via AdminCategoryForm), activity actor
+                         + entityType. Theme font dropdown explicitly
+                         left out — 3-mode state machine doesn't fit
+                         the 2-value helper and converting would grow
+                         the code. (2) bcrypt sync→async on
+                         `packages/platform/src/admin/auth.ts` (login,
+                         changePassword, createAdmin, seedInitialAdmin)
+                         — stops ~100ms event-loop block per login.
+                         (3) Categories hardening: `deleteCategory`
+                         rejects when attached products exist
+                         (`findProductIdsByCategory` guard);
+                         `updateCategory` walks parent chain and rejects
+                         self-parent + descendant-cycle; `Category.sortOrder`
+                         promoted to required number across 8 mappers
+                         (Salla `sort_order`, Medusa `rank`, platform
+                         columns, default 0 elsewhere); T08 list page
+                         now renders a Sort column and sorts by
+                         `sortOrder ASC, name`. (4) T13 "deleted" chip
+                         now fires for orphan actorIds too (cross-checks
+                         `liveAdminIds` Set built from already-fetched
+                         staff list); system actions (actorId=null)
+                         still show the chip as before. (5) Smoke
+                         merchant schema drift — default-deferred
+                         (Option B from T01.md): drift stays in place
+                         absorbed via the existing `::text` casts; a
+                         dedicated schema-normalize plan can retire it
+                         later. (6) `@commercejs/storage-s3 v0.2.1`
+                         changeset verified as the presign X-Amz-Expires
+                         fix (not a stale draft); publish itself
+                         remains gated on CI run from a publish-capable
+                         branch (fly/eaas is not wired to the release
+                         workflow). 10 new unit tests in
+                         `admin-categories-guards.test.ts`: children
+                         guard, attached-products guard (plural +
+                         singular), self-parent reject, descendant-cycle
+                         reject, non-descendant accept, cleared
+                         parentId accept, sortOrder round-trip
+                         (populated + default). Query parity 153/153;
+                         294/294 monorepo tests green; platform +
+                         adapters + core + nuxt + ui + checkout + cloud
+                         builds green. Pre-existing storefront +
+                         dashboard typecheck errors on unrelated admin
+                         pages (h3 module, `@vueuse/core`, `altText`,
+                         ioredis version dup) NOT touched by this
+                         commit — zero new errors introduced on the 6
+                         files I edited. Live deploy + 9-scenario
+                         smoke acceptance deferred pending user go-ahead.
+  Earlier milestone:     Merchant-admin-followup T13 (audit log /
                          activity feed) shipped + deployed + 9/9
                          acceptance green on smoke.commercejs.cloud —
                          **closing the merchant-admin-followup
@@ -174,37 +231,48 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
                          workstream-wide findings (most important:
                          ship a shared USelect-sentinel helper before
                          the next admin task — four consumers deep).
-  Current blocker:       None. Merchant-admin-followup workstream
-                         closed. Awaiting user direction on the next
-                         workstream — three obvious candidates:
-                         (1) Tap subscription billing for merchant SaaS
-                         plan charges, (2) transactional emails
-                         (handleSendEmail stub in worker.ts), or (3)
-                         Step 9 self-service signup + plan enforcement.
-  Open carry-overs:      (1) Changeset attached but unreleased for
-                         @commercejs/storage-s3 v0.2.0 → 0.2.1 presign
-                         signature fix — run `pnpm release` to publish.
-                         (2) NUXT_* prefix gotcha has bitten 3× — keep
+  Current blocker:       Awaiting explicit-go for `fly deploy` + T01
+                         live smoke acceptance on smoke.commercejs.cloud
+                         (9 scenarios per T01.md Test Scenarios). With
+                         T01 merged locally, the next eaas-launch item
+                         is T02 transactional emails — emails-first
+                         critical path (gates T03 billing + T04 signup).
+                         T02 will spawn its own sub-plan at
+                         `.plans/transactional-emails/plan.md` on start.
+  Open carry-overs:      (1) T01 live deploy + 9-scenario smoke
+                         acceptance still owed (latency / category
+                         delete / category cycle / sort column / deleted
+                         chip orphan + system / no Reka console error /
+                         storage-s3 v0.2.1 published).
+                         (2) @commercejs/storage-s3 v0.2.1 publish —
+                         changeset file verified; publish runs via CI
+                         from a publish-capable branch (fly/eaas has no
+                         release workflow wired, so this rides the T05
+                         branch-swap or an explicit `pnpm changeset
+                         publish` from main).
+                         (3) NUXT_* prefix gotcha has bitten 3× — keep
                          near top of .memory/gotchas.md.
-                         (3) platform-hardening follow-up still owed —
-                         categories deleteCategory silent orphaning,
-                         updateCategory self-parent cycle, Category type
-                         omits sortOrder (surfaced during T08).
-                         (4) bcrypt.compareSync carry-over on
-                         packages/platform/src/admin/auth.ts — swap to
-                         async compare (T01-review finding).
-                         (5) T13 UX polish — "deleted" chip only fires
-                         for system actions (actorId null), not deleted
-                         staff whose orphan UUID stays on the row.
-                         (6) USelect sentinel helper — four consumers
-                         (T08 '__root__', T13 'all', T12-fix
-                         '__default__', T03 status filter). One
-                         composable would kill the repetition.
-                         (7) Smoke merchant schema drift
+                         (4) Smoke merchant schema drift
                          (products.id=UUID vs order_items.product_id=
-                         TEXT) — addressed inline via ::text casts in
+                         TEXT) — still absorbed via `::text` casts in
                          analytics; any new raw SQL join needs the
-                         same guard until normalized.
+                         same guard until normalized (deferred to a
+                         dedicated schema-normalize plan per T01.md
+                         Option B).
+                         (5) Pre-existing typecheck errors in
+                         apps/{storefront,dashboard} on unrelated admin
+                         pages (h3 resolution in dashboard, @vueuse/core
+                         + Image.altText + Address.email/name in
+                         storefront, ioredis version dup in worker.ts).
+                         None are blocking — surface during build/
+                         typecheck runs; worth a pass before T05
+                         branch-swap.
+                         (6) Theme font dropdown — explicitly NOT
+                         converted to useSelectSentinel (3-mode state
+                         machine doesn't fit 2-value helper). Left with
+                         its existing `fontPresetValue` computed;
+                         a polish task could extract a 3-mode helper
+                         if the pattern repeats on T03 billing UX.
   Last updated:          2026-04-20
 ─────────────────────────────────────────────────────────
 ```
@@ -246,6 +314,7 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 
 ## Change Log
 
+- **2026-04-20** — eaas-launch T01 (platform polish) shipped locally in a single bundle commit `beea6d9`. Six carry-over items cleared in one pass: (1) `useSelectSentinel` composable + 4 consumer conversions (theme font explicitly skipped — 3-mode state machine doesn't fit the 2-value helper); (2) bcrypt sync→async across all four call sites on platform admin auth (login, changePassword, createAdmin, seedInitialAdmin); (3) categories hardening on @commercejs/platform — `deleteCategory` rejects when attached products exist, `updateCategory` walks the parent chain and rejects self-parent + descendant-cycle, `Category.sortOrder` promoted to required `number` across 8 mappers (Salla `sort_order`, Medusa `rank`, platform columns, default 0 elsewhere), T08 list page gains a Sort column and sorts by `sortOrder ASC, name`; (4) T13 "deleted" chip now fires for orphan actorIds (cross-checks a `liveAdminIds` Set built from the already-fetched staff list), system-action rows still tagged as before; (5) smoke merchant Neon-branch schema drift — defaulted to Option B (drift stays; `::text` casts in analytics continue; dedicated schema-normalize plan deferred); (6) `@commercejs/storage-s3 v0.2.1` changeset verified (presign X-Amz-Expires fix; publish runs via CI from a publish-capable branch). 10 new unit tests in `admin-categories-guards.test.ts` (8 platform tests file, now 60 admin tests total on the platform package). Query parity 153/153 — no new queries (guards reuse existing finders). 294/294 monorepo tests green. Platform + adapters + core + nuxt + ui + checkout + cloud builds green. Pre-existing typecheck errors on unrelated admin pages surfaced (h3 resolution in dashboard, `@vueuse/core` + `Image.altText` + `Address.{email,name}` in storefront, ioredis version dup in worker.ts) — none are new. Open carry-overs rewritten in State Snapshot; "What's Next" flipped to reflect T01 landed + T02 emails next on the eaas-launch critical path. T01 live deploy + 9-scenario acceptance on smoke.commercejs.cloud remains owed pending explicit-go.
 - **2026-04-20** — Merchant-admin-followup T13 (audit log / activity feed) shipped + deployed + 9/9 acceptance green on smoke.commercejs.cloud. **Merchant-admin-followup workstream CLOSED (T06–T13 all ✅).** Phase 7 gains a new row "Merchant admin follow-up (T06–T13) ✅" referencing merchant-admin-followup/plan.md. Platform: activity_events table + 3 indexes on both Prisma + Drizzle drivers, first live test of CREATE TABLE IF NOT EXISTS + CREATE INDEX IF NOT EXISTS via the lazy-migrate pattern (T09/T12 previously proved ADD COLUMN); smoke's pre-existing Neon branch picked up the table on first request with no manual step. New AdminAPI.recordActivity (append-only) + listActivity (paginated + filterable) with types kept inside @commercejs/platform/admin (not @commercejs/types — platform-admin-only concern, avoided cross-package rebuild). 9 unit tests. Query parity 153/153. Dashboard: apps/dashboard/server/utils/audit.ts fire-and-forget helper + /api/admin/activity.get.ts Zod-validated route + 15 existing mutation routes retrofitted with recordActivity after the successful platform call. Storefront: /admin/activity.vue timeline (day-grouped, actor/entity/date filters mirror T11) + useActivityLabel composable + sidebar "Activity" link. Three commits on fly/eaas: `2131a45` (platform) + `82645cf` (apps) + `963a125` (out-of-scope USelect-sentinel fixes on products/index.vue + theme.vue — fourth and fifth appearances of the Reka empty-string-crash pattern). Eight-workstream Lessons Learned filled in at merchant-admin-followup/plan.md; most actionable next step is a shared USelect-sentinel helper. State Snapshot rewritten; "What's Next" rewritten to reflect workstream closure; three obvious next candidates surfaced (Tap billing / transactional emails / Step 9 self-service signup). No remaining admin-UI gap on CommerceJS Cloud merchants.
 - **2026-04-20** — Merchant-admin-followup T12 (storefront theming v1) shipped + deployed + 12/12 acceptance green on smoke.commercejs.cloud. Platform gains 6 theme columns on store_info (Prisma + Drizzle), idempotent lazy-migrate on both sides; `StoreTheme` added to @commercejs/types and surfaced on `StoreInfo.theme`; admin `StoreSettings` + `UpdateStoreInput` gain 6 flat fields. Storefront injects `:root { --cjs-* }` via `useHead` in app.vue from `useStoreInfo().store.theme` (deviates from T12.md's Nitro render:html plugin — the storefront is remote-mode with no `event.context.db`; `useHead` on the already-fetched store info gives the same rendered output with one less round-trip). Homepage hero conditionally renders a full-bleed themed hero when `heroImageUrl` is set, otherwise gradient hero with the merchant's heading substituted in; Shop Now CTA uses `var(--cjs-primary, var(--ui-primary))`. New `/admin/theme.vue` page with native color pickers + curated font dropdown + hero image upload reusing T04 presign (`context: 'theme'`) + sticky live-preview card. Sidebar gets a "Theme" link between Staff and Settings. Query parity green 151/151. 7 unit tests added. Two commits: platform (`76d9cb7`) + apps (`d438d70`). State Snapshot bumped; merchant-admin-followup plan T12 ✅ (T06–T12 done; T13 still pending).
 - **2026-04-17** — Dashboard tenant middleware migrated to per-event Prisma binding. New Nitro plugin at `apps/dashboard/server/plugins/platform-event-resolver.ts` registers `useEvent()` with `@commercejs/platform`. `apps/dashboard/server/middleware/tenant.ts` now sets `event.context.db = prismaClient` before `ensureAdapter()` and drops the `bindDb()` call. Mirror of the pattern that `apps/hosted-checkout` has been running in prod. The "Parallel (non-blocking) track" row in "What's Next" flipped from pending → shipped, and the matching open carry-over was cleared from State Snapshot. No API surface change — all 22 admin/storefront handlers continue reading `event.context.adapter`/`admin`/`merchant`. Verified live on smoke.commercejs.cloud: login, admin.listOrders, admin.listProducts, admin.stats, storefront catalog/store, and SSR homepage all still return 200.
