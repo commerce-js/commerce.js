@@ -364,8 +364,10 @@ function onSubmit(publish?: boolean) {
 </script>
 
 <template>
-  <form class="flex flex-col" @submit.prevent>
-    <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pb-24">
+  <!-- pb-24 reserves clearance for the fixed action bar so the last card
+       isn't hidden behind it when fully scrolled. -->
+  <form class="flex flex-col pb-24" @submit.prevent>
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
       <!-- ================================================================ -->
       <!-- Main column                                                       -->
       <!-- ================================================================ -->
@@ -808,54 +810,57 @@ function onSubmit(publish?: boolean) {
     </div>
 
     <!-- ================================================================== -->
-    <!-- Sticky action bar                                                   -->
+    <!-- Fixed action bar — anchored to the admin layout's main area.         -->
+    <!-- left-60 matches the admin layout's sidebar width (w-60 shrink-0).   -->
     <!-- ================================================================== -->
-    <div class="sticky bottom-0 px-4 py-3 border border-default rounded-lg shadow-lg bg-default/90 backdrop-blur supports-[backdrop-filter]:bg-default/70 flex items-center justify-between gap-3 z-10">
-      <div class="flex items-center gap-2 text-xs text-muted min-w-0">
-        <span
-          class="inline-block w-2 h-2 rounded-full"
-          :class="dirty ? 'bg-warning' : 'bg-success'"
-        />
-        <span class="truncate">{{ dirty ? 'Unsaved changes' : 'All changes saved' }}</span>
-      </div>
+    <div class="fixed bottom-0 left-60 right-0 z-20 border-t border-default bg-default/95 backdrop-blur supports-[backdrop-filter]:bg-default/80 shadow-[0_-2px_8px_rgb(0_0_0/0.04)]">
+      <div class="max-w-6xl px-6 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 text-xs text-muted min-w-0">
+          <span
+            class="inline-block w-2 h-2 rounded-full"
+            :class="dirty ? 'bg-warning' : 'bg-success'"
+          />
+          <span class="truncate">{{ dirty ? 'Unsaved changes' : 'All changes saved' }}</span>
+        </div>
 
-      <div v-if="mode === 'create'" class="flex items-center gap-2">
-        <UButton
-          variant="outline"
-          color="neutral"
-          :loading="submitting"
-          :disabled="submitting"
-          @click="onSubmit(false)"
-        >
-          Save draft
-        </UButton>
-        <UButton
-          color="primary"
-          :loading="submitting"
-          :disabled="submitting"
-          @click="onSubmit(true)"
-        >
-          Save & publish
-        </UButton>
-      </div>
+        <div v-if="mode === 'create'" class="flex items-center gap-2">
+          <UButton
+            variant="outline"
+            color="neutral"
+            :loading="submitting"
+            :disabled="submitting"
+            @click="onSubmit(false)"
+          >
+            Save draft
+          </UButton>
+          <UButton
+            color="primary"
+            :loading="submitting"
+            :disabled="submitting"
+            @click="onSubmit(true)"
+          >
+            Save & publish
+          </UButton>
+        </div>
 
-      <div v-else class="flex items-center gap-2">
-        <UButton
-          variant="ghost"
-          color="neutral"
-          :disabled="!dirty || submitting"
-          @click="discard"
-        >
-          Discard
-        </UButton>
-        <UButton
-          color="primary"
-          :loading="submitting"
-          :disabled="submitting || !dirty"
-          @click="onSubmit()"
-        >
-          Save
-        </UButton>
+        <div v-else class="flex items-center gap-2">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            :disabled="!dirty || submitting"
+            @click="discard"
+          >
+            Discard
+          </UButton>
+          <UButton
+            color="primary"
+            :loading="submitting"
+            :disabled="submitting || !dirty"
+            @click="onSubmit()"
+          >
+            Save
+          </UButton>
+        </div>
       </div>
     </div>
   </form>
