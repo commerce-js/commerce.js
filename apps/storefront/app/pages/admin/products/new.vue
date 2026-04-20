@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // ---------------------------------------------------------------------------
 // /admin/products/new — create a product. POSTs to /api/admin/products and
-// redirects to the edit page on success.
+// redirects to the edit page on success. Form ref is used to clear the
+// dirty-check before navigating so the route-leave guard doesn't fire.
 // ---------------------------------------------------------------------------
 
 import type { Category, Product } from '@commercejs/types'
@@ -25,6 +26,7 @@ const { data: categories } = await useFetch<Category[]>('/api/admin/categories',
   key: 'admin-categories',
 })
 
+const formRef = ref<{ markClean: () => void } | null>(null)
 const submitting = ref(false)
 
 async function onSubmit(value: ProductFormValue, opts: { publish?: boolean }) {
@@ -44,6 +46,7 @@ async function onSubmit(value: ProductFormValue, opts: { publish?: boolean }) {
       title: opts.publish ? 'Product published' : 'Draft saved',
       color: 'success',
     })
+    formRef.value?.markClean()
     await navigateTo(`/admin/products/${created.id}/edit`)
   }
   catch (err: any) {
@@ -60,23 +63,22 @@ async function onSubmit(value: ProductFormValue, opts: { publish?: boolean }) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 max-w-3xl">
-    <header class="flex items-center justify-between">
-      <div>
-        <NuxtLink
-          to="/admin/products"
-          class="text-sm text-muted hover:text-primary flex items-center gap-1"
-        >
-          <UIcon name="i-heroicons-arrow-left-20-solid" />
-          Back to products
-        </NuxtLink>
-        <h1 class="text-2xl font-bold text-highlighted mt-1">
-          New product
-        </h1>
-      </div>
+  <div class="flex flex-col gap-6 max-w-6xl">
+    <header>
+      <NuxtLink
+        to="/admin/products"
+        class="text-sm text-muted hover:text-primary flex items-center gap-1 w-fit"
+      >
+        <UIcon name="i-heroicons-arrow-left-20-solid" />
+        Back to products
+      </NuxtLink>
+      <h1 class="text-2xl font-bold text-highlighted mt-1">
+        New product
+      </h1>
     </header>
 
     <AdminProductForm
+      ref="formRef"
       mode="create"
       :categories="categories ?? []"
       :currency="currency"

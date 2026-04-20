@@ -15,6 +15,7 @@ interface ProductPayloadImage {
 interface ProductPayload {
   name: string
   nameAr?: string
+  slug?: string
   description?: string
   descriptionAr?: string
   shortDescription?: string
@@ -79,6 +80,7 @@ export function useAdminProductForm() {
     }
 
     if (v.nameAr.trim()) payload.nameAr = v.nameAr.trim()
+    if (v.slug.trim()) payload.slug = v.slug.trim()
     if (v.description.trim()) payload.description = v.description.trim()
     if (v.descriptionAr.trim()) payload.descriptionAr = v.descriptionAr.trim()
     if (v.shortDescription.trim()) payload.shortDescription = v.shortDescription.trim()

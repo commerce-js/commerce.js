@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // ---------------------------------------------------------------------------
 // /admin/products/[id]/edit — edit a product. Loads the product via GET,
-// PATCHes on submit, DELETEs via confirm modal.
+// PATCHes on submit, DELETEs via confirm modal. Form ref is used to clear
+// the dirty check after a successful save.
 // ---------------------------------------------------------------------------
 
 import type { Category, Product } from '@commercejs/types'
@@ -20,7 +21,6 @@ const route = useRoute()
 const toast = useToast()
 
 const productId = computed(() => route.params.id as string)
-
 const currency = computed(() => store.value?.locales?.find(l => l.isDefault)?.currency || 'USD')
 
 const { data: product, error, refresh } = await useFetch<Product>(
@@ -39,6 +39,7 @@ const { data: categories } = await useFetch<Category[]>('/api/admin/categories',
   key: 'admin-categories',
 })
 
+const formRef = ref<{ markClean: () => void } | null>(null)
 const submitting = ref(false)
 const confirmDeleteOpen = ref(false)
 const deleting = ref(false)
@@ -51,14 +52,15 @@ async function onSubmit(value: ProductFormValue, opts: { publish?: boolean }) {
 
   submitting.value = true
   try {
-    // In edit mode, "Save as draft" forces draft; otherwise keep form status.
-    const publishFlag = opts.publish === false ? false : undefined
+    // In edit mode, "Save" honors the form's current status. "Save draft"
+    // is no longer a separate action — status lives in the sidebar dropdown.
     await $fetch(`/api/admin/products/${productId.value}`, {
       method: 'PATCH',
       credentials: 'include',
-      body: toPayload(value, { publish: publishFlag }),
+      body: toPayload(value, opts),
     })
     toast.add({ title: 'Changes saved', color: 'success' })
+    formRef.value?.markClean()
     await refresh()
   }
   catch (err: any) {
@@ -73,7 +75,7 @@ async function onSubmit(value: ProductFormValue, opts: { publish?: boolean }) {
   }
 }
 
-async function onDelete() {
+function onDelete() {
   confirmDeleteOpen.value = true
 }
 
@@ -86,6 +88,7 @@ async function confirmDelete() {
     })
     toast.add({ title: 'Product deleted', color: 'success' })
     confirmDeleteOpen.value = false
+    formRef.value?.markClean()
     await navigateTo('/admin/products')
   }
   catch (err: any) {
@@ -102,20 +105,18 @@ async function confirmDelete() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 max-w-3xl">
-    <header class="flex items-center justify-between">
-      <div>
-        <NuxtLink
-          to="/admin/products"
-          class="text-sm text-muted hover:text-primary flex items-center gap-1"
-        >
-          <UIcon name="i-heroicons-arrow-left-20-solid" />
-          Back to products
-        </NuxtLink>
-        <h1 class="text-2xl font-bold text-highlighted mt-1">
-          {{ product ? t(product.name) : 'Edit product' }}
-        </h1>
-      </div>
+  <div class="flex flex-col gap-6 max-w-6xl">
+    <header>
+      <NuxtLink
+        to="/admin/products"
+        class="text-sm text-muted hover:text-primary flex items-center gap-1 w-fit"
+      >
+        <UIcon name="i-heroicons-arrow-left-20-solid" />
+        Back to products
+      </NuxtLink>
+      <h1 class="text-2xl font-bold text-highlighted mt-1 truncate">
+        {{ product ? t(product.name) : 'Edit product' }}
+      </h1>
     </header>
 
     <UAlert
@@ -129,6 +130,7 @@ async function confirmDelete() {
 
     <AdminProductForm
       v-if="product"
+      ref="formRef"
       mode="edit"
       :initial="product"
       :categories="categories ?? []"
