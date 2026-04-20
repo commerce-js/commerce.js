@@ -221,4 +221,14 @@ export const updateStoreSettingsSchema = z.object({
   contactPhone: z.string().optional(),
   address: z.string().optional(),
   socialLinks: z.string().optional(), // JSON string of Record<string, string>
+  // T12 theming. Empty string clears; undefined leaves the DB value untouched.
+  // `primaryColor` / `accentColor` accept any CSS color the admin sends — the
+  // native <input type="color"> emits `#rrggbb`, but we don't hard-fail other
+  // syntaxes (rgb(), hsl()) so a paste-in works.
+  primaryColor: z.string().max(64, 'Color must be under 64 chars').optional().or(z.literal('')),
+  accentColor: z.string().max(64, 'Color must be under 64 chars').optional().or(z.literal('')),
+  fontFamily: z.string().max(128, 'Font family must be under 128 chars').optional().or(z.literal('')),
+  heroImageUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  heroHeadingEn: z.string().max(200, 'Heading must be under 200 chars').optional().or(z.literal('')),
+  heroHeadingAr: z.string().max(200, 'Heading must be under 200 chars').optional().or(z.literal('')),
 })

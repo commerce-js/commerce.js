@@ -15,6 +15,19 @@ const { store, refresh: refreshStore } = useStoreInfo()
 refreshStore()
 const storeName = computed(() => t(store.value?.name) || 'CommerceJS')
 
+// T12 — storefront theming. When the merchant set a hero image + headings,
+// render a themed hero banner in place of the default gradient hero. The
+// locale-aware headline picks Arabic when the store's default locale is
+// Arabic and an Arabic heading is set; otherwise English.
+const heroImageUrl = computed(() => store.value?.theme?.heroImageUrl || '')
+const heroHeadingLocalized = computed(() => {
+  const theme = store.value?.theme
+  if (!theme) return ''
+  const defaultLocale = store.value?.locales?.find(l => l.isDefault)?.code
+  if (defaultLocale === 'ar' && theme.heroHeadingAr) return theme.heroHeadingAr
+  return theme.heroHeadingEn || theme.heroHeadingAr || ''
+})
+
 // SEO
 useSeoMeta({
   title: () => `${storeName.value} — Premium Storefront`,
@@ -27,8 +40,39 @@ useSeoMeta({
 <template>
   <div>
     <!-- Hero Section -->
-    <section class="relative overflow-hidden">
-      <!-- Gradient background -->
+    <section v-if="heroImageUrl" class="relative overflow-hidden">
+      <!-- Themed hero (T12) — merchant-provided background image -->
+      <img
+        :src="heroImageUrl"
+        alt=""
+        aria-hidden="true"
+        class="absolute inset-0 w-full h-full object-cover"
+      />
+      <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/40 to-black/20" />
+      <UContainer class="relative">
+        <div class="py-24 md:py-32 lg:py-40 max-w-3xl text-white">
+          <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 drop-shadow">
+            {{ heroHeadingLocalized || storeName }}
+          </h1>
+          <div class="flex flex-wrap gap-3">
+            <NuxtLink
+              to="/products"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-md text-base font-medium text-white transition hover:opacity-90"
+              :style="{ backgroundColor: 'var(--cjs-primary, var(--ui-primary))' }"
+            >
+              <UIcon name="i-heroicons-shopping-bag-20-solid" />
+              Shop Now
+            </NuxtLink>
+            <UButton to="/products" size="xl" variant="outline" color="neutral" class="text-white border-white/60 hover:bg-white/10">
+              Browse Categories
+            </UButton>
+          </div>
+        </div>
+      </UContainer>
+    </section>
+
+    <section v-else class="relative overflow-hidden">
+      <!-- Default hero — gradient background when no theme hero image is set -->
       <div class="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-secondary/10" />
       <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--ui-primary)_0%,transparent_50%)] opacity-5" />
 
@@ -40,9 +84,14 @@ useSeoMeta({
           </UBadge>
 
           <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-highlighted leading-tight mb-6">
-            Discover
-            <span class="text-primary">Premium</span>
-            Products
+            <template v-if="heroHeadingLocalized">
+              {{ heroHeadingLocalized }}
+            </template>
+            <template v-else>
+              Discover
+              <span class="text-primary">Premium</span>
+              Products
+            </template>
           </h1>
 
           <p class="text-lg md:text-xl text-muted mb-8 max-w-xl">
@@ -50,10 +99,14 @@ useSeoMeta({
           </p>
 
           <div class="flex flex-wrap gap-3">
-            <UButton to="/products" size="xl" color="primary">
-              <UIcon name="i-heroicons-shopping-bag-20-solid" class="mr-2" />
+            <NuxtLink
+              to="/products"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-md text-base font-medium text-white transition hover:opacity-90"
+              :style="{ backgroundColor: 'var(--cjs-primary, var(--ui-primary))' }"
+            >
+              <UIcon name="i-heroicons-shopping-bag-20-solid" />
               Shop Now
-            </UButton>
+            </NuxtLink>
             <UButton to="/products" size="xl" variant="outline" color="neutral">
               Browse Categories
             </UButton>

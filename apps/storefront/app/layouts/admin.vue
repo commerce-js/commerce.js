@@ -25,6 +25,7 @@ const navLinks = [
   { label: 'Customers', to: '/admin/customers', icon: 'i-heroicons-users-20-solid' },
   { label: 'Analytics', to: '/admin/analytics', icon: 'i-heroicons-chart-bar-20-solid' },
   { label: 'Staff', to: '/admin/staff', icon: 'i-heroicons-user-group-20-solid' },
+  { label: 'Theme', to: '/admin/theme', icon: 'i-heroicons-swatch-20-solid' },
   { label: 'Settings', to: '/admin/settings', icon: 'i-heroicons-cog-6-tooth-20-solid' },
 ]
 
