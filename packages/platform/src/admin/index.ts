@@ -10,6 +10,7 @@ import { createAdminOrdersDomain } from './orders.js'
 import { createAdminCustomersDomain } from './customers.js'
 import { createAdminStoreDomain } from './store.js'
 import { createAdminInventoryDomain } from './inventory.js'
+import { createAdminAnalyticsDomain } from './analytics.js'
 import {
   countOrdersByStatus,
   sumOrderRevenue,
@@ -42,6 +43,7 @@ export function createAdminAPI(currency: string): AdminAPI {
   const customers = createAdminCustomersDomain()
   const store = createAdminStoreDomain()
   const inventory = createAdminInventoryDomain(currency)
+  const analytics = createAdminAnalyticsDomain()
 
   return {
     // Auth
@@ -78,6 +80,11 @@ export function createAdminAPI(currency: string): AdminAPI {
     // Inventory
     updateInventory: inventory.updateInventory,
     getLowStockProducts: inventory.getLowStockProducts,
+
+    // Analytics
+    getRevenueTimeSeries: analytics.getRevenueTimeSeries,
+    getTopProducts: analytics.getTopProducts,
+    getTopCustomers: analytics.getTopCustomers,
 
     // Dashboard stats
     async getDashboardStats() {
@@ -148,6 +155,18 @@ export function createAdminAPI(currency: string): AdminAPI {
         }),
       )
 
+      const cancelledCount = ordersByStatus['cancelled'] ?? 0
+      const refundedCount = ordersByStatus['refunded'] ?? 0
+      // AOV and refund rate share the same "revenue-eligible" denominator:
+      // total − cancelled − refunded. Cancelled orders never paid, refunded
+      // orders returned their money — both are excluded from sumOrderRevenue.
+      const completedCount = Math.max(totalOrders - cancelledCount - refundedCount, 0)
+      const avgOrderValue = completedCount > 0 ? totalRevenue / completedCount : 0
+      // Refund rate = refunded / (total − cancelled). Cancelled orders don't
+      // dilute the denominator because they never paid.
+      const refundDenominator = Math.max(totalOrders - cancelledCount, 0)
+      const refundRate = refundDenominator > 0 ? refundedCount / refundDenominator : 0
+
       return {
         totalProducts,
         activeProducts,
@@ -156,6 +175,8 @@ export function createAdminAPI(currency: string): AdminAPI {
         totalCustomers,
         recentOrders,
         ordersByStatus,
+        avgOrderValue,
+        refundRate,
       }
     },
   }
@@ -181,4 +202,11 @@ export type {
   CreateVariantInput,
   CreateAttributeInput,
   AdminListProductsParams,
+  AnalyticsGranularity,
+  RevenueTimeSeriesParams,
+  RevenueBucket,
+  TopProductsParams,
+  TopProduct,
+  TopCustomersParams,
+  TopCustomer,
 } from './types.js'

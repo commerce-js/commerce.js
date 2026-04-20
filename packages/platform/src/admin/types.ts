@@ -2,7 +2,7 @@
 // Admin API types — platform-only input/output types for merchant operations
 // ---------------------------------------------------------------------------
 
-import type { PaginationParams, PaginatedResult, Order, Product, Customer, Category } from '@commercejs/types'
+import type { PaginationParams, PaginatedResult, Order, Product, Customer, Category, LocalizedString } from '@commercejs/types'
 
 // ---- Admin Users ----
 
@@ -181,6 +181,53 @@ export interface DashboardStats {
   totalCustomers: number
   recentOrders: Order[]
   ordersByStatus: Record<string, number>
+  /** Average order value across non-cancelled, non-refunded orders. 0 when no qualifying orders. */
+  avgOrderValue: number
+  /** Refunded / (total − cancelled). 0 when denominator is 0. Always in [0, 1]. */
+  refundRate: number
+}
+
+// ---- Analytics ----
+
+export type AnalyticsGranularity = 'day' | 'week' | 'month'
+
+export interface RevenueTimeSeriesParams {
+  granularity: AnalyticsGranularity
+  from: string
+  to: string
+}
+
+export interface RevenueBucket {
+  bucket: string
+  revenue: number
+  orderCount: number
+}
+
+export interface TopProductsParams {
+  limit?: number
+  from?: string
+  to?: string
+}
+
+export interface TopProduct {
+  productId: string
+  name: LocalizedString
+  sku: string | null
+  unitsSold: number
+  revenue: number
+}
+
+export interface TopCustomersParams {
+  limit?: number
+  from?: string
+  to?: string
+}
+
+export interface TopCustomer {
+  customerId: string
+  email: string
+  orderCount: number
+  lifetimeValue: number
 }
 
 // ---- Admin API ----
@@ -233,4 +280,9 @@ export interface AdminAPI {
 
   // Dashboard
   getDashboardStats(): Promise<DashboardStats>
+
+  // Analytics
+  getRevenueTimeSeries(params: RevenueTimeSeriesParams): Promise<RevenueBucket[]>
+  getTopProducts(params?: TopProductsParams): Promise<TopProduct[]>
+  getTopCustomers(params?: TopCustomersParams): Promise<TopCustomer[]>
 }

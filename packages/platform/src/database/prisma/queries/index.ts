@@ -169,6 +169,13 @@ export {
   findRecentOrders,
 } from './admin-orders.js'
 
+// Admin: Analytics
+export {
+  findRevenueTimeSeries,
+  findTopProductsByRevenue,
+  findTopCustomersBySpend,
+} from './admin-analytics.js'
+
 // Admin: Customers
 export {
   findAllCustomers,
