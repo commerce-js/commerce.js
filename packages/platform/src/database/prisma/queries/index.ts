@@ -191,6 +191,12 @@ export {
   updateStoreInfo as adminUpdateStoreInfo,
 } from './admin-store.js'
 
+// Admin: Activity
+export {
+  insertActivityEvent,
+  findActivityEvents,
+} from './admin-activity.js'
+
 // Admin: Users
 export {
   findAdminByEmail,

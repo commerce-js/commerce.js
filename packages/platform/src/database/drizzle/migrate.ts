@@ -377,6 +377,21 @@ export async function migrateDrizzle(connectionString?: string) {
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`)
 
+  // T13 — activity / audit log
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS activity_events (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    actor_id TEXT,
+    actor_email TEXT NOT NULL,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT,
+    diff JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_events_created_at_idx ON activity_events (created_at DESC)`)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_events_actor_id_idx ON activity_events (actor_id)`)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS activity_events_entity_idx ON activity_events (entity_type, entity_id)`)
+
   // Profile tables — cross-merchant buyer identity
   await db.execute(sql`CREATE TABLE IF NOT EXISTS profiles (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),

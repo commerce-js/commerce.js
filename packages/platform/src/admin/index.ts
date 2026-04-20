@@ -11,6 +11,7 @@ import { createAdminCustomersDomain } from './customers.js'
 import { createAdminStoreDomain } from './store.js'
 import { createAdminInventoryDomain } from './inventory.js'
 import { createAdminAnalyticsDomain } from './analytics.js'
+import { createAdminActivityDomain } from './activity.js'
 import {
   countOrdersByStatus,
   sumOrderRevenue,
@@ -44,6 +45,7 @@ export function createAdminAPI(currency: string): AdminAPI {
   const store = createAdminStoreDomain()
   const inventory = createAdminInventoryDomain(currency)
   const analytics = createAdminAnalyticsDomain()
+  const activity = createAdminActivityDomain()
 
   return {
     // Auth
@@ -85,6 +87,10 @@ export function createAdminAPI(currency: string): AdminAPI {
     getRevenueTimeSeries: analytics.getRevenueTimeSeries,
     getTopProducts: analytics.getTopProducts,
     getTopCustomers: analytics.getTopCustomers,
+
+    // Activity log (audit trail)
+    recordActivity: activity.recordActivity,
+    listActivity: activity.listActivity,
 
     // Dashboard stats
     async getDashboardStats() {
@@ -209,4 +215,7 @@ export type {
   TopProduct,
   TopCustomersParams,
   TopCustomer,
+  ActivityEvent,
+  RecordActivityInput,
+  ListActivityParams,
 } from './types.js'

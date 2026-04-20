@@ -361,6 +361,22 @@ export async function migratePrisma() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`,
 
+    // T13 — activity / audit log. New table; lands fresh on provisioning,
+    // lazy-migrates onto pre-existing merchant branches on first request.
+    `CREATE TABLE IF NOT EXISTS activity_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      actor_id UUID,
+      actor_email TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT,
+      diff JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`,
+    `CREATE INDEX IF NOT EXISTS activity_events_created_at_idx ON activity_events (created_at DESC)`,
+    `CREATE INDEX IF NOT EXISTS activity_events_actor_id_idx ON activity_events (actor_id)`,
+    `CREATE INDEX IF NOT EXISTS activity_events_entity_idx ON activity_events (entity_type, entity_id)`,
+
     // Idempotent additions for pre-existing merchant branches. Keep
     // statements here (not in CREATE TABLE) when adding a column to a
     // table that already ships on older Neon branches.

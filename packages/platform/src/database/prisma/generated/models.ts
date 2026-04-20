@@ -8,6 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/ActivityEvent.js'
 export type * from './models/AdminUser.js'
 export type * from './models/Brand.js'
 export type * from './models/Cart.js'

@@ -244,6 +244,43 @@ export interface TopCustomer {
   lifetimeValue: number
 }
 
+// ---- Activity log ----
+
+/** Append-only row written when merchant staff perform any admin mutation. */
+export interface ActivityEvent {
+  id: string
+  /** admin_users.id at the time of the event; null for system / unauthenticated actors */
+  actorId: string | null
+  /** Snapshot of the actor's email at event time so rows still render after the admin is deleted */
+  actorEmail: string
+  /** Namespaced verb — e.g. 'order.fulfilled', 'product.created', 'settings.updated' */
+  action: string
+  /** Top-level noun — 'order' | 'product' | 'settings' | 'customer' | 'category' | 'staff' | 'inventory' | 'store' */
+  entityType: string
+  entityId: string | null
+  /** Changed keys only; never a full entity snapshot. Shape is action-specific. */
+  diff: Record<string, unknown> | null
+  createdAt: string
+}
+
+export interface RecordActivityInput {
+  actorId: string | null
+  actorEmail: string
+  action: string
+  entityType: string
+  entityId?: string | null
+  diff?: Record<string, unknown> | null
+}
+
+export interface ListActivityParams {
+  page?: number
+  perPage?: number
+  actorId?: string
+  entityType?: string
+  from?: string
+  to?: string
+}
+
 // ---- Admin API ----
 
 export interface AdminAPI {
@@ -299,4 +336,8 @@ export interface AdminAPI {
   getRevenueTimeSeries(params: RevenueTimeSeriesParams): Promise<RevenueBucket[]>
   getTopProducts(params?: TopProductsParams): Promise<TopProduct[]>
   getTopCustomers(params?: TopCustomersParams): Promise<TopCustomer[]>
+
+  // Activity log (audit trail)
+  recordActivity(input: RecordActivityInput): Promise<void>
+  listActivity(params?: ListActivityParams): Promise<PaginatedResult<ActivityEvent>>
 }

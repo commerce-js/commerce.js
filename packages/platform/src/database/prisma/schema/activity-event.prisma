@@ -1,0 +1,25 @@
+// ---------------------------------------------------------------------------
+// ActivityEvent model — append-only audit log for merchant admin actions
+// ---------------------------------------------------------------------------
+//
+// Every mutation on the admin API writes one row. `actorEmail` is a snapshot
+// (not a FK) so rows still render after the admin is deleted. `diff` stores
+// only the changed keys — never a full entity snapshot — to keep the table
+// small. T13 ships v1 with no retention policy; retention lives in v2.
+// ---------------------------------------------------------------------------
+
+model ActivityEvent {
+  id          String   @id @default(uuid())
+  actorId     String?  @map("actor_id")
+  actorEmail  String   @map("actor_email")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  diff        Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@map("activity_events")
+}
