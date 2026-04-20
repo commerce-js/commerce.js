@@ -12,7 +12,7 @@ import {
   findAllAdminUsers,
   countAdminUsers,
 } from '../database/index.js'
-import type { AdminUser, AdminUserSafe } from './types.js'
+import type { AdminUserSafe } from './types.js'
 
 /** Strip passwordHash from admin user for safe responses */
 function toSafe(row: any): AdminUserSafe {
@@ -21,9 +21,18 @@ function toSafe(row: any): AdminUserSafe {
     email: row.email,
     name: row.name ?? null,
     role: row.role,
+    // Existing rows on older Neon branches may predate the status column
+    // until migratePrisma() has re-run against them — default to 'active'.
+    status: row.status ?? 'active',
     createdAt: row.createdAt ?? row.created_at,
     updatedAt: row.updatedAt ?? row.updated_at,
   }
+}
+
+/** Count admins whose role === 'owner'. Used by the last-owner guard. */
+async function countOwners(): Promise<number> {
+  const rows = await findAllAdminUsers()
+  return rows.filter((r: any) => r.role === 'owner').length
 }
 
 export function createAdminAuthDomain() {
@@ -101,6 +110,36 @@ export function createAdminAuthDomain() {
     },
 
     /**
+     * Update an admin's name or role. Demoting the last owner is blocked here
+     * (not just in the HTTP layer) so CLI scripts that call this method
+     * directly can't lock the store out of itself.
+     */
+    async updateAdmin(
+      id: string,
+      input: { name?: string | null; role?: 'owner' | 'admin' | 'editor' },
+    ): Promise<AdminUserSafe> {
+      const row = await findAdminById(id)
+      if (!row) throw new Error('Admin user not found')
+
+      if (input.role && input.role !== row.role && row.role === 'owner') {
+        const owners = await countOwners()
+        if (owners <= 1) throw new Error('Cannot remove the last owner')
+      }
+
+      const patch: Record<string, any> = {}
+      if (input.name !== undefined) patch.name = input.name
+      if (input.role !== undefined) patch.role = input.role
+
+      if (Object.keys(patch).length === 0) {
+        return toSafe(row)
+      }
+
+      await updateAdminUser(id, patch)
+      const updated = await findAdminById(id)
+      return toSafe(updated)
+    },
+
+    /**
      * Delete an admin user. Cannot delete the last owner.
      */
     async deleteAdmin(id: string): Promise<void> {
@@ -108,8 +147,8 @@ export function createAdminAuthDomain() {
       if (!row) throw new Error('Admin user not found')
 
       if (row.role === 'owner') {
-        const total = await countAdminUsers()
-        if (total <= 1) throw new Error('Cannot delete the last admin user')
+        const owners = await countOwners()
+        if (owners <= 1) throw new Error('Cannot remove the last owner')
       }
 
       await dbDeleteAdmin(id)

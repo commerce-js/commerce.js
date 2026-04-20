@@ -350,9 +350,15 @@ export async function migratePrisma() {
       password_hash TEXT NOT NULL,
       name TEXT,
       role TEXT NOT NULL DEFAULT 'admin',
+      status TEXT NOT NULL DEFAULT 'active',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`,
+
+    // Idempotent additions for pre-existing merchant branches. Keep
+    // statements here (not in CREATE TABLE) when adding a column to a
+    // table that already ships on older Neon branches.
+    `ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`,
 
     // -------------------------------------------------------------------
     // Profile family — cross-merchant buyer identity (mirrors

@@ -26,7 +26,7 @@
 * [x] [**T06**: Store Settings](tasks/T06.md) — Status: ✅ Completed (2026-04-19)
 * [x] [**T07**: Customers (list + detail, read-first)](tasks/T07.md) — Status: ✅ Completed (2026-04-19)
 * [x] [**T08**: Categories CRUD UI](tasks/T08.md) — Status: ✅ Completed (2026-04-19)
-* [ ] [**T09**: Staff management (local-password)](tasks/T09.md) — Status: 🟡 Planned
+* [x] [**T09**: Staff management (local-password)](tasks/T09.md) — Status: ✅ Completed (2026-04-20)
 * [ ] [**T10**: Inventory inline + low-stock](tasks/T10.md) — Status: 🟡 Planned
 * [ ] [**T11**: Analytics expansion](tasks/T11.md) — Status: 🟡 Planned
 * [ ] [**T12**: Storefront theming (CSS custom properties v1)](tasks/T12.md) — Status: 🟡 Planned
@@ -291,6 +291,48 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-20**: T09 Staff management (local-password) shipped + deployed +
+  8/8 acceptance green on smoke.commercejs.cloud. Platform: `admin_users.status`
+  column (Prisma + Drizzle + idempotent `ALTER TABLE … ADD COLUMN IF NOT EXISTS`
+  in `migratePrisma`); `AdminUserSafe` gains `status` with a `'active'` fallback
+  in `toSafe` for rows that predate the migration; `admin.auth.updateAdmin(id,
+  { name?, role? })` added to both the domain and the `AdminAPI.auth` type.
+  Last-owner guard bug fix: the pre-existing `deleteAdmin` path counted ALL
+  admins (`countAdminUsers()`) so a 1-owner + 1-editor store could delete its
+  only owner — switched to a `countOwners()` helper that filters by role, and
+  duplicated the check on the role-change path so a CLI script calling
+  `updateAdmin` directly can't demote the last owner either. Dashboard:
+  tenant middleware now runs `migratePrisma()` on adapter-cache-miss (lazy-
+  migrate — applies idempotent schema patches to pre-existing merchant Neon
+  branches on first-request-per-process, verified live on smoke where it
+  added the `status` column without a manual step); six new routes under
+  `apps/dashboard/server/api/admin/staff/` (`index.{get,post}`, `[id].
+  {get,patch,delete}`, `[id]/password.patch`); `requireOwner` helper at
+  `apps/dashboard/server/utils/require-role.ts` gates write routes; write
+  routes check `role === 'owner'`, the password route is scoped to "change
+  your OWN password" via `id === session.userId`; `createStaffSchema` +
+  `updateStaffSchema` + `changeStaffPasswordSchema` in `admin-schemas.ts`
+  (password ≥ 8 chars, role triad enum). Storefront: three new pages under
+  `apps/storefront/app/pages/admin/staff/` — list (role + status badges,
+  owner-only add/remove, self-delete hidden), new (show/hide password toggle,
+  1-tap secure random generator, post-create banner shows the password once
+  with a copy button), edit (own-role-change disabled client-side, password-
+  change modal self-only). Sidebar gets a "Staff" link between Customers and
+  Settings. Smoke acceptance 8/8: (1) owner creates admin → status 'active';
+  (2) created staff logs in; (3) non-owner POST → 403 "requires one of:
+  owner"; (4) owner self-delete → 400 (self-delete guard fires first with
+  "You cannot remove your own staff account" — last-owner guard is the
+  safety net); (5) owner demotes only owner to editor → 400 "Cannot remove
+  the last owner"; (6) wrong current password → 400 "Current password is
+  incorrect"; (7) correct current+new → 200, new works, old rejected; (8)
+  cross-tenant cookie replay to `nonexistent.commercejs.cloud` → 404
+  "Merchant not found" (tenant middleware blocks before the auth guard).
+  Lazy-migrate verified in production: GET /api/admin/staff on smoke
+  returned `status:"active"` on the pre-existing owner row, confirming
+  `migratePrisma()` ran the `ALTER TABLE` on the existing Neon branch.
+  Query parity stayed green (148/148). No scope creep — the T01-review
+  `bcrypt.compareSync` carry-over is untouched; categories-hardening items
+  stay on the Deferred list.
 - **2026-04-19**: T08 Categories CRUD UI shipped. Platform gains a one-liner
   `AdminAPI.getCategory(id)` (wraps existing `findCategoryById` + the
   domain's `mapCategory`). Dashboard restructures the flat

@@ -135,6 +135,33 @@ export const createCategorySchema = z.object({
 
 export const updateCategorySchema = createCategorySchema.partial()
 
+// ---- Staff ----
+
+// Mirrors admin.auth.createAdmin/updateAdmin shapes in @commercejs/platform.
+// role is the AdminUser role triad ('owner' | 'admin' | 'editor'). Password
+// ≥ 8 chars matches the T09 spec — we don't mirror the platform's hashing
+// parameters because those are an implementation detail.
+const staffRoleEnum = z.enum(['owner', 'admin', 'editor'])
+
+export const createStaffSchema = z.object({
+  email: z.string().email('Must be a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().optional().transform(v => (v === '' ? undefined : v)),
+  role: staffRoleEnum.optional(),
+})
+
+export const updateStaffSchema = z.object({
+  name: z.string().optional().transform(v => (v === '' ? undefined : v)),
+  role: staffRoleEnum.optional(),
+}).refine(v => v.name !== undefined || v.role !== undefined, {
+  message: 'Provide at least one of name or role',
+})
+
+export const changeStaffPasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+})
+
 // ---- Store settings ----
 
 // Mirrors UpdateStoreInput in @commercejs/platform/admin. Empty-string

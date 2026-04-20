@@ -12,6 +12,13 @@ export interface AdminUser {
   passwordHash: string
   name: string | null
   role: 'owner' | 'admin' | 'editor'
+  /**
+   * Lifecycle state. `'active'` is the only value set by T09's local-password
+   * CRUD. `'invited'` is reserved for a future email-invite flow (token
+   * pending acceptance); `'disabled'` is reserved for a future "deactivate"
+   * action that stops at login without deleting the row.
+   */
+  status: 'active' | 'invited' | 'disabled'
   createdAt: string
   updatedAt: string
 }
@@ -186,6 +193,7 @@ export interface AdminAPI {
     createAdmin(input: { email: string; password: string; name?: string; role?: 'owner' | 'admin' | 'editor' }): Promise<AdminUserSafe>
     listAdmins(): Promise<AdminUserSafe[]>
     getAdmin(id: string): Promise<AdminUserSafe>
+    updateAdmin(id: string, input: { name?: string | null; role?: 'owner' | 'admin' | 'editor' }): Promise<AdminUserSafe>
     deleteAdmin(id: string): Promise<void>
     seedInitialAdmin(): Promise<void>
   }

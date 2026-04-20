@@ -34,7 +34,7 @@
 // ---------------------------------------------------------------------------
 
 // defineEventHandler / createError / getRequestURL are Nitro auto-imports.
-import { createPlatformAdapter, getPrismaClient } from '@commercejs/platform'
+import { createPlatformAdapter, getPrismaClient, migratePrisma, runWithDb } from '@commercejs/platform'
 import type { PlatformAdapterResult } from '@commercejs/platform'
 import { resolveMerchant } from '../utils/tenant'
 import type { MerchantContext } from '../utils/tenant'
@@ -86,6 +86,15 @@ async function ensureAdapter(merchant: MerchantContext): Promise<PlatformAdapter
   if (cached && cached.databaseUrl === merchant.databaseUrl) {
     return cached.adapter
   }
+
+  // Lazy-migrate on first-request-per-process for this merchant. migratePrisma
+  // is CREATE TABLE IF NOT EXISTS + ALTER TABLE ADD COLUMN IF NOT EXISTS —
+  // idempotent and fast. Keeps pre-existing Neon branches in sync with new
+  // columns added to the platform schema without a manual migration step.
+  const prisma = getPrismaClient(merchant.databaseUrl)
+  await runWithDb(prisma, async () => {
+    await migratePrisma()
+  })
 
   const adapter = await createPlatformAdapter({
     connectionString: merchant.databaseUrl,
