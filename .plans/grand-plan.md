@@ -221,7 +221,8 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 | Hard-won bugs (`NUXT_*` prefix, CF limits, etc.) | [`.memory/gotchas.md`](../.memory/gotchas.md) |
 | Master 7-phase roadmap + change log | [`roadmap.md`](roadmap.md) |
 | Fly.io infrastructure plan (Steps 1–8, LOCKED) | [`fly-migration-plan.md`](fly-migration-plan.md) |
-| Current gate — merchant admin UI (T01–T05) | [`merchant-admin/plan.md`](merchant-admin/plan.md) |
+| Current gate — EaaS launch closing plan (T01–T05) | [`eaas-launch/plan.md`](eaas-launch/plan.md) |
+| Merchant admin UI (T01–T05, shipped) | [`merchant-admin/plan.md`](merchant-admin/plan.md) |
 | Storefront EaaS architecture + lessons | [`storefront-eaas/plan.md`](storefront-eaas/plan.md) |
 | Product vision (three pillars) | [`../.research/best-ecommerce-strategy.md`](../.research/best-ecommerce-strategy.md) |
 | Multi-tenancy architecture research | [`../.research/cloud-architecture.md`](../.research/cloud-architecture.md) |
