@@ -452,7 +452,7 @@ onBeforeRouteLeave(() => {
         <!-- Two-column grid -->
         <div class="grid lg:grid-cols-[200px_1fr] gap-8 items-start">
           <!-- Section nav -->
-          <nav class="hidden lg:flex flex-col gap-1 sticky top-2 self-start">
+          <nav class="hidden lg:flex flex-col gap-1 sticky top-0 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
             <p class="text-xs font-medium uppercase tracking-wider text-muted px-3 pb-2">
               Sections
             </p>

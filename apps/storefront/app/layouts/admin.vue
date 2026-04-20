@@ -39,7 +39,7 @@ async function handleSignOut() {
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-default">
+  <div class="h-screen overflow-hidden flex bg-default">
     <!-- Sidebar -->
     <aside class="w-60 shrink-0 border-e border-default bg-elevated flex flex-col">
       <div class="h-16 flex items-center gap-2 px-4 border-b border-default">
