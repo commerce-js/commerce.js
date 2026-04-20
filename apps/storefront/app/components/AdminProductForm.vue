@@ -364,14 +364,17 @@ function onSubmit(publish?: boolean) {
 </script>
 
 <template>
-  <!-- pb-24 reserves clearance for the fixed action bar so the last card
-       isn't hidden behind it when fully scrolled. -->
-  <form class="flex flex-col pb-24" @submit.prevent>
+  <!-- Clearance for the fixed action bar. On mobile (no sticky sidebar)
+       it goes on the form so the last sidebar card doesn't hide behind
+       the bar. On lg+ it goes on the main column so the grid row grows
+       — keeping the sidebar's sticky range alive all the way to the
+       bottom of the scroll. -->
+  <form class="flex flex-col pb-24 lg:pb-0" @submit.prevent>
     <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
       <!-- ================================================================ -->
       <!-- Main column                                                       -->
       <!-- ================================================================ -->
-      <div class="flex flex-col gap-6 min-w-0">
+      <div class="flex flex-col gap-6 min-w-0 lg:pb-24">
         <!-- Basics -->
         <UCard>
           <template #header>
