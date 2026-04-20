@@ -343,6 +343,28 @@ plan. Each has a forward-reference.
 
 ## Change Log
 
+- **2026-04-20**: T01 live acceptance on smoke.commercejs.cloud (curl
+  via `SMOKE_MERCHANT_EMAIL` / `SMOKE_MERCHANT_PASSWORD` in `.secrets`).
+  Baseline + 6 scenarios green via API: bcrypt login 657ms warm US→FRA
+  (no regression); category products-attached guard → 400 "it has 4
+  attached products"; self-parent guard → 400; descendant-cycle guard
+  → 400; sortOrder surfaced on GET /api/admin/categories + nested
+  `product.categories[].sortOrder`; orphan actorId (Alice, deleted
+  after T13) confirmed present in /api/admin/activity, chip render
+  logic trivially covered by the `!ev.actorId || isOrphanActor(ev)`
+  template change. Scenarios not exercisable here: (7) no null-actor
+  rows on the current dev DB, code path preserved (OR-extended only);
+  (8) browser-only console-error sweep across admin pages — pending
+  owner verification; (9) `npm view @commercejs/storage-s3 version`
+  still 0.2.0, publish gated on CI from a release-capable branch
+  (rides T05 branch-swap). **One gap surfaced + fixed inline**:
+  `apps/dashboard/server/api/admin/categories/[id].patch.ts` was
+  returning 500 instead of 400 for the new platform guard throws —
+  sibling `[id].delete.ts` had the try/catch wrapper but PATCH
+  didn't. Fixed + redeployed as commit `528867a`; rerun of scenarios
+  3 + 4 confirms clean 400 with the platform's message preserved.
+  T01 Execution Summary in `tasks/T01.md` updated with the full
+  acceptance table + follow-up note.
 - **2026-04-20**: T02 sub-plan spawned at `.plans/transactional-emails/`.
   Research completed (Option A — vertical slices per task, staff-invite
   first). Seven sub-tasks defined (T01 provider wiring + staff invite;
