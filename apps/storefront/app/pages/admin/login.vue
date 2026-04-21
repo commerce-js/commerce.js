@@ -99,6 +99,12 @@ async function handleSubmit() {
         >
           Sign in
         </UButton>
+
+        <div class="text-center">
+          <NuxtLink to="/admin/forgot-password" class="text-sm text-muted hover:text-primary">
+            Forgot password?
+          </NuxtLink>
+        </div>
       </form>
     </UCard>
   </div>
