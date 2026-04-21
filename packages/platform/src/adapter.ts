@@ -136,6 +136,13 @@ export async function createPlatformAdapter(config: PlatformConfig = {}): Promis
     logout: customers.logout,
     forgotPassword: customers.forgotPassword,
     resetPassword: customers.resetPassword,
+    // Transactional-emails T02 — real buyer password-reset pipeline.
+    // Exposed alongside the legacy stubs so the CommerceAdapter type in
+    // @commercejs/types doesn't need a breaking change; dashboard routes
+    // cast via (adapter as any) for now.
+    requestPasswordReset: customers.requestPasswordReset,
+    verifyPasswordResetToken: customers.verifyPasswordResetToken,
+    completePasswordReset: customers.completePasswordReset,
     getAddresses: customers.getAddresses,
     addAddress: customers.addAddress,
     updateAddress: customers.updateAddress,

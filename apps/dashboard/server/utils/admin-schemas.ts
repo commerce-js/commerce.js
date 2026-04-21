@@ -162,6 +162,17 @@ export const acceptInviteSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
+// Transactional-emails T02 — password reset request + completion.
+// Shared by both admin and buyer flows; the route lives in the correct
+// namespace and the platform domain picks the actor_type.
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Must be a valid email'),
+})
+
+export const completePasswordResetSchema = z.object({
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
 export const updateStaffSchema = z.object({
   name: z.string().optional().transform(v => (v === '' ? undefined : v)),
   role: staffRoleEnum.optional(),
