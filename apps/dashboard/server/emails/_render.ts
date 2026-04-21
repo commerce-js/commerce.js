@@ -14,12 +14,14 @@ import type { RenderedEmail, Template } from './_types'
 import { staffInviteTemplate } from './staff-invite'
 import { adminPasswordResetTemplate } from './admin-password-reset'
 import { buyerPasswordResetTemplate } from './buyer-password-reset'
+import { orderConfirmationTemplate } from './order-confirmation'
 
 // Register every template here. Adding a new template is a one-line change.
 const TEMPLATES: Record<string, Template<any>> = {
   [staffInviteTemplate.key]: staffInviteTemplate,
   [adminPasswordResetTemplate.key]: adminPasswordResetTemplate,
   [buyerPasswordResetTemplate.key]: buyerPasswordResetTemplate,
+  [orderConfirmationTemplate.key]: orderConfirmationTemplate,
 }
 
 export function getTemplateKeys(): string[] {
