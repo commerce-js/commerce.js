@@ -11,13 +11,26 @@ on `commercejs-cloud.fly.dev` 2026-04-21.** Full email pipeline
 inbox) proven end-to-end. Fly-managed Upstash Redis DB in `fra`
 replaced the exhausted free-tier DB.
 
-**T02 (password reset, admin + buyer) starts now.** Sub-plan T02 row
-flipped 🟢 In Progress in this docs commit. T02.md was pre-scaffolded
-by an earlier session with a locked-in approach: single
-`password_resets` table with `actor_type ('admin' | 'buyer')`
-discriminator on the merchant branch DB; 1h expiry; enumeration-safe
-`/forgot-password`; auto-login on reset complete; cross-actor token
-rejection.
+**T02 (password reset, admin + buyer) code-complete on all 3 surfaces
+2026-04-21.** Three feature commits landed by a concurrent session:
+- `7b60363 feat(platform)` — shared `password_resets` table with
+  `actor_type` discriminator on merchant branch DB, 6 domain methods
+  (3 admin on `admin/auth.ts` + 3 buyer filling `customers.ts:123`
+  stubs), cross-actor-type rejection in `verify*`, async bcrypt on
+  new paths, 31 unit tests, parity 161.
+- `f142cca feat(dashboard)` — 2 templates (`admin-password-reset.ts`
+  + `buyer-password-reset.ts`) + 6 PUBLIC routes
+  (admin + storefront × forgot / reset-GET / reset-complete) +
+  shared Zod schemas + adapter surface expose + 6 render tests.
+  Enumeration-safe 200 on forgot-password; session cookie issued on
+  complete for both actor types.
+- `6efb80a feat(storefront)` — 4 pages (admin pre-auth +
+  buyer default-layout) + "Forgot password?" link under
+  `/admin/login`.
+
+**Remaining on T02**: EXPLICIT-GO `fly deploy` + 10-scenario smoke
+acceptance on `commercejs-cloud.fly.dev` → T02 → ✅ final docs flip.
+No code work left.
 
 ## What Landed This Session (docs-only)
 
@@ -34,28 +47,17 @@ rejection.
 4. **grand-plan.md** — to be updated alongside this commit with the
    T01 → ✅ flip and T02 → 🟢 In Progress flag.
 
-## T02 Scope (next ship)
+## T02 Ship State
 
-Two password-reset flows; full spec in
-[`.plans/transactional-emails/tasks/T02.md`](../.plans/transactional-emails/tasks/T02.md).
+Full spec in [`.plans/transactional-emails/tasks/T02.md`](../.plans/transactional-emails/tasks/T02.md).
+Three feature commits land the full vertical slice in one day
+(concurrent session — not this one):
 
-- **Admin reset** — `/admin/forgot-password` + `/admin/reset/[token]`
-  → platform `admin.auth.{requestAdminPasswordReset,
-  verifyAdminPasswordResetToken, completeAdminPasswordReset}` →
-  template `admin-password-reset.ts`.
-- **Buyer reset** — `/account/forgot-password` +
-  `/account/reset/[token]` → fill stubs in
-  [`packages/platform/src/domains/customers.ts:123`](../packages/platform/src/domains/customers.ts:123)
-  → template `buyer-password-reset.ts`.
-
-Vertical-slice commit plan (mirror T01's rhythm):
-1. Platform admin side (table + helpers + tests + parity).
-2. Platform buyer side (stubs filled + tests + parity) — may fold
-   into (1) if diff budget permits.
-3. Dashboard templates + 6 PUBLIC routes + Zod + snapshot tests.
-4. Storefront: 4 pages + "Forgot your password?" links on both
-   login pages.
-5. Deploy + 10-scenario smoke (explicit-go) → T02 ✅ docs commit.
+1. ✅ Platform (`7b60363`) — `password_resets` + admin + buyer helpers.
+2. ✅ Dashboard (`f142cca`) — templates + 6 routes + adapter surface.
+3. ✅ Storefront (`6efb80a`) — 4 pages + forgot-password link.
+4. 🔲 Deploy + 10-scenario smoke on `commercejs-cloud.fly.dev` (EXPLICIT-GO).
+5. 🔲 T02 → ✅ final docs commit.
 
 ## Carry-Overs Into Future Sessions
 

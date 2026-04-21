@@ -39,7 +39,7 @@
 * [ ] **Research & Strategy Selection** ✅ Completed (2026-04-20)
 
 * [x] [**T01**: Provider wiring + staff invite (first vertical slice)](tasks/T01.md) — Status: ✅ Completed — code-complete + deployed + 8/8 smoke scenarios green on `commercejs-cloud.fly.dev` 2026-04-21. Five commits: `d4b68e2` platform, `a5716ea` dashboard infra, `6c16779` dashboard routes, `5df66eb` storefront, `da62205` runtime-dep fix. Fly-managed Upstash Redis DB (fra) replaces the exhausted free-tier DB.
-* [ ] [**T02**: Password reset (admin + buyer)](tasks/T02.md) — Status: 🟢 In Progress — platform side starting 2026-04-21; two templates, two reset routes per flow
+* [ ] [**T02**: Password reset (admin + buyer)](tasks/T02.md) — Status: 🟢 In Progress — **code-complete on all 3 surfaces 2026-04-21**: `7b60363` platform (password_resets table + 6 domain methods + 31 unit tests + parity 161), `f142cca` dashboard (2 templates + 6 PUBLIC routes + Zod + adapter surface + 6 render tests), `6efb80a` storefront (4 pages + forgot-password link). Remaining: EXPLICIT-GO deploy + 10-scenario smoke acceptance → final ✅ flip.
 * [ ] [**T03**: Order confirmation (customer-facing)](tasks/T03.md) — Status: 🟡 Planned — triggered on hosted-checkout finalize
 * [ ] [**T04**: Welcome email (merchant signup)](tasks/T04.md) — Status: 🟡 Planned — also gates eaas-launch T04
 * [ ] [**T05**: Email verification (double-opt-in)](tasks/T05.md) — Status: 🟡 Planned — signup + email-change flows
@@ -469,6 +469,36 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-21** (late pm): T02 code-complete on all three surfaces.
+  `7b60363 feat(platform): password-reset token helpers + password_resets table`
+  — shared merchant-branch `password_resets` table with
+  `actor_type ('admin' | 'buyer')` discriminator, 6 new domain
+  methods (3 admin on `admin/auth.ts` + 3 buyer filling
+  [`customers.ts:123`](../../packages/platform/src/domains/customers.ts:123)
+  stubs), cross-actor-type rejection in `verify*` helpers,
+  async-bcrypt on new paths (existing sync `hashSync`/`compareSync`
+  on `customers.login` / `register` kept for a later polish task),
+  31 new unit tests, parity 161/161. 1-hour expiry via
+  `PASSWORD_RESET_EXPIRY_MINUTES`. `f142cca feat(dashboard): password-reset
+  routes + templates + buyer adapter surface` — 2 new templates
+  (`admin-password-reset.ts` + `buyer-password-reset.ts`) registered
+  in `_render.ts` with HTML-escaped vars + 6 render tests; 6 PUBLIC
+  routes (`/api/admin/forgot-password`, `/api/admin/reset/[token]`
+  GET + `/complete`, plus `/api/storefront/auth/*` mirrors);
+  enumeration-safe `/forgot-password` always 200; session cookies
+  issued on complete (merchant-session for admin, `cjs-buyer-session`
+  for buyer); `forgotPasswordSchema` + `completePasswordResetSchema`
+  shared across both actor types; `adapter.ts` exposes the three
+  new buyer methods (kept alongside legacy `forgotPassword`/
+  `resetPassword` stubs to avoid a breaking change to
+  `@commercejs/types` CommerceAdapter — storefront routes consume
+  via `(adapter as any)` until the stubs are retired). `6efb80a
+  feat(storefront): password-reset pages (admin + buyer) + forgot-password link`
+  — 4 new pages (`/admin/forgot-password` + `/admin/reset/[token]`
+  pre-auth, `/account/forgot-password` + `/account/reset/[token]`
+  default layout) + "Forgot password?" link under `/admin/login`.
+  Remaining: EXPLICIT-GO `fly deploy` + 10-scenario smoke on
+  `commercejs-cloud.fly.dev` → T02 → ✅.
 - **2026-04-21** (pm): T01 ✅ **Completed** — deployed + smoke-accepted
   end-to-end on `commercejs-cloud.fly.dev` after operator SMTP
   pre-reqs landed (service chosen, credentials provisioned,
