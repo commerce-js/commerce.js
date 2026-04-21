@@ -1,13 +1,14 @@
 <script setup lang="ts">
 // ---------------------------------------------------------------------------
-// /admin/staff/new — owner sets up a teammate with a local password. After
-// the create succeeds we surface the password ONCE in a banner so the owner
-// can copy it and share out-of-band; redirect to the list happens on
-// "Done" (not auto, so the password stays visible until acknowledged).
+// /admin/staff/new — owner invites or creates a teammate.
 //
-// The email-workstream plan replaces this UI with a "send invite" button
-// that emails an acceptance token instead — at that point this page goes
-// away and `status: 'invited'` rows appear in the list.
+// Two modes:
+//   - "Send invite email" (default): email + name + role, no password.
+//     POST creates the row with status='invited' and dispatches a
+//     SendEmailJob that mails the invitee a single-use invite link.
+//     No post-create banner — the secret lives in the email, not the UI.
+//   - "I'll share the password manually": T09 legacy flow. Email + name +
+//     role + password; after success the password is shown once for copy.
 // ---------------------------------------------------------------------------
 
 import type { AdminUserSafe } from '@commercejs/platform'
@@ -26,6 +27,9 @@ if (user.value && user.value.role !== 'owner') {
   await navigateTo('/admin/staff')
 }
 
+type Mode = 'invite' | 'manual'
+const mode = ref<Mode>('invite')
+
 const form = reactive({
   email: '',
   password: '',
@@ -36,12 +40,26 @@ const form = reactive({
 const showPassword = ref(false)
 const submitting = ref(false)
 const created = ref<AdminUserSafe | null>(null)
+const invitedEmail = ref('')
 const sharedPassword = ref('')
 
 const roleOptions = [
   { label: 'Owner — full access including staff management', value: 'owner' },
   { label: 'Admin — store operations, no staff management', value: 'admin' },
   { label: 'Editor — products and content only', value: 'editor' },
+]
+
+const modeOptions = [
+  {
+    label: 'Send invite email',
+    value: 'invite',
+    description: 'We email a link; they set their own password.',
+  },
+  {
+    label: "I'll share the password manually",
+    value: 'manual',
+    description: 'You type the password and pass it to them out-of-band.',
+  },
 ]
 
 function generatePassword() {
@@ -60,30 +78,49 @@ async function onSubmit() {
     toast.add({ title: 'Email is required', color: 'warning' })
     return
   }
-  if (form.password.length < 8) {
+
+  if (mode.value === 'manual' && form.password.length < 8) {
     toast.add({ title: 'Password must be at least 8 characters', color: 'warning' })
     return
   }
 
   submitting.value = true
   try {
+    const body: Record<string, unknown> = {
+      email,
+      name: form.name.trim() || undefined,
+      role: form.role,
+    }
+    if (mode.value === 'invite') {
+      body.sendInvite = true
+    }
+    else {
+      body.password = form.password
+    }
+
     const result = await $fetch<AdminUserSafe>('/api/admin/staff', {
       method: 'POST',
       credentials: 'include',
-      body: {
-        email,
-        password: form.password,
-        name: form.name.trim() || undefined,
-        role: form.role,
-      },
+      body,
     })
-    sharedPassword.value = form.password
-    created.value = result
-    toast.add({ title: 'Staff member created', color: 'success' })
+
+    if (mode.value === 'invite') {
+      invitedEmail.value = result.email
+      toast.add({
+        title: 'Invite sent',
+        description: `Email on its way to ${result.email}.`,
+        color: 'success',
+      })
+    }
+    else {
+      sharedPassword.value = form.password
+      created.value = result
+      toast.add({ title: 'Staff member created', color: 'success' })
+    }
   }
   catch (err: any) {
     toast.add({
-      title: 'Could not create staff member',
+      title: mode.value === 'invite' ? 'Could not send invite' : 'Could not create staff member',
       description: err?.data?.statusMessage || err?.data?.message || err?.message,
       color: 'error',
     })
@@ -121,8 +158,14 @@ async function copyShared() {
       </div>
     </header>
 
-    <UCard v-if="!created">
+    <UCard v-if="!created && !invitedEmail">
       <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
+        <URadioGroup
+          v-model="mode"
+          :items="modeOptions"
+          value-key="value"
+        />
+
         <UFormField label="Email" required>
           <UInput
             v-model="form.email"
@@ -146,7 +189,7 @@ async function copyShared() {
           />
         </UFormField>
 
-        <UFormField label="Password" required help="At least 8 characters. You'll share this with the new staff member.">
+        <UFormField v-if="mode === 'manual'" label="Password" required help="At least 8 characters. You'll share this with the new staff member.">
           <div class="flex gap-2">
             <UInput
               v-model="form.password"
@@ -178,10 +221,42 @@ async function copyShared() {
             Cancel
           </UButton>
           <UButton type="submit" color="primary" :loading="submitting">
-            Create staff member
+            {{ mode === 'invite' ? 'Send invite' : 'Create staff member' }}
           </UButton>
         </div>
       </form>
+    </UCard>
+
+    <UCard v-else-if="invitedEmail">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-envelope-20-solid" class="text-success text-xl" />
+          <h2 class="font-semibold text-highlighted">
+            Invite sent
+          </h2>
+        </div>
+      </template>
+
+      <div class="flex flex-col gap-4">
+        <p class="text-sm">
+          An invite email has been sent to <strong>{{ invitedEmail }}</strong>. They have 7 days to accept before the link expires. No further action from you is needed.
+        </p>
+        <UAlert
+          color="info"
+          variant="subtle"
+          icon="i-heroicons-information-circle-20-solid"
+          title="Didn't arrive?"
+          description="Ask them to check spam. If it still doesn't appear, delete the pending row from the staff list and send a fresh invite."
+        />
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <UButton variant="ghost" color="neutral" to="/admin/staff/new">
+            Invite another
+          </UButton>
+          <UButton color="primary" to="/admin/staff">
+            Done
+          </UButton>
+        </div>
+      </div>
     </UCard>
 
     <UCard v-else>
@@ -196,7 +271,7 @@ async function copyShared() {
 
       <div class="flex flex-col gap-4">
         <p class="text-sm">
-          <strong>{{ created.email }}</strong> can now sign in to <code>/admin/login</code>. Share the password below with them — we won't show it again.
+          <strong>{{ created?.email }}</strong> can now sign in to <code>/admin/login</code>. Share the password below with them — we won't show it again.
         </p>
 
         <div class="flex items-center gap-2 p-3 rounded bg-elevated border border-default">
