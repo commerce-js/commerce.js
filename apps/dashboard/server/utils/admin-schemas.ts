@@ -143,11 +143,23 @@ export const updateCategorySchema = createCategorySchema.partial()
 // parameters because those are an implementation detail.
 const staffRoleEnum = z.enum(['owner', 'admin', 'editor'])
 
+// Either supply `password` for the legacy show-password-once flow OR
+// set `sendInvite: true` to dispatch a staff-invite email (transactional-
+// emails T01). The platform enforces "at least one of" again; the schema
+// allows both optional so the client can choose without ordering quirks.
 export const createStaffSchema = z.object({
   email: z.string().email('Must be a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
   name: z.string().optional().transform(v => (v === '' ? undefined : v)),
   role: staffRoleEnum.optional(),
+  sendInvite: z.boolean().optional(),
+}).refine(
+  v => v.sendInvite === true || (v.password !== undefined && v.password.length >= 8),
+  { message: 'Either set sendInvite: true or supply a password of 8+ characters' },
+)
+
+export const acceptInviteSchema = z.object({
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
 export const updateStaffSchema = z.object({
