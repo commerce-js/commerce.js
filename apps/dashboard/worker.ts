@@ -9,23 +9,18 @@
 // Runtime shape:
 //
 //   Worker('merchant-jobs', dispatch, { connection, concurrency: 5 })
-//     ├── provision-store   → handleProvisionStore(data)       (Step 6)
-//     ├── send-email        → handleSendEmail(data)
+//     ├── provision-store   → handleProvisionStore(data)
+//     ├── send-email        → handleSendEmail(data)       (SMTP via @commercejs/notification-smtp)
 //     └── dispatch-webhook  → handleDispatchWebhook(data)
 //
-// Jobs that need tenant-scoped DB access wrap their body in
-// `runWithDb(getPrismaClient(merchant.databaseUrl), () => …)` so the
-// platform's `getDb()` (AsyncLocalStorage) returns that merchant's
-// client. `provision-store` is special — it runs BEFORE the merchant has
-// a database_url; it uses the control DB (via `useDB()`) to mutate the
-// Merchant row and can skip the runWithDb wrapper.
+// The handlers themselves live in `server/utils/worker-handlers.ts` so
+// unit tests can import them without triggering the Worker bootstrap /
+// Redis connect below.
 // ---------------------------------------------------------------------------
 
 import process from 'node:process'
-import { createHash, createHmac } from 'node:crypto'
 import { Worker } from 'bullmq'
 import type { Job } from 'bullmq'
-import { getPrismaClient, runWithDb } from '@commercejs/platform'
 import { createRedisConnection } from './server/utils/redis'
 import { MERCHANT_QUEUE } from './server/utils/queue'
 import type {
@@ -34,89 +29,11 @@ import type {
   ProvisionStoreJob,
   SendEmailJob,
 } from './server/utils/queue'
-import { useDB } from './server/utils/db'
-import { provisionMerchant } from './server/utils/merchant-provisioner'
-
-// ---------------------------------------------------------------------------
-// Handlers — each one owns a single job type.
-// ---------------------------------------------------------------------------
-
-async function handleProvisionStore(data: ProvisionStoreJob['data']): Promise<void> {
-  // Delegates to the pipeline in merchant-provisioner.ts — create Neon
-  // project, apply platform schema, flip status='active'. Idempotent:
-  // rerunning after a partial failure picks up from where it left off.
-  const result = await provisionMerchant(data.merchantId)
-  console.log(
-    '[worker] provision-store OK merchant=%s neonProjectId=%s neonBranchId=%s',
-    result.merchantId,
-    result.neonProjectId,
-    result.neonBranchId,
-  )
-}
-
-async function handleSendEmail(data: SendEmailJob['data']): Promise<void> {
-  // SMTP credentials live in the monorepo-root .secrets file / Fly secrets.
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
-    throw new Error('send-email: SMTP_* env vars are missing')
-  }
-
-  // Deliberately leaving the transport off the hot path for Step 5 — the
-  // notification-smtp provider gets wired in alongside the Step 7 UI work
-  // so we don't drag a templating engine into the worker bundle yet.
-  console.log(
-    '[worker] send-email stub — merchant=%s to=%s subject=%o (template=%s)',
-    data.merchantId,
-    data.to,
-    data.subject,
-    data.template,
-  )
-
-  // Log the connection parameters so operators can sanity-check secrets
-  // without leaking the password.
-  console.log('  SMTP target: %s:%s as %s', SMTP_HOST, SMTP_PORT ?? '587', SMTP_USER)
-}
-
-async function handleDispatchWebhook(data: DispatchWebhookJob['data']): Promise<void> {
-  // Dispatch runs per-merchant; bind the Prisma client in case the handler
-  // wants to record delivery attempts in the merchant DB.
-  const prisma = getPrismaClient(await resolveMerchantDatabaseUrl(data.merchantId))
-
-  await runWithDb(prisma, async () => {
-    const body = JSON.stringify(data.payload)
-    const headers: Record<string, string> = {
-      'content-type': 'application/json',
-      'x-commerce-event': data.event,
-      'x-commerce-delivery-id': createHash('sha256')
-        .update(`${data.merchantId}:${data.event}:${Date.now()}`)
-        .digest('hex')
-        .slice(0, 32),
-    }
-    if (data.secret) {
-      const sig = createHmac('sha256', data.secret).update(body).digest('hex')
-      headers['x-commerce-signature'] = `sha256=${sig}`
-    }
-
-    const res = await fetch(data.url, { method: 'POST', headers, body })
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      throw new Error(
-        `webhook ${data.event} → ${data.url} responded ${res.status} ${res.statusText}: ${text.slice(0, 200)}`,
-      )
-    }
-  })
-}
-
-async function resolveMerchantDatabaseUrl(merchantId: string): Promise<string> {
-  const merchant = await useDB().merchant.findUnique({
-    where: { id: merchantId },
-    select: { databaseUrl: true },
-  })
-  if (!merchant?.databaseUrl) {
-    throw new Error(`merchant ${merchantId} has no database_url — still provisioning?`)
-  }
-  return merchant.databaseUrl
-}
+import {
+  handleProvisionStore,
+  handleSendEmail,
+  handleDispatchWebhook,
+} from './server/utils/worker-handlers'
 
 // ---------------------------------------------------------------------------
 // Dispatch — single switch driven by job.name (populated by Queue.add(type))

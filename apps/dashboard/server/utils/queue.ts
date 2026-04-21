@@ -38,9 +38,16 @@ export interface SendEmailJob {
   data: {
     merchantId: string
     to: string
-    subject: string
+    /** Template key — resolved against apps/dashboard/server/emails/ */
     template: string
     vars?: Record<string, unknown>
+    /**
+     * Optional subject override. When undefined, the worker uses the
+     * template's own subject. Callers rarely need to override — prefer
+     * letting the template own its subject so every send of a given
+     * template has consistent wording.
+     */
+    subject?: string
   }
 }
 
