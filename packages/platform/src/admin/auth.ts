@@ -273,9 +273,13 @@ export function createAdminAuthDomain() {
       const claimed = await markPasswordResetUsed(hashToken(rawToken))
       if (!claimed) throw new Error('Reset link is invalid or has already been used')
 
+      // Also flip status='active' in case the row was sitting in 'invited'
+      // state (the invitee used forgot-password instead of the invite link
+      // — both paths end with the account usable).
       await updateAdminUser(adminUserId, {
         passwordHash: await hash(newPassword, 10),
-      })
+        status: 'active',
+      } as any)
 
       const updated = await findAdminById(adminUserId)
       if (!updated) throw new Error('Admin user not found after reset')
