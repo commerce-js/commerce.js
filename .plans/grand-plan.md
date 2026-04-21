@@ -62,7 +62,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 | Merchant admin UI (T01–T05) | ✅ | [`merchant-admin/plan.md`](merchant-admin/plan.md) — all five tasks shipped (T01 ✅, T02 ✅, T03 ✅, T04 ✅, T05 ✅) |
 | Merchant admin follow-up (T06–T13) | ✅ | [`merchant-admin-followup/plan.md`](merchant-admin-followup/plan.md) — all eight tasks shipped (T06 ✅ settings, T07 ✅ customers, T08 ✅ categories, T09 ✅ staff, T10 ✅ inventory, T11 ✅ analytics, T12 ✅ theming, T13 ✅ audit log) — merchant-admin scope CLOSED |
 | Tap subscription billing (merchant SaaS plan charges) | 🔲 | No plan doc yet; `Merchant.tapCustomerId` column plumbed |
-| Transactional emails (order confirmations, password resets, trial-ending) | 🟢 In Progress | [`transactional-emails/plan.md`](transactional-emails/plan.md) — T01 (staff-invite) ✅ + T02 (password reset, admin + buyer) ✅ both deployed + smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21; T03 (order confirmation) up next |
+| Transactional emails (order confirmations, password resets, trial-ending) | 🟢 In Progress | [`transactional-emails/plan.md`](transactional-emails/plan.md) — T01 (staff-invite) ✅ + T02 (password reset, admin + buyer) ✅ both deployed + smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21; T03 (order confirmation) 🟢 code-complete + deployed 2026-04-21 evening (image `deployment-01KPR2EB4F8KRW9Q7JNE5M3KDH`), awaiting live-purchase acceptance round-trip; T04–T07 still 🟡 |
 
 <!-- END PROGRESS SECTION -->
 

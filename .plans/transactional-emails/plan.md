@@ -40,7 +40,7 @@
 
 * [x] [**T01**: Provider wiring + staff invite (first vertical slice)](tasks/T01.md) — Status: ✅ Completed — code-complete + deployed + 8/8 smoke scenarios green on `commercejs-cloud.fly.dev` 2026-04-21. Five commits: `d4b68e2` platform, `a5716ea` dashboard infra, `6c16779` dashboard routes, `5df66eb` storefront, `da62205` runtime-dep fix. Fly-managed Upstash Redis DB (fra) replaces the exhausted free-tier DB.
 * [x] [**T02**: Password reset (admin + buyer)](tasks/T02.md) — Status: ✅ Completed — code-complete + deployed + smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21. Four feature commits: `7b60363` platform (password_resets + 6 methods + 31 tests + parity 161), `f142cca` dashboard (2 templates + 6 routes + Zod + adapter + 6 render tests), `6efb80a` storefront (4 pages + forgot-password link), `834cfc5` status='active' fix on reset-complete (surfaced by concurrent-session smoke run). Curl-based scenarios green on live: enumeration-safe 200 on admin+buyer unknown/known email, 400 Zod on malformed, 404 on random tokens (both flows), 400 on bad-token complete, audit row lands on known-email request with 1h expiry, 4 pages render 200, /admin/login has the "Forgot password?" link.
-* [ ] [**T03**: Order confirmation (customer-facing)](tasks/T03.md) — Status: 🟢 In Progress — storefront-native finalize + Tap webhook triggers, one template, idempotent
+* [ ] [**T03**: Order confirmation (customer-facing)](tasks/T03.md) — Status: 🟢 In Progress — code-complete + deployed 2026-04-21 to `commercejs-cloud.fly.dev` (deploy image `deployment-01KPR2EB4F8KRW9Q7JNE5M3KDH`, 4 machines green in `fra`). Two commits: `3c76e04` (template + T03 scaffold + 13 render tests) + `0ddb411` (triggers on both finalize paths + hosted-checkout BullMQ mirror + Tap metadata propagation). Awaiting live-purchase acceptance (operator-driven): place a real card order through `smoke.commercejs.cloud/checkout` → 3DS → verify email lands at buyer inbox. Pipeline smoke via curl all green: health 200, storefront home + `/order-confirmation` 200, webhook reachable on `checkout.commercejs.cloud` (400 without `?merchant=`, 401 with `?merchant=` + bad sig — both expected), `cart-pay` route validates `cartId` as expected.
 * [ ] [**T04**: Welcome email (merchant signup)](tasks/T04.md) — Status: 🟡 Planned — also gates eaas-launch T04
 * [ ] [**T05**: Email verification (double-opt-in)](tasks/T05.md) — Status: 🟡 Planned — signup + email-change flows
 * [ ] [**T06**: Trial-ending warnings (7-day + 1-day, scheduled)](tasks/T06.md) — Status: 🟡 Planned — gates eaas-launch T03; introduces BullMQ repeatable jobs
@@ -469,6 +469,41 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-21** (evening): T03 code-complete + deployed — two feature
+  commits land the vertical slice: `3c76e04 feat(dashboard): order-
+  confirmation email template + T03 scaffold` (new template with
+  line-item table + conditional shipping/tax rows + address block;
+  registered in `_render.ts`; 13 render tests covering happy-path,
+  missing buyerName, conditional rows, null imageUrl, digital-only,
+  HTML-escape on storeName / line-item name / buyerName, minimal-
+  address formatting; T03.md scaffold with two-trigger-site spec +
+  acceptance scenarios), `0ddb411 feat(apps): wire order-
+  confirmation email triggers on both finalize paths` (storefront-
+  native path in `checkout/complete.post.ts` enqueues after
+  `adapter.placeOrder`; Tap-path trigger split across `cart-
+  confirm.get.ts` + `webhooks/tap-payment.post.ts` with
+  status-before-update check on both so only ONE fires per order
+  regardless of redirect-vs-webhook race; `cart-pay.post.ts`
+  propagates merchantId + buyerEmail + buyerName through Tap
+  `metadata` AND appends `?merchant=<subdomain>` to `webhookUrl`
+  so Tap's webhook POST resolves tenant context). Hosted-checkout
+  gains `bullmq` + `ioredis` direct deps and producer-only
+  `server/utils/{queue,redis,orderConfirmationEmail}.ts` mirrors;
+  worker stays in dashboard as sole consumer of the shared
+  `merchant-jobs` queue. `fly deploy --remote-only` 2026-04-21
+  evening → image `deployment-01KPR2EB4F8KRW9Q7JNE5M3KDH`, 4
+  machines rolled green (2 web + 2 worker, `fra`). Curl smoke on
+  live: health 200, smoke storefront home + `/order-confirmation`
+  200, hosted-checkout webhook on `checkout.commercejs.cloud`
+  returns 400 without `?merchant=` (tenant middleware enforces as
+  expected — confirms the cart-pay fix is load-bearing) and 401
+  with `?merchant=smoke` + empty body (signature verification
+  working); `cart-pay?merchant=smoke` with empty body returns 400
+  "cartId is required" (route + validation reachable). T03 still
+  🟢 pending live-purchase acceptance (operator-driven round-
+  trip: real card through Tap → 3DS → email at buyer inbox); no
+  code path can be exercised end-to-end via curl without a real
+  Tap charge.
 - **2026-04-21** (late late pm): T02 ✅ **Completed** —
   `commercejs-cloud` redeployed to version 70
   (`deployment-01KPQXJ801379BT86VMESW04GK`, image 222 MB, 4 machines
