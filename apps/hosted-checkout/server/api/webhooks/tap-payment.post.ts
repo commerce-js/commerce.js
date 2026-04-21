@@ -24,6 +24,13 @@ export default defineEventHandler(async (event) => {
   const chargeStatus = (body.status as string)?.toUpperCase()
   const orderId = body.reference?.order as string | undefined
   const cartId = body.metadata?.cartId as string | undefined
+  // Buyer identity echoed from cart-pay's Tap `metadata`; used to enqueue
+  // the order-confirmation email when this handler wins the race against
+  // cart-confirm.get.ts. If either field is missing (older charges that
+  // predate the metadata bump) we skip the email — logged below.
+  const metadataMerchantId = body.metadata?.merchantId as string | undefined
+  const metadataBuyerEmail = body.metadata?.buyerEmail as string | undefined
+  const metadataBuyerName = body.metadata?.buyerName as string | undefined
 
   console.log(`[tap-webhook] Received: charge=${chargeId} status=${chargeStatus} orderId=${orderId}`)
 
@@ -79,6 +86,40 @@ export default defineEventHandler(async (event) => {
     // Clean up the cart (may already be deleted by redirect — that's OK)
     if (cartId) {
       try { await cartDomain.deleteCart(cartId) } catch {}
+    }
+
+    // Fire the buyer-facing order-confirmation email. Reaching this branch
+    // means this handler transitioned the order (the earlier idempotency
+    // guard short-circuited if it was already `processing`), so enqueueing
+    // here is the authoritative "payment captured" signal when the user's
+    // redirect didn't make it back to cart-confirm.get.ts (closed tab,
+    // mobile app-switch, etc.). Best-effort — never fail the webhook.
+    if (metadataMerchantId && metadataBuyerEmail) {
+      try {
+        const merchantRow = event.context.merchant as { id: string, subdomain: string, name: string } | undefined
+        const storeName = merchantRow?.name ?? 'your store'
+        const subdomain = merchantRow?.subdomain ?? ''
+        const orderStatusUrl = subdomain
+          ? `https://${subdomain}.commercejs.cloud/order-confirmation?orderId=${orderId}`
+          : `https://commercejs.cloud/order-confirmation?orderId=${orderId}`
+        const { enqueueOrderConfirmationEmail } = await import('../../utils/orderConfirmationEmail')
+        const freshOrder = await ordersDomain.getOrder(orderId)
+        await enqueueOrderConfirmationEmail({
+          merchantId: metadataMerchantId,
+          storeName,
+          orderStatusUrl,
+          to: metadataBuyerEmail,
+          buyerName: metadataBuyerName ?? null,
+          order: freshOrder,
+        })
+        console.log(`[tap-webhook] Enqueued order-confirmation email for ${orderId} → ${metadataBuyerEmail}`)
+      }
+      catch (err) {
+        console.warn(`[tap-webhook] Failed to enqueue order-confirmation email for ${orderId}:`, err)
+      }
+    }
+    else {
+      console.log(`[tap-webhook] Skipped order-confirmation email for ${orderId} — metadata missing merchantId or buyerEmail (older charge?)`)
     }
 
     console.log(`[tap-webhook] Order ${orderId} → processing (charge ${chargeId})`)

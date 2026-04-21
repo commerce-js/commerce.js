@@ -30,6 +30,14 @@ export default defineEventHandler(async (event) => {
     ? config.public.appUrl
     : `${requestUrl.protocol}//${requestUrl.host}`
 
+  // Tenant context (populated by server/middleware/tenant.ts). Used to:
+  //   (a) append `?merchant=<subdomain>` to the Tap webhookUrl so the
+  //       webhook route can resolve the merchant DB when Tap calls it,
+  //   (b) pass merchantId + buyerEmail/buyerName through Tap metadata so
+  //       the webhook / cart-confirm can enqueue the order-confirmation
+  //       email without a second control-DB lookup.
+  const merchant = event.context.merchant as { id: string, subdomain: string, name: string } | undefined
+
   const cartDomain = createCartDomain(currency)
   const checkoutDomain = createCheckoutDomain(currency)
   const ordersDomain = createOrdersDomain(currency)
@@ -69,9 +77,21 @@ export default defineEventHandler(async (event) => {
       saveCard: true,
       customerId: body.tapCustomerId || undefined,
       returnUrl: `${appUrl}/api/cart-confirm?orderId=${order.id}&cartId=${body.cartId}&email=${encodeURIComponent(body.email || '')}&returnUrl=${encodeURIComponent(body.returnUrl || '')}`,
-      webhookUrl: `${appUrl}/api/webhooks/tap-payment`,
+      // Appending `?merchant=<subdomain>` lets the tenant middleware resolve
+      // merchant context when Tap POSTs the webhook (Tap has no cookies).
+      // Without this the webhook would 400 on "Missing merchant parameter".
+      webhookUrl: merchant?.subdomain
+        ? `${appUrl}/api/webhooks/tap-payment?merchant=${encodeURIComponent(merchant.subdomain)}`
+        : `${appUrl}/api/webhooks/tap-payment`,
       orderId: order.id,
-      metadata: { cartId: body.cartId },
+      metadata: {
+        cartId: body.cartId,
+        // Propagate buyer identity for the downstream order-confirmation
+        // email (Tap echoes metadata on the webhook + charge-fetch payloads).
+        ...(merchant?.id ? { merchantId: merchant.id } : {}),
+        ...(body.email ? { buyerEmail: String(body.email) } : {}),
+        ...(body.firstName ? { buyerName: String(body.firstName) } : {}),
+      },
       customer: {
         email: body.email,
         firstName: body.firstName,

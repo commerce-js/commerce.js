@@ -19,6 +19,8 @@
     "@commercejs/types": "workspace:*",
     "@commercejs/webhook-verifier": "workspace:*",
     "@neondatabase/serverless": "^1.0.2",
+    "bullmq": "^5.40.0",
+    "ioredis": "^5.4.2",
     "nuxt": "^4.3.1",
     "qrcode": "^1.5.4",
     "vue": "^3.5.28",
