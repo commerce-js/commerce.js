@@ -1,127 +1,116 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-20T2247.md`](checkpoints/2026-04-20T2247.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-20T1815.md`](checkpoints/2026-04-20T1815.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-21T0353.md`](checkpoints/2026-04-21T0353.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-20T2247.md`](checkpoints/2026-04-20T2247.md)
 
 ## Current Phase
 
-**eaas-launch T01 (platform polish) shipped + deployed + live-accepted
-on smoke.commercejs.cloud 2026-04-20.** Three commits on `fly/eaas`:
-`beea6d9` (code bundle), `76b71ea` (docs flip), `528867a` (PATCH route
-500→400 fix surfaced during acceptance). Two Fly rollouts; all 4
-machines green after each. 6 of 9 acceptance scenarios pass via API;
-1 pending browser check (scenario 8, Reka console errors); 1 gated on
-dev-DB state (scenario 7, no null-actor rows — prod will be clean); 1
-gated on release CI (scenario 9, storage-s3 0.2.1 publish — rides
-T05 branch-swap). **T02 transactional emails is in flight** — a
-parallel session spawned `.plans/transactional-emails/` with 7
-sub-tasks and flipped the eaas-launch T02 row 🟡 → 🟢.
+**transactional-emails T01 (staff-invite vertical slice) is code-
+complete on `fly/eaas`.** Four commits this session:
+- `d4b68e2` feat(platform) — `staff_invites` table + token helpers +
+  null-password login guard + 19 unit tests
+- `a5716ea` feat(dashboard) — SMTP provider singleton +
+  `server/emails/` template system + worker handler extraction + 11
+  tests
+- `6c16779` feat(dashboard) — `/api/admin/staff` invite dispatch +
+  PUBLIC `/api/admin/invite/[token]` validate + accept routes
+- `5df66eb` feat(storefront) — `/admin/invite/[token].vue` pre-auth
+  accept page + `/admin/staff/new.vue` invite/manual toggle
 
-## What Just Landed (T01, 2026-04-20)
+**Smoke acceptance (8 scenarios) blocked on operator SMTP pre-reqs
+(EXPLICIT-GO).** Choose provider (SES SMTP me-south-1 / Mailgun /
+Postmark / Resend-SMTP), provision credentials, DKIM+SPF+DMARC on
+`commercejs.cloud`, `fly secrets set SMTP_*` on `commercejs-cloud`
+app, then deploy + run scenarios 1–8 from T01.md with a Commerce.js
+team inbox as recipient.
 
-Three commits on `fly/eaas`:
+eaas-launch T02 (transactional emails) row on the master plan
+remains 🟢 In Progress; sub-plan T01 → 🟢 In Progress (was 🟡). T02
+sub-plan still gates T02 (password reset) / T03 (order confirm) /
+T04 (welcome) / T05 (verify) / T06 (trial-ending) / T07 (retrofit
+sweep) on this slice's smoke completion.
 
-- `beea6d9` feat(eaas-launch): T01 platform polish — sentinel helper
-  + bcrypt async + categories hardening
-- `76b71ea` docs(plans): T01 platform polish shipped locally — flip
-  eaas-launch plan + grand-plan + checkpoint
-- `528867a` fix(dashboard): surface updateCategory cycle guard as 400
-  not 500 — follow-up from live acceptance (sibling `[id].delete.ts`
-  had the try/catch wrapper, PATCH didn't)
+## What Just Landed (T01 code-complete, 2026-04-21)
 
-Two Fly deploys; all 4 machines green after each. 6 of 9 scenarios
-green via API. Full acceptance table in
-[`2026-04-20T2247.md`](checkpoints/2026-04-20T2247.md).
+See [`2026-04-21T0353.md`](checkpoints/2026-04-21T0353.md) for the
+full diff surface + architectural decisions + gaps.
 
-## What Was Built (T01 in a paragraph)
-
-Six carry-over items resolved in a single 17-file commit. New
-`useSelectSentinel` composable under `apps/storefront/app/composables/`
-wraps Reka's empty-value crash; four consumers converted (products
-status, activity actor, activity entityType, categories parent via
-AdminCategoryForm) — theme font dropdown deliberately skipped due to
-3-mode state machine. bcrypt sync→async across all four call sites in
-platform admin auth. Categories hardening: `deleteCategory` now blocks
-on attached products, `updateCategory` walks the parent chain and
-rejects self-parent + descendant cycles, `Category.sortOrder` promoted
-to required number with 8 mappers updated and the T08 list page gaining
-a Sort column. T13 "deleted" chip now detects orphan actorIds via a
-`liveAdminIds` Set cross-check. Smoke merchant schema drift documented
-(Option B — no normalization). `@commercejs/storage-s3 v0.2.1`
-changeset verified as the presign X-Amz-Expires fix. 10 new unit tests
-(60 admin tests total on the platform package now). 294/294 monorepo
-tests green. Query parity 153/153. Full details in
-[`.plans/eaas-launch/tasks/T01.md`](../.plans/eaas-launch/tasks/T01.md)
-Execution Summary and in
-[`.memory/checkpoints/2026-04-20T1815.md`](checkpoints/2026-04-20T1815.md).
+Highlights to carry forward:
+- **Worker handlers extracted to `server/utils/worker-handlers.ts`**
+  so vitest can mock deps without Redis connecting. Shape for every
+  future handler (T06 repeatable trial-ending job, T07 retrofit).
+- **Template subjects belong to the template.** `SendEmailJob.subject`
+  is optional; worker falls back to `template.subject(vars)`.
+- **Token = 32 random bytes → base64url → sha256 hex at rest.**
+  Race-safe consumption via `WHERE used_at IS NULL`.
+- **admin_users.password_hash is now nullable on the merchant DB.**
+  `invited` state is the only null case; login rejects before bcrypt.
+- **`inviteUrl` built from request host + proto.** Custom domains +
+  subdomains both work without hardcoding `commercejs.cloud`.
+- **Dashboard vitest setup is minimal but real** — one config, one
+  script, uses root vitest devDep.
 
 ## Carry-Overs Into Future Sessions
 
-1. **T01 scenario 8** — browser sweep of `/admin/{products,
-   categories/new,categories/<id>/edit,theme,activity}` with devtools
-   open, confirm no Reka SelectItem "value cannot be an empty string"
-   console errors. Pre-existing pattern motivated the whole composable;
-   trusted but not visually verified.
-2. **@commercejs/storage-s3 v0.2.1 publish** (T01 scenario 9) — rides
-   T05 branch-swap or explicit `pnpm changeset publish` from a
-   release-capable branch.
-3. **Shared platform-throw → 400 helper** — `[id].patch.ts` 500→400
-   gap (commit `528867a`) suggests extracting
-   `handlePlatformThrow(err)` to `apps/dashboard/server/utils/` so
-   new guards in the platform don't need every consuming route to
-   remember the try/catch. Small DX win.
-4. **Smoke merchant schema drift** — Option B in place
-   (`::text` casts in analytics); dedicated
-   `.plans/schema-normalize/` plan if we decide to retire them.
-5. **Pre-existing apps/ typecheck debt** — ~36 TS errors across
-   storefront + dashboard on unrelated admin pages (h3 resolution,
-   `@vueuse/core`, `Image.altText`, `Address.email/name`, ioredis
-   version dup). Worth a pass before T05 branch-swap.
-6. **Smoke dev-DB state** — orphan actorId from T13 (Alice
-   `292e8c23…`), 4 products all in "Featured" with sortOrder=0. Prod
-   DB will be clean — smoke-isms expected.
-7. **NUXT_* prefix gotcha** — keep top of `.memory/gotchas.md`.
+1. **BLOCKING — operator SMTP provisioning (EXPLICIT-GO).** Service
+   choice (recommend SES me-south-1) + credentials + DKIM/SPF/DMARC
+   on `commercejs.cloud` + `fly secrets set SMTP_*`. Without these,
+   Scenario 1 onward can't run.
+2. **Acceptance recipient** — dev-team inbox (e.g.
+   `baker+invite-test@xyz.dev`). Smoke merchant's default
+   `qa@smoke-test.local` won't route. Document the chosen address in
+   T01.md Execution Summary.
+3. **Deliverability warmup** — first real send from a fresh
+   DKIM-verified domain can land in spam. Not a code issue; flag in
+   scenario 2 so we don't false-positive on a spam check.
+4. **Dashboard `pnpm typecheck` pre-existing errors** carry over
+   from 2026-04-20 (h3 auto-imports, ioredis dup). My changes don't
+   add to the pile.
+5. **T01 scenario 8 (Reka console errors) from 2026-04-20** still
+   open — browser sweep still pending.
+6. **`@commercejs/storage-s3 v0.2.1` publish** still open — rides
+   T05 branch-swap or explicit release-branch publish.
+7. **Shared `handlePlatformThrow` helper** idea from 2026-04-20
+   still unclaimed. Small DX win.
+8. **Repeatable-jobs infra for T06 (trial-ending)** deferred — no
+   BullMQ config changes this session.
 
 ## What's Next (user's call)
 
-**T02 transactional emails is in flight.** A parallel session spawned
-`.plans/transactional-emails/` on 2026-04-20 with 7 sub-tasks (staff
-invite vertical slice first, then password reset, order confirmation,
-welcome, verification, trial-ending, retrofit sweep). Provider decision
-in that sub-plan: SMTP via `@commercejs/notification-smtp` (NOT Resend
-as the master plan originally pointed to — keeps the existing `SMTP_*`
-env-var shape from the worker.ts stub). eaas-launch T02 row flipped 🟡
-→ 🟢.
+To unblock T01 smoke acceptance: pick SMTP service + provision
+credentials + DNS + `fly secrets set` + deploy + run 8 scenarios on
+`smoke.commercejs.cloud` with a team inbox. Sub-plan T01 flips ✅
+after that.
 
-To continue T02: enter `.plans/transactional-emails/plan.md` — the
-current ship target is sub-task T01 (staff-invite end-to-end pipeline
-proof).
-
-To finish remaining T01 work: just scenario 8 browser check; otherwise
-T01 is effectively closed for this repo's standards.
+To start sub-plan T02 (password reset) right now without waiting on
+operator SMTP: technically possible — code would land but can't be
+acceptance-tested. Recommend finishing T01 acceptance first so each
+task ships with a real user-facing proof.
 
 ## Live Deployment
 
 - App: `commercejs-cloud` (Fly.io, Frankfurt)
-- Latest image: tip of `fly/eaas` after commit `528867a` (2 deploys
-  this session: `beea6d9` then `528867a`)
+- Current prod tip: `528867a` (eaas-launch T01 PATCH fix from
+  2026-04-20). No new deploy this session.
 - Health: `https://commercejs-cloud.fly.dev/api/_health` → 200
-- Smoke: `https://smoke.commercejs.cloud` owner login works, bcrypt
-  async 657ms warm, 4 products + 1 "Featured" category (4 attached)
+- Smoke: `https://smoke.commercejs.cloud` owner login works
 
 ## Where to Look
 
 | Question | File |
 |---|---|
 | Project orientation + current phase (start here) | `.plans/grand-plan.md` |
-| eaas-launch master plan (T01–T05) | `.plans/eaas-launch/plan.md` |
-| T01 task spec + Execution Summary | `.plans/eaas-launch/tasks/T01.md` |
-| What shipped this session + acceptance table (detailed) | `.memory/checkpoints/2026-04-20T2247.md` |
-| T01 locally done (before deploy) | `.memory/checkpoints/2026-04-20T1815.md` |
-| T06–T13 merchant-admin close | `.memory/checkpoints/2026-04-20T1600.md` |
+| Sub-plan (in flight) | `.plans/transactional-emails/plan.md` |
+| T01 task spec + next-up scenarios | `.plans/transactional-emails/tasks/T01.md` |
+| What shipped this session (detailed) | `.memory/checkpoints/2026-04-21T0353.md` |
+| Previous session (T01 deployed + accepted) | `.memory/checkpoints/2026-04-20T2247.md` |
+| eaas-launch master plan | `.plans/eaas-launch/plan.md` |
 | Architectural decisions (locked) | `.memory/decisions.md` |
 | Hard-won bugs | `.memory/gotchas.md` |
 | Phase 7 roadmap state | `.plans/roadmap.md` |
-| T02 sub-plan (in flight) | `.plans/transactional-emails/plan.md` |
+| SMTP provider source | `packages/notification-smtp/src/smtp-provider.ts` |
+| Worker handlers (now testable) | `apps/dashboard/server/utils/worker-handlers.ts` |
+| Staff-invite template | `apps/dashboard/server/emails/staff-invite.ts` |
+| Invite accept UI | `apps/storefront/app/pages/admin/invite/[token].vue` |
 | Project-wide Claude instructions | `CLAUDE.md` |
-| Secrets (smoke login, Fly, Neon, Tap, SMTP, Tigris) | `.secrets` (gitignored) |
+| Secrets (smoke login, Fly, Neon, Tap, SMTP [TBD], Tigris) | `.secrets` (gitignored) |

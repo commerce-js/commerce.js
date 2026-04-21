@@ -62,7 +62,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 | Merchant admin UI (T01–T05) | ✅ | [`merchant-admin/plan.md`](merchant-admin/plan.md) — all five tasks shipped (T01 ✅, T02 ✅, T03 ✅, T04 ✅, T05 ✅) |
 | Merchant admin follow-up (T06–T13) | ✅ | [`merchant-admin-followup/plan.md`](merchant-admin-followup/plan.md) — all eight tasks shipped (T06 ✅ settings, T07 ✅ customers, T08 ✅ categories, T09 ✅ staff, T10 ✅ inventory, T11 ✅ analytics, T12 ✅ theming, T13 ✅ audit log) — merchant-admin scope CLOSED |
 | Tap subscription billing (merchant SaaS plan charges) | 🔲 | No plan doc yet; `Merchant.tapCustomerId` column plumbed |
-| Transactional emails (order confirmations, password resets, trial-ending) | 🔲 | No plan doc yet; `handleSendEmail` stub in `worker.ts` |
+| Transactional emails (order confirmations, password resets, trial-ending) | 🟢 In Progress | [`transactional-emails/plan.md`](transactional-emails/plan.md) — sub-plan T01 (staff-invite vertical slice) code-complete on `fly/eaas` 2026-04-21; `handleSendEmail` now dispatches via `@commercejs/notification-smtp`; T02–T07 sub-tasks pending |
 
 <!-- END PROGRESS SECTION -->
 
@@ -83,10 +83,18 @@ query parity 153/153. **Awaiting explicit-go for `fly deploy` + T01
 live acceptance on `smoke.commercejs.cloud`** — 9 scenarios per
 T01.md Test Scenarios.
 
-**After T01 deploy: the eaas-launch critical path.** T02 transactional
-emails is next (emails-first gates T03 billing + T04 signup). T02 will
-spawn `.plans/transactional-emails/plan.md` on start. Full roadmap +
-dependencies in [`eaas-launch/plan.md`](eaas-launch/plan.md).
+**eaas-launch T02 sub-plan T01 code-complete on `fly/eaas` 2026-04-21.**
+Four commits land the staff-invite vertical slice: platform
+(`staff_invites` + token helpers + null-password login guard),
+dashboard (SMTP provider + template system + worker dispatcher +
+invite routes + audit), storefront (pre-auth `/admin/invite/[token]`
+page + `/admin/staff/new` toggle). Session recap in
+[`.memory/checkpoints/2026-04-21T0353.md`](../.memory/checkpoints/
+2026-04-21T0353.md). Smoke acceptance (8 scenarios) blocks on
+operator SMTP pre-reqs (service choice, credentials, DKIM/SPF/DMARC,
+`fly secrets set SMTP_*`) — all EXPLICIT-GO. After acceptance, T02
+sub-plan moves to T02 (password reset) → T03 (order confirm) → T04
+(welcome) → T05 (verify) → T06 (trial-ending) → T07 (retrofit).
 
 **Merchant-admin scope remains CLOSED** (T01–T13 all ✅). T01 platform
 polish shipped as part of the new eaas-launch plan, NOT a reopening of

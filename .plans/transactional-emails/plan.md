@@ -38,7 +38,7 @@
 
 * [ ] **Research & Strategy Selection** ✅ Completed (2026-04-20)
 
-* [ ] [**T01**: Provider wiring + staff invite (first vertical slice)](tasks/T01.md) — Status: 🟡 Planned — end-to-end pipeline proof on the deferred T09 flow
+* [ ] [**T01**: Provider wiring + staff invite (first vertical slice)](tasks/T01.md) — Status: 🟢 In Progress — code-complete on `fly/eaas` 2026-04-21 (4 commits `d4b68e2` → `5df66eb`); blocked on operator SMTP pre-reqs (service choice + credentials + DKIM/SPF/DMARC + `fly secrets set`) before `fly deploy` + 8-scenario smoke acceptance
 * [ ] [**T02**: Password reset (admin + buyer)](tasks/T02.md) — Status: 🟡 Planned — two templates, two reset routes
 * [ ] [**T03**: Order confirmation (customer-facing)](tasks/T03.md) — Status: 🟡 Planned — triggered on hosted-checkout finalize
 * [ ] [**T04**: Welcome email (merchant signup)](tasks/T04.md) — Status: 🟡 Planned — also gates eaas-launch T04
@@ -469,6 +469,17 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-21**: T01 code-complete on `fly/eaas` — four commits:
+  `d4b68e2` platform (staff_invites table + token helpers + null-
+  password login guard + 19 unit tests), `a5716ea` dashboard (SMTP
+  provider singleton + `server/emails/` template system + worker
+  handler extraction + 11 tests), `6c16779` dashboard (invite routes
+  + audit integration), `5df66eb` storefront (`/admin/invite/[token]
+  .vue` pre-auth page + `/admin/staff/new.vue` toggle). T01 status
+  flipped 🟡 → 🟢. Acceptance blocks on operator SMTP pre-reqs +
+  `fly deploy`; both gated behind EXPLICIT-GO. Full session recap in
+  [`.memory/checkpoints/2026-04-21T0353.md`](../../.memory/
+  checkpoints/2026-04-21T0353.md).
 - **2026-04-20**: Sub-plan created. Research completed (Option A —
   vertical slices per task, staff-invite first). Seven tasks (T01–T07)
   defined; T01 task file spawned alongside this doc with the staff-
