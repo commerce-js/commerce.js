@@ -24,7 +24,17 @@
 import { getPrismaClient } from '@commercejs/platform'
 import { findMerchantBySubdomain } from '../utils/control-db'
 
-const SKIP_PREFIXES = ['/_checkout/', '/_nuxt/', '/__nuxt', '/favicon']
+// SKIP_PREFIXES bypass tenant resolution entirely — the handler downstream
+// is expected to run without a merchant-scoped Prisma client.
+//
+// `/api/sessions` is the in-memory demo-session surface (see
+// server/api/sessions/index.post.ts) — it accepts an optional `merchantId`
+// in the body and falls back to `useTapProviderFromEnv()` when absent,
+// so it never needs the cookie/query-driven tenant resolution the
+// hosted-merchant flows (cart-pay, cart-confirm, webhooks) depend on.
+// Without this skip, the demo index page 400s on "Missing merchant
+// parameter" before the handler's env-fallback runs.
+const SKIP_PREFIXES = ['/_checkout/', '/_nuxt/', '/__nuxt', '/favicon', '/api/sessions']
 
 export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname
