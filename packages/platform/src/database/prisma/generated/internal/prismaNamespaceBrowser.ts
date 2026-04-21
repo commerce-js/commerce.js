@@ -63,6 +63,7 @@ export const ModelName = {
   Order: 'Order',
   OrderItem: 'OrderItem',
   OrderHistory: 'OrderHistory',
+  PasswordReset: 'PasswordReset',
   Product: 'Product',
   ProductImage: 'ProductImage',
   ProductVariant: 'ProductVariant',
@@ -295,6 +296,20 @@ export const OrderHistoryScalarFieldEnum = {
 } as const
 
 export type OrderHistoryScalarFieldEnum = (typeof OrderHistoryScalarFieldEnum)[keyof typeof OrderHistoryScalarFieldEnum]
+
+
+export const PasswordResetScalarFieldEnum = {
+  id: 'id',
+  actorType: 'actorType',
+  actorId: 'actorId',
+  tokenHash: 'tokenHash',
+  emailSnapshot: 'emailSnapshot',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type PasswordResetScalarFieldEnum = (typeof PasswordResetScalarFieldEnum)[keyof typeof PasswordResetScalarFieldEnum]
 
 
 export const ProductScalarFieldEnum = {

@@ -2,7 +2,7 @@
 // Customers domain — registration, auth, and address book
 // ---------------------------------------------------------------------------
 
-import { hashSync, compareSync } from 'bcrypt-ts'
+import { hashSync, compareSync, hash as hashAsync } from 'bcrypt-ts'
 import type {
   Customer,
   Address,
@@ -19,7 +19,14 @@ import {
   createAddress as dbCreateAddress,
   updateAddress as dbUpdateAddress,
   deleteAddress as dbDeleteAddress,
+  markPasswordResetUsed,
 } from '../database/index.js'
+import {
+  createPasswordReset,
+  findActivePasswordReset,
+  hashResetToken,
+  type PasswordResetSecret,
+} from '../admin/auth.js'
 
 export function createCustomersDomain() {
   /** Map DB row to Customer type */
@@ -120,12 +127,71 @@ export function createCustomersDomain() {
       currentCustomerId = null
     },
 
+    /** Legacy stub — use requestPasswordReset + completePasswordReset instead. */
     async forgotPassword(_email: string): Promise<void> {
-      // Stub — in a real implementation, this would send an email
+      // Kept for backwards-compat with older adapter tests; new code
+      // drives the real pipeline via the methods below.
+    },
+    async resetPassword(_token: string, _newPassword: string): Promise<void> {
+      // See completePasswordReset below.
     },
 
-    async resetPassword(_token: string, _newPassword: string): Promise<void> {
-      // Stub — in a real implementation, this would verify token and update password
+    /**
+     * Request a password reset for a buyer. Returns a token + expiry
+     * when the email exists, null otherwise. Callers must always return
+     * {ok:true} to the client regardless of this result — no enumeration.
+     */
+    async requestPasswordReset(email: string): Promise<PasswordResetSecret | null> {
+      if (!email) return null
+      const row = await findCustomerByEmail(email)
+      if (!row) return null
+      return createPasswordReset('buyer', row.id, email)
+    },
+
+    /**
+     * Look up a buyer password-reset token. Returns snapshot info or
+     * null when missing / expired / used / wrong actor type.
+     */
+    async verifyPasswordResetToken(rawToken: string): Promise<{
+      customerId: string
+      email: string
+      expiresAt: Date
+    } | null> {
+      const row = await findActivePasswordReset(rawToken, 'buyer')
+      if (!row) return null
+      return {
+        customerId: row.actorId ?? (row as any).actor_id,
+        email: row.emailSnapshot ?? (row as any).email_snapshot,
+        expiresAt: new Date(row.expiresAt ?? (row as any).expires_at),
+      }
+    },
+
+    /**
+     * Consume a buyer password-reset: validates, hashes + sets the new
+     * password on customers, marks the token used. Also sets the
+     * domain's "current customer" so the caller can issue a session.
+     */
+    async completePasswordReset(rawToken: string, newPassword: string): Promise<Customer> {
+      if (!rawToken) throw new Error('Reset token is required')
+      if (!newPassword || newPassword.length < 8) {
+        throw new Error('Password must be at least 8 characters')
+      }
+      const row = await findActivePasswordReset(rawToken, 'buyer')
+      if (!row) throw new Error('Reset link is invalid or has already been used')
+
+      const customerId = row.actorId ?? (row as any).actor_id
+
+      const claimed = await markPasswordResetUsed(hashResetToken(rawToken))
+      if (!claimed) throw new Error('Reset link is invalid or has already been used')
+
+      await dbUpdateCustomer(customerId, {
+        passwordHash: await hashAsync(newPassword, 10),
+      })
+
+      currentCustomerId = customerId
+      const updated = await findCustomerById(customerId)
+      if (!updated) throw new Error('Customer not found after reset')
+      return mapCustomer(updated)
     },
 
     // ---- Address Book ----

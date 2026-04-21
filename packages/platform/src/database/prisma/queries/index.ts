@@ -216,6 +216,14 @@ export {
   deleteExpiredStaffInvites,
 } from './staff-invites.js'
 
+// Password resets (transactional-emails T02 — shared admin + buyer)
+export {
+  createPasswordResetRow,
+  findPasswordResetByTokenHash,
+  markPasswordResetUsed,
+  deleteExpiredPasswordResets,
+} from './password-resets.js'
+
 // Profiles (cross-merchant buyer identity)
 export {
   createProfile,

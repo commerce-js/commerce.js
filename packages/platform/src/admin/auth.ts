@@ -15,11 +15,17 @@ import {
   createStaffInviteRow,
   findStaffInviteByTokenHash,
   markStaffInviteUsed,
+  createPasswordResetRow,
+  findPasswordResetByTokenHash,
+  markPasswordResetUsed,
 } from '../database/index.js'
 import type { AdminUserSafe } from './types.js'
 
 /** Days a staff invite remains valid after creation. */
 const INVITE_EXPIRY_DAYS = 7
+
+/** Minutes a password-reset token remains valid after creation. */
+const PASSWORD_RESET_EXPIRY_MINUTES = 60
 
 /** Strip passwordHash from admin user for safe responses */
 function toSafe(row: any): AdminUserSafe {
@@ -56,6 +62,14 @@ export interface CreateStaffInviteResult {
   token: string
   expiresAt: Date
   tokenHash: string
+}
+
+export interface PasswordResetSecret {
+  /** Raw base64url token — embedded in the email URL. Never log it. */
+  token: string
+  /** sha256 hex of `token` — the value stored in `password_resets.token_hash`. */
+  tokenHash: string
+  expiresAt: Date
 }
 
 export function createAdminAuthDomain() {
@@ -212,6 +226,63 @@ export function createAdminAuthDomain() {
     },
 
     /**
+     * Request a password reset for an admin user. Returns a token +
+     * expiry when the email exists, null otherwise. Callers must always
+     * return {ok:true} to the client regardless of this result to avoid
+     * user enumeration.
+     */
+    async requestAdminPasswordReset(email: string): Promise<PasswordResetSecret | null> {
+      if (!email) return null
+      const row = await findAdminByEmail(email)
+      if (!row) return null
+      return createPasswordReset('admin', row.id, email)
+    },
+
+    /**
+     * Look up an admin password-reset token. Returns snapshot info or
+     * null when missing / expired / already used.
+     */
+    async verifyAdminPasswordResetToken(rawToken: string): Promise<{
+      adminUserId: string
+      email: string
+      expiresAt: Date
+    } | null> {
+      const row = await findActivePasswordReset(rawToken, 'admin')
+      if (!row) return null
+      return {
+        adminUserId: row.actorId ?? (row as any).actor_id,
+        email: row.emailSnapshot ?? (row as any).email_snapshot,
+        expiresAt: new Date(row.expiresAt ?? (row as any).expires_at),
+      }
+    },
+
+    /**
+     * Consume an admin password-reset: validates, hashes + sets the new
+     * password on admin_users, marks the token used.
+     */
+    async completeAdminPasswordReset(rawToken: string, newPassword: string): Promise<AdminUserSafe> {
+      if (!rawToken) throw new Error('Reset token is required')
+      if (!newPassword || newPassword.length < 8) {
+        throw new Error('Password must be at least 8 characters')
+      }
+      const row = await findActivePasswordReset(rawToken, 'admin')
+      if (!row) throw new Error('Reset link is invalid or has already been used')
+
+      const adminUserId = row.actorId ?? (row as any).actor_id
+
+      const claimed = await markPasswordResetUsed(hashToken(rawToken))
+      if (!claimed) throw new Error('Reset link is invalid or has already been used')
+
+      await updateAdminUser(adminUserId, {
+        passwordHash: await hash(newPassword, 10),
+      })
+
+      const updated = await findAdminById(adminUserId)
+      if (!updated) throw new Error('Admin user not found after reset')
+      return toSafe(updated)
+    },
+
+    /**
      * List all admin users (safe — no password hashes).
      */
     async listAdmins(): Promise<AdminUserSafe[]> {
@@ -312,4 +383,49 @@ async function createStaffInvite(adminUserId: string, email: string): Promise<Cr
     expiresAt,
   })
   return { token, expiresAt, tokenHash }
+}
+
+/**
+ * Generate + persist a single-use password-reset token for either an
+ * admin or a buyer. Exported so the buyer domain can reuse the same
+ * pipeline without duplicating the token-generation logic.
+ */
+export async function createPasswordReset(
+  actorType: 'admin' | 'buyer',
+  actorId: string,
+  email: string,
+): Promise<PasswordResetSecret> {
+  const token = generateRawToken()
+  const tokenHash = hashToken(token)
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MINUTES * 60 * 1000)
+  await createPasswordResetRow({
+    id: crypto.randomUUID(),
+    actorType,
+    actorId,
+    tokenHash,
+    emailSnapshot: email,
+    expiresAt,
+  })
+  return { token, tokenHash, expiresAt }
+}
+
+/**
+ * Look up a password-reset row by raw token, verifying actor-type and
+ * liveness (not used, not expired).
+ */
+export async function findActivePasswordReset(rawToken: string, actorType: 'admin' | 'buyer') {
+  if (!rawToken) return null
+  const row = await findPasswordResetByTokenHash(hashToken(rawToken))
+  if (!row) return null
+  const rowActorType = row.actorType ?? (row as any).actor_type
+  if (rowActorType !== actorType) return null
+  if (row.usedAt ?? (row as any).used_at) return null
+  const expiresAt = (row.expiresAt ?? (row as any).expires_at) as Date
+  if (new Date(expiresAt).getTime() <= Date.now()) return null
+  return row
+}
+
+/** Hash a raw token for storage — exported for the buyer domain. */
+export function hashResetToken(raw: string): string {
+  return hashToken(raw)
 }

@@ -375,6 +375,22 @@ export async function migratePrisma() {
     )`,
     `CREATE INDEX IF NOT EXISTS staff_invites_admin_user_id_idx ON staff_invites (admin_user_id)`,
 
+    // Transactional-emails T02 — password resets (admin + buyer, shared
+    // table). actor_type discriminates 'admin' | 'buyer'; actor_id
+    // references admin_users.id or customers.id. Expiry window 1h set
+    // by the domain layer.
+    `CREATE TABLE IF NOT EXISTS password_resets (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      actor_type TEXT NOT NULL,
+      actor_id UUID NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      email_snapshot TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`,
+    `CREATE INDEX IF NOT EXISTS password_resets_actor_idx ON password_resets (actor_type, actor_id)`,
+
     // T13 — activity / audit log. New table; lands fresh on provisioning,
     // lazy-migrates onto pre-existing merchant branches on first request.
     `CREATE TABLE IF NOT EXISTS activity_events (

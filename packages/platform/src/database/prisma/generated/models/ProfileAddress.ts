@@ -623,10 +623,6 @@ export type ProfileAddressUncheckedUpdateManyWithoutProfileNestedInput = {
   deleteMany?: Prisma.ProfileAddressScalarWhereInput | Prisma.ProfileAddressScalarWhereInput[]
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type ProfileAddressCreateWithoutProfileInput = {
   id?: string
   label?: string | null

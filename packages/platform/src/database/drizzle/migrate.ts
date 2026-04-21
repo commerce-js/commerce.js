@@ -389,6 +389,19 @@ export async function migrateDrizzle(connectionString?: string) {
   )`)
   await db.execute(sql`CREATE INDEX IF NOT EXISTS staff_invites_admin_user_id_idx ON staff_invites (admin_user_id)`)
 
+  // Transactional-emails T02 — password resets (admin + buyer, shared table)
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS password_resets (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    actor_type TEXT NOT NULL,
+    actor_id TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    email_snapshot TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS password_resets_actor_idx ON password_resets (actor_type, actor_id)`)
+
   // T13 — activity / audit log
   await db.execute(sql`CREATE TABLE IF NOT EXISTS activity_events (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),

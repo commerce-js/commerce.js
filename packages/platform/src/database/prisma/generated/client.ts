@@ -102,6 +102,11 @@ export type OrderItem = Prisma.OrderItemModel
  */
 export type OrderHistory = Prisma.OrderHistoryModel
 /**
+ * Model PasswordReset
+ * 
+ */
+export type PasswordReset = Prisma.PasswordResetModel
+/**
  * Model Product
  * 
  */
