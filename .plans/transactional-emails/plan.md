@@ -38,8 +38,8 @@
 
 * [ ] **Research & Strategy Selection** ✅ Completed (2026-04-20)
 
-* [ ] [**T01**: Provider wiring + staff invite (first vertical slice)](tasks/T01.md) — Status: 🟢 In Progress — code-complete on `fly/eaas` 2026-04-21 (4 commits `d4b68e2` → `5df66eb`); blocked on operator SMTP pre-reqs (service choice + credentials + DKIM/SPF/DMARC + `fly secrets set`) before `fly deploy` + 8-scenario smoke acceptance
-* [ ] [**T02**: Password reset (admin + buyer)](tasks/T02.md) — Status: 🟡 Planned — two templates, two reset routes
+* [x] [**T01**: Provider wiring + staff invite (first vertical slice)](tasks/T01.md) — Status: ✅ Completed — code-complete + deployed + 8/8 smoke scenarios green on `commercejs-cloud.fly.dev` 2026-04-21. Five commits: `d4b68e2` platform, `a5716ea` dashboard infra, `6c16779` dashboard routes, `5df66eb` storefront, `da62205` runtime-dep fix. Fly-managed Upstash Redis DB (fra) replaces the exhausted free-tier DB.
+* [ ] [**T02**: Password reset (admin + buyer)](tasks/T02.md) — Status: 🟢 In Progress — platform side starting 2026-04-21; two templates, two reset routes per flow
 * [ ] [**T03**: Order confirmation (customer-facing)](tasks/T03.md) — Status: 🟡 Planned — triggered on hosted-checkout finalize
 * [ ] [**T04**: Welcome email (merchant signup)](tasks/T04.md) — Status: 🟡 Planned — also gates eaas-launch T04
 * [ ] [**T05**: Email verification (double-opt-in)](tasks/T05.md) — Status: 🟡 Planned — signup + email-change flows
@@ -469,7 +469,25 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
-- **2026-04-21**: T01 code-complete on `fly/eaas` — four commits:
+- **2026-04-21** (pm): T01 ✅ **Completed** — deployed + smoke-accepted
+  end-to-end on `commercejs-cloud.fly.dev` after operator SMTP
+  pre-reqs landed (service chosen, credentials provisioned,
+  DKIM/SPF/DMARC on `commercejs.cloud`, `fly secrets set SMTP_*`) +
+  `fly deploy` + standalone runtime-dep fix `da62205`
+  (`@commercejs/notification-smtp` promoted from transitive-only to
+  dashboard `dependencies`; the worker process module-load-crashed
+  before picking up its first job). Full pipeline proven: enqueue →
+  BullMQ → worker → render → SMTP → ImprovMX catch-all → recipient
+  inbox with working accept link. Fly-managed Upstash Redis DB in
+  `fra` replaces the exhausted free-tier DB (`REDIS_URL` swap via
+  `fly secrets set`; no code changes). Scenarios 1–8 all green
+  including BullMQ retry-with-backoff on intentional SMTP
+  credential corruption. One carry-over documented: orphan
+  `invited` rows when the email bounces or is lost — no in-product
+  resend button yet; operator-recoverable by deleting and
+  re-inviting. T02 (password reset) starts next. Sub-plan T01 row
+  flipped 🟢 → ✅; T02 row flipped 🟡 → 🟢 In Progress.
+- **2026-04-21** (am): T01 code-complete on `fly/eaas` — four commits:
   `d4b68e2` platform (staff_invites table + token helpers + null-
   password login guard + 19 unit tests), `a5716ea` dashboard (SMTP
   provider singleton + `server/emails/` template system + worker

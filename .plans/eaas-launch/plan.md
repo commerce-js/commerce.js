@@ -34,7 +34,7 @@
 * [ ] **Research & Strategy Selection** ✅ Completed (2026-04-20)
 
 * [x] [**T01**: Platform polish](tasks/T01.md) — Status: ✅ Completed (2026-04-20) — 6 items cleared in a single bundle commit
-* [ ] [**T02**: Transactional emails](tasks/T02.md) — Status: 🟢 In Progress — sub-plan T01 (staff-invite vertical slice) code-complete on `fly/eaas` 2026-04-21 (commits `d4b68e2` → `5df66eb`), blocked on operator SMTP pre-reqs before smoke acceptance. Sub-plan at [`.plans/transactional-emails/`](../transactional-emails/plan.md); gates T03 + T04
+* [ ] [**T02**: Transactional emails](tasks/T02.md) — Status: 🟢 In Progress — sub-plan T01 (staff-invite vertical slice) ✅ shipped + deployed + smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21; sub-plan T02 (password reset) now in progress. Sub-plan at [`.plans/transactional-emails/`](../transactional-emails/plan.md); gates T03 + T04
 * [ ] [**T03**: Tap subscription billing](tasks/T03.md) — Status: 🟡 Planned — blocked by T02
 * [ ] [**T04**: Step 9 self-service signup](tasks/T04.md) — Status: 🟡 Planned — blocked by T02 + T03
 * [ ] [**T05**: `fly/eaas → main` branch-swap](tasks/T05.md) — Status: 🟡 Planned — blocked by T01–T04

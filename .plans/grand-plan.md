@@ -62,7 +62,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 | Merchant admin UI (T01–T05) | ✅ | [`merchant-admin/plan.md`](merchant-admin/plan.md) — all five tasks shipped (T01 ✅, T02 ✅, T03 ✅, T04 ✅, T05 ✅) |
 | Merchant admin follow-up (T06–T13) | ✅ | [`merchant-admin-followup/plan.md`](merchant-admin-followup/plan.md) — all eight tasks shipped (T06 ✅ settings, T07 ✅ customers, T08 ✅ categories, T09 ✅ staff, T10 ✅ inventory, T11 ✅ analytics, T12 ✅ theming, T13 ✅ audit log) — merchant-admin scope CLOSED |
 | Tap subscription billing (merchant SaaS plan charges) | 🔲 | No plan doc yet; `Merchant.tapCustomerId` column plumbed |
-| Transactional emails (order confirmations, password resets, trial-ending) | 🟢 In Progress | [`transactional-emails/plan.md`](transactional-emails/plan.md) — sub-plan T01 (staff-invite vertical slice) code-complete on `fly/eaas` 2026-04-21; `handleSendEmail` now dispatches via `@commercejs/notification-smtp`; T02–T07 sub-tasks pending |
+| Transactional emails (order confirmations, password resets, trial-ending) | 🟢 In Progress | [`transactional-emails/plan.md`](transactional-emails/plan.md) — sub-plan T01 (staff-invite vertical slice) ✅ shipped + deployed + smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21; T02 password reset now in progress; T03–T07 pending |
 
 <!-- END PROGRESS SECTION -->
 
