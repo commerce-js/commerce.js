@@ -62,7 +62,7 @@ Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commerc
 | Merchant admin UI (T01–T05) | ✅ | [`merchant-admin/plan.md`](merchant-admin/plan.md) — all five tasks shipped (T01 ✅, T02 ✅, T03 ✅, T04 ✅, T05 ✅) |
 | Merchant admin follow-up (T06–T13) | ✅ | [`merchant-admin-followup/plan.md`](merchant-admin-followup/plan.md) — all eight tasks shipped (T06 ✅ settings, T07 ✅ customers, T08 ✅ categories, T09 ✅ staff, T10 ✅ inventory, T11 ✅ analytics, T12 ✅ theming, T13 ✅ audit log) — merchant-admin scope CLOSED |
 | Tap subscription billing (merchant SaaS plan charges) | 🔲 | No plan doc yet; `Merchant.tapCustomerId` column plumbed |
-| Transactional emails (order confirmations, password resets, trial-ending) | 🟢 In Progress | [`transactional-emails/plan.md`](transactional-emails/plan.md) — T01 (staff-invite) ✅ deployed + smoke-accepted 2026-04-21; T02 (password reset) code-complete on all 3 surfaces same day (`7b60363` platform + `f142cca` dashboard + `6efb80a` storefront), smoke + final ✅ remain; T03–T07 pending |
+| Transactional emails (order confirmations, password resets, trial-ending) | 🟢 In Progress | [`transactional-emails/plan.md`](transactional-emails/plan.md) — T01 (staff-invite) ✅ + T02 (password reset, admin + buyer) ✅ both deployed + smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21; T03 (order confirmation) up next |
 
 <!-- END PROGRESS SECTION -->
 
@@ -98,25 +98,31 @@ Deferred carry-over: orphan `invited` admin_user rows when the email
 bounces / is lost — recoverable by operator delete+reinvite today;
 resend-invite button is a polish task.
 
-**sub-plan T02 (password reset, admin + buyer) 🟢 In Progress — code-complete on all 3 surfaces 2026-04-21.**
-Three feature commits land the full vertical slice in one day:
-`7b60363 feat(platform)` (shared `password_resets` table with
-`actor_type` discriminator, 6 domain methods split admin/buyer,
-cross-actor-type rejection, async bcrypt, 31 unit tests, parity
-161), `f142cca feat(dashboard)` (2 templates + 6 PUBLIC routes for
-both admin + buyer flows + shared Zod schemas + adapter surface
-expose + 6 render tests; enumeration-safe 200; session cookies
-issued on complete), `6efb80a feat(storefront)` (4 pages — admin
-pre-auth + buyer default-layout — + "Forgot password?" link under
-`/admin/login`). Plan + grand-plan docs flipped incrementally as
-`b3d1666` (T01 ✅ + T02 🟢 spawn) and `83f3ef3` (session-state
-reconciliation). Session recap in
-[`.memory/checkpoints/2026-04-21T0708.md`](../.memory/checkpoints/2026-04-21T0708.md).
-**Remaining on T02**: EXPLICIT-GO `fly deploy` + 10-scenario smoke
-acceptance on `commercejs-cloud.fly.dev` → final T02 → ✅ docs flip.
-No code work left. After T02 the sub-plan continues T03 (order
-confirm) → T04 (welcome) → T05 (verify) → T06 (trial-ending) → T07
-(retrofit).
+**sub-plan T02 (password reset, admin + buyer) ✅ Completed 2026-04-21.**
+Four feature commits land the vertical slice + surface an edge-case
+fix from smoke: `7b60363 feat(platform)` (shared `password_resets`
+table with `actor_type` discriminator, 6 domain methods split
+admin/buyer, cross-actor-type rejection, async bcrypt, 31 unit
+tests, parity 161), `f142cca feat(dashboard)` (2 templates + 6
+PUBLIC routes for both admin + buyer flows + shared Zod schemas +
+adapter surface expose via `(adapter as any)` stopgap + 6 render
+tests), `6efb80a feat(storefront)` (4 pages — admin pre-auth +
+buyer default-layout — + "Forgot password?" link under
+`/admin/login`), `834cfc5 fix(platform)` (status='active' on
+reset-complete so an invited admin who uses forgot-password instead
+of their invite link doesn't get stranded in `invited` state).
+Redeployed to `commercejs-cloud.fly.dev` 2026-04-21 (deploy #70, 4
+machines green in `fra`). Curl smoke in this session: enumeration-
+safe 200 on admin + buyer forgot-password (unknown + known), Zod
+400 on malformed email, 404 on random tokens in both validate-GET
+endpoints, 400 on bad-token `/complete`, audit row
+`auth.password_reset_requested` landed at known-email-time with 1h
+`expiresAt`, 200 HTML on all 4 storefront pages, "Forgot password?"
+link live on `/admin/login`. Email + click + complete round-trip
+proven earlier by the concurrent-session smoke that produced
+`834cfc5`. **Sub-plan T02 closed.** Next ship: T03 (order
+confirmation) triggered on hosted-checkout finalize, then T04
+(welcome) → T05 (verify) → T06 (trial-ending) → T07 (retrofit).
 
 **Merchant-admin scope remains CLOSED** (T01–T13 all ✅). T01 platform
 polish shipped as part of the new eaas-launch plan, NOT a reopening of

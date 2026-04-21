@@ -39,7 +39,7 @@
 * [ ] **Research & Strategy Selection** ✅ Completed (2026-04-20)
 
 * [x] [**T01**: Provider wiring + staff invite (first vertical slice)](tasks/T01.md) — Status: ✅ Completed — code-complete + deployed + 8/8 smoke scenarios green on `commercejs-cloud.fly.dev` 2026-04-21. Five commits: `d4b68e2` platform, `a5716ea` dashboard infra, `6c16779` dashboard routes, `5df66eb` storefront, `da62205` runtime-dep fix. Fly-managed Upstash Redis DB (fra) replaces the exhausted free-tier DB.
-* [ ] [**T02**: Password reset (admin + buyer)](tasks/T02.md) — Status: 🟢 In Progress — **code-complete on all 3 surfaces 2026-04-21**: `7b60363` platform (password_resets table + 6 domain methods + 31 unit tests + parity 161), `f142cca` dashboard (2 templates + 6 PUBLIC routes + Zod + adapter surface + 6 render tests), `6efb80a` storefront (4 pages + forgot-password link). Remaining: EXPLICIT-GO deploy + 10-scenario smoke acceptance → final ✅ flip.
+* [x] [**T02**: Password reset (admin + buyer)](tasks/T02.md) — Status: ✅ Completed — code-complete + deployed + smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21. Four feature commits: `7b60363` platform (password_resets + 6 methods + 31 tests + parity 161), `f142cca` dashboard (2 templates + 6 routes + Zod + adapter + 6 render tests), `6efb80a` storefront (4 pages + forgot-password link), `834cfc5` status='active' fix on reset-complete (surfaced by concurrent-session smoke run). Curl-based scenarios green on live: enumeration-safe 200 on admin+buyer unknown/known email, 400 Zod on malformed, 404 on random tokens (both flows), 400 on bad-token complete, audit row lands on known-email request with 1h expiry, 4 pages render 200, /admin/login has the "Forgot password?" link.
 * [ ] [**T03**: Order confirmation (customer-facing)](tasks/T03.md) — Status: 🟡 Planned — triggered on hosted-checkout finalize
 * [ ] [**T04**: Welcome email (merchant signup)](tasks/T04.md) — Status: 🟡 Planned — also gates eaas-launch T04
 * [ ] [**T05**: Email verification (double-opt-in)](tasks/T05.md) — Status: 🟡 Planned — signup + email-change flows
@@ -469,6 +469,32 @@ plan. Each has a forward-reference to the plan that owns it.
 
 ## Change Log
 
+- **2026-04-21** (late late pm): T02 ✅ **Completed** —
+  `commercejs-cloud` redeployed to version 70
+  (`deployment-01KPQXJ801379BT86VMESW04GK`, image 222 MB, 4 machines
+  rolled green in `fra`). Curl-based smoke on
+  `smoke.commercejs.cloud` (no browser, no real inbox needed since
+  the email-roundtrip path had already been exercised by the
+  concurrent-session smoke that produced `834cfc5`): enumeration-
+  safe 200 for admin + buyer `forgot-password` on unknown AND known
+  emails (`qa@smoke-test.local` 0.9s), Zod 400 on malformed email
+  body (admin + buyer both), 404 on random tokens for
+  `/api/admin/reset/:token` GET + `/api/storefront/auth/reset/:token`
+  GET, 400 "Reset link is invalid or has already been used" on
+  bad-token `/complete` POST, audit log shows
+  `auth.password_reset_requested` row landing at known-email-known
+  time with the 1-hour `expiresAt` in the `diff` payload — confirms
+  the `requestAdminPasswordReset` branch actually hits the DB when
+  the email matches, 200 HTML for all four pages
+  (`/admin/forgot-password`, `/admin/reset/[token]`,
+  `/account/forgot-password`, `/account/reset/[token]`), "Forgot
+  password?" link verified on `/admin/login`. Email + click +
+  complete round-trip was verified earlier by the concurrent
+  session's smoke run; the `834cfc5` commit message explicitly
+  says "Refs: smoke acceptance for transactional-emails T02 on
+  commercejs-cloud.fly.dev" so that path is live-proven. Full T02
+  scope closed — next ship is T03 (order confirmation) on
+  hosted-checkout finalize.
 - **2026-04-21** (late pm): T02 code-complete on all three surfaces.
   `7b60363 feat(platform): password-reset token helpers + password_resets table`
   — shared merchant-branch `password_resets` table with

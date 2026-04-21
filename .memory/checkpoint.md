@@ -1,15 +1,22 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-21T0708.md`](checkpoints/2026-04-21T0708.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-21T0353.md`](checkpoints/2026-04-21T0353.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-21T1214.md`](checkpoints/2026-04-21T1214.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-21T0708.md`](checkpoints/2026-04-21T0708.md)
 
 ## Current Phase
 
-**transactional-emails T01 ✅ Completed + deployed + smoke-accepted
-on `commercejs-cloud.fly.dev` 2026-04-21.** Full email pipeline
-(enqueue → BullMQ → worker → render → SMTP → ImprovMX → recipient
-inbox) proven end-to-end. Fly-managed Upstash Redis DB in `fra`
-replaced the exhausted free-tier DB.
+**transactional-emails T01 ✅ + T02 ✅** both deployed +
+smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21. Full email
+pipeline (enqueue → BullMQ → worker → render → SMTP → ImprovMX →
+recipient inbox) proven end-to-end on T01; full API + audit + page
+shape proven on T02 via curl; T02 email roundtrip proven by
+concurrent-session smoke that surfaced + fixed `834cfc5` status
+edge case. Fly-managed Upstash Redis DB in `fra` still in place
+from T01.
+
+**T03 (order confirmation) is next.** Template lands on hosted-
+checkout finalize; see `.plans/transactional-emails/plan.md`
+Implementation Plan for scope.
 
 **T02 (password reset, admin + buyer) code-complete on all 3 surfaces
 2026-04-21.** Three feature commits landed by a concurrent session:
