@@ -1,99 +1,109 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-21T0353.md`](checkpoints/2026-04-21T0353.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-20T2247.md`](checkpoints/2026-04-20T2247.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-21T0708.md`](checkpoints/2026-04-21T0708.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-21T0353.md`](checkpoints/2026-04-21T0353.md)
 
 ## Current Phase
 
-**transactional-emails T01 (staff-invite vertical slice) is code-
-complete on `fly/eaas`.** Four commits this session:
-- `d4b68e2` feat(platform) — `staff_invites` table + token helpers +
-  null-password login guard + 19 unit tests
-- `a5716ea` feat(dashboard) — SMTP provider singleton +
-  `server/emails/` template system + worker handler extraction + 11
-  tests
-- `6c16779` feat(dashboard) — `/api/admin/staff` invite dispatch +
-  PUBLIC `/api/admin/invite/[token]` validate + accept routes
-- `5df66eb` feat(storefront) — `/admin/invite/[token].vue` pre-auth
-  accept page + `/admin/staff/new.vue` invite/manual toggle
+**transactional-emails T01 ✅ Completed + deployed + smoke-accepted
+on `commercejs-cloud.fly.dev` 2026-04-21.** Full email pipeline
+(enqueue → BullMQ → worker → render → SMTP → ImprovMX → recipient
+inbox) proven end-to-end. Fly-managed Upstash Redis DB in `fra`
+replaced the exhausted free-tier DB.
 
-**Smoke acceptance (8 scenarios) blocked on operator SMTP pre-reqs
-(EXPLICIT-GO).** Choose provider (SES SMTP me-south-1 / Mailgun /
-Postmark / Resend-SMTP), provision credentials, DKIM+SPF+DMARC on
-`commercejs.cloud`, `fly secrets set SMTP_*` on `commercejs-cloud`
-app, then deploy + run scenarios 1–8 from T01.md with a Commerce.js
-team inbox as recipient.
+**T02 (password reset, admin + buyer) starts now.** Sub-plan T02 row
+flipped 🟢 In Progress in this docs commit. T02.md was pre-scaffolded
+by an earlier session with a locked-in approach: single
+`password_resets` table with `actor_type ('admin' | 'buyer')`
+discriminator on the merchant branch DB; 1h expiry; enumeration-safe
+`/forgot-password`; auto-login on reset complete; cross-actor token
+rejection.
 
-eaas-launch T02 (transactional emails) row on the master plan
-remains 🟢 In Progress; sub-plan T01 → 🟢 In Progress (was 🟡). T02
-sub-plan still gates T02 (password reset) / T03 (order confirm) /
-T04 (welcome) / T05 (verify) / T06 (trial-ending) / T07 (retrofit
-sweep) on this slice's smoke completion.
+## What Landed This Session (docs-only)
 
-## What Just Landed (T01 code-complete, 2026-04-21)
+1. **T01.md flipped to ✅** with Execution Summary amended to note
+   deploy + 8/8 smoke, the `da62205` runtime-dep fix that unblocked
+   the worker, the Fly-managed Upstash Redis swap, and a new
+   "orphan-invited-row" carry-over (failed / lost invite leaves
+   admin_users in an unusable state; operator-recoverable by
+   delete+reinvite; future resend button).
+2. **plan.md** — T01 row flipped 🟢 → ✅ with 5-commit list; T02 row
+   flipped 🟡 → 🟢 In Progress; Change Log gained a 2026-04-21 (pm)
+   entry capturing deploy + smoke + dep fix + Redis swap.
+3. **This file** — bumped pointer to `2026-04-21T0708.md`.
+4. **grand-plan.md** — to be updated alongside this commit with the
+   T01 → ✅ flip and T02 → 🟢 In Progress flag.
 
-See [`2026-04-21T0353.md`](checkpoints/2026-04-21T0353.md) for the
-full diff surface + architectural decisions + gaps.
+## T02 Scope (next ship)
 
-Highlights to carry forward:
-- **Worker handlers extracted to `server/utils/worker-handlers.ts`**
-  so vitest can mock deps without Redis connecting. Shape for every
-  future handler (T06 repeatable trial-ending job, T07 retrofit).
-- **Template subjects belong to the template.** `SendEmailJob.subject`
-  is optional; worker falls back to `template.subject(vars)`.
-- **Token = 32 random bytes → base64url → sha256 hex at rest.**
-  Race-safe consumption via `WHERE used_at IS NULL`.
-- **admin_users.password_hash is now nullable on the merchant DB.**
-  `invited` state is the only null case; login rejects before bcrypt.
-- **`inviteUrl` built from request host + proto.** Custom domains +
-  subdomains both work without hardcoding `commercejs.cloud`.
-- **Dashboard vitest setup is minimal but real** — one config, one
-  script, uses root vitest devDep.
+Two password-reset flows; full spec in
+[`.plans/transactional-emails/tasks/T02.md`](../.plans/transactional-emails/tasks/T02.md).
+
+- **Admin reset** — `/admin/forgot-password` + `/admin/reset/[token]`
+  → platform `admin.auth.{requestAdminPasswordReset,
+  verifyAdminPasswordResetToken, completeAdminPasswordReset}` →
+  template `admin-password-reset.ts`.
+- **Buyer reset** — `/account/forgot-password` +
+  `/account/reset/[token]` → fill stubs in
+  [`packages/platform/src/domains/customers.ts:123`](../packages/platform/src/domains/customers.ts:123)
+  → template `buyer-password-reset.ts`.
+
+Vertical-slice commit plan (mirror T01's rhythm):
+1. Platform admin side (table + helpers + tests + parity).
+2. Platform buyer side (stubs filled + tests + parity) — may fold
+   into (1) if diff budget permits.
+3. Dashboard templates + 6 PUBLIC routes + Zod + snapshot tests.
+4. Storefront: 4 pages + "Forgot your password?" links on both
+   login pages.
+5. Deploy + 10-scenario smoke (explicit-go) → T02 ✅ docs commit.
 
 ## Carry-Overs Into Future Sessions
 
-1. **BLOCKING — operator SMTP provisioning (EXPLICIT-GO).** Service
-   choice (recommend SES me-south-1) + credentials + DKIM/SPF/DMARC
-   on `commercejs.cloud` + `fly secrets set SMTP_*`. Without these,
-   Scenario 1 onward can't run.
-2. **Acceptance recipient** — dev-team inbox (e.g.
-   `baker+invite-test@xyz.dev`). Smoke merchant's default
-   `qa@smoke-test.local` won't route. Document the chosen address in
-   T01.md Execution Summary.
-3. **Deliverability warmup** — first real send from a fresh
-   DKIM-verified domain can land in spam. Not a code issue; flag in
-   scenario 2 so we don't false-positive on a spam check.
+1. **Orphan `invited` admin_user rows** (new, from T01 smoke). Failed
+   / lost invite leaves admin_users with `password_hash=NULL` +
+   unused `staff_invites` row. Operator-recoverable today. Future:
+   resend-invite button on staff list + DB cleanup helper.
+2. **Customer-domain sync bcrypt** (pre-existing).
+   `packages/platform/src/domains/customers.ts` still uses
+   `hashSync`/`compareSync` for `login` + `register`. T02 writes new
+   code paths async but does not convert the existing call sites —
+   separate polish task.
+3. **Rate-limit infra** — inline TODOs in T01 invite routes; T02
+   will add more to `/forgot-password` + `/reset/[token]`. Deferred
+   cross-cutting.
 4. **Dashboard `pnpm typecheck` pre-existing errors** carry over
-   from 2026-04-20 (h3 auto-imports, ioredis dup). My changes don't
-   add to the pile.
-5. **T01 scenario 8 (Reka console errors) from 2026-04-20** still
-   open — browser sweep still pending.
-6. **`@commercejs/storage-s3 v0.2.1` publish** still open — rides
-   T05 branch-swap or explicit release-branch publish.
-7. **Shared `handlePlatformThrow` helper** idea from 2026-04-20
-   still unclaimed. Small DX win.
-8. **Repeatable-jobs infra for T06 (trial-ending)** deferred — no
-   BullMQ config changes this session.
+   (h3 auto-imports, ioredis version dup). Not blocking; worth a
+   pass before T05 branch-swap.
+5. **eaas-launch T01 scenario 8 (Reka console errors)** — separate
+   from transactional-emails T01 scenario 8 (retry backoff). Still
+   open; browser-only sweep on `smoke.commercejs.cloud`.
+6. **`@commercejs/storage-s3 v0.2.1` publish** — rides T05 branch-
+   swap or an explicit release-branch publish.
+7. **Token-primitives factor-out** into
+   `packages/platform/src/database/tokens.ts` — nice-to-have; may
+   or may not land in T02.
+8. **Smoke merchant schema drift** (products.id=UUID vs
+   order_items.product_id=TEXT) — still default-deferred.
+9. **Repeatable-jobs infra for T06 (trial-ending)** — still
+   deferred.
 
-## What's Next (user's call)
+## What's Next
 
-To unblock T01 smoke acceptance: pick SMTP service + provision
-credentials + DNS + `fly secrets set` + deploy + run 8 scenarios on
-`smoke.commercejs.cloud` with a team inbox. Sub-plan T01 flips ✅
-after that.
-
-To start sub-plan T02 (password reset) right now without waiting on
-operator SMTP: technically possible — code would land but can't be
-acceptance-tested. Recommend finishing T01 acceptance first so each
-task ships with a real user-facing proof.
+Start T02 platform side: `password_resets` table + Prisma + Drizzle
++ lazy-migrate + the three admin-side methods + unit tests + parity
+check. Autonomous per the operating protocol. Live deploy + smoke
+remain EXPLICIT-GO.
 
 ## Live Deployment
 
 - App: `commercejs-cloud` (Fly.io, Frankfurt)
-- Current prod tip: `528867a` (eaas-launch T01 PATCH fix from
-  2026-04-20). No new deploy this session.
+- Current prod tip: `da62205` (T01 notification-smtp runtime dep
+  fix). No new deploy this session.
 - Health: `https://commercejs-cloud.fly.dev/api/_health` → 200
 - Smoke: `https://smoke.commercejs.cloud` owner login works
+- Redis: Fly-managed Upstash DB in `fra` (wired via
+  `fly secrets set REDIS_URL=...`). Worker machine auto-starts on
+  job arrival.
 
 ## Where to Look
 
@@ -101,16 +111,18 @@ task ships with a real user-facing proof.
 |---|---|
 | Project orientation + current phase (start here) | `.plans/grand-plan.md` |
 | Sub-plan (in flight) | `.plans/transactional-emails/plan.md` |
-| T01 task spec + next-up scenarios | `.plans/transactional-emails/tasks/T01.md` |
-| What shipped this session (detailed) | `.memory/checkpoints/2026-04-21T0353.md` |
-| Previous session (T01 deployed + accepted) | `.memory/checkpoints/2026-04-20T2247.md` |
+| T01 spec (now ✅) | `.plans/transactional-emails/tasks/T01.md` |
+| T02 spec (starting) | `.plans/transactional-emails/tasks/T02.md` |
+| This session (detailed) | `.memory/checkpoints/2026-04-21T0708.md` |
+| Previous session (T01 code-complete) | `.memory/checkpoints/2026-04-21T0353.md` |
 | eaas-launch master plan | `.plans/eaas-launch/plan.md` |
 | Architectural decisions (locked) | `.memory/decisions.md` |
 | Hard-won bugs | `.memory/gotchas.md` |
 | Phase 7 roadmap state | `.plans/roadmap.md` |
-| SMTP provider source | `packages/notification-smtp/src/smtp-provider.ts` |
-| Worker handlers (now testable) | `apps/dashboard/server/utils/worker-handlers.ts` |
-| Staff-invite template | `apps/dashboard/server/emails/staff-invite.ts` |
-| Invite accept UI | `apps/storefront/app/pages/admin/invite/[token].vue` |
+| Staff-invite template (reference) | `apps/dashboard/server/emails/staff-invite.ts` |
+| Template registry | `apps/dashboard/server/emails/_render.ts` |
+| Admin auth domain | `packages/platform/src/admin/auth.ts` |
+| Customer domain (stubs to fill) | `packages/platform/src/domains/customers.ts` |
+| Invite accept page (reference shape) | `apps/storefront/app/pages/admin/invite/[token].vue` |
 | Project-wide Claude instructions | `CLAUDE.md` |
-| Secrets (smoke login, Fly, Neon, Tap, SMTP [TBD], Tigris) | `.secrets` (gitignored) |
+| Secrets (smoke login, Fly, Neon, Tap, SMTP, Tigris, Redis) | `.secrets` (gitignored) |

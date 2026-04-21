@@ -83,18 +83,43 @@ query parity 153/153. **Awaiting explicit-go for `fly deploy` + T01
 live acceptance on `smoke.commercejs.cloud`** — 9 scenarios per
 T01.md Test Scenarios.
 
-**eaas-launch T02 sub-plan T01 code-complete on `fly/eaas` 2026-04-21.**
-Four commits land the staff-invite vertical slice: platform
-(`staff_invites` + token helpers + null-password login guard),
-dashboard (SMTP provider + template system + worker dispatcher +
-invite routes + audit), storefront (pre-auth `/admin/invite/[token]`
-page + `/admin/staff/new` toggle). Session recap in
-[`.memory/checkpoints/2026-04-21T0353.md`](../.memory/checkpoints/
-2026-04-21T0353.md). Smoke acceptance (8 scenarios) blocks on
-operator SMTP pre-reqs (service choice, credentials, DKIM/SPF/DMARC,
-`fly secrets set SMTP_*`) — all EXPLICIT-GO. After acceptance, T02
-sub-plan moves to T02 (password reset) → T03 (order confirm) → T04
-(welcome) → T05 (verify) → T06 (trial-ending) → T07 (retrofit).
+**eaas-launch T02 sub-plan T01 ✅ Completed 2026-04-21.** Four feature
+commits (`d4b68e2` platform + `a5716ea` dashboard infra + `6c16779`
+dashboard routes + `5df66eb` storefront) + a `da62205` runtime-dep
+fix that unblocked the worker process (notification-smtp was a
+transitive-only dev dep; worker module-load-crashed before picking
+up its first job). Deployed to `commercejs-cloud.fly.dev` + 8/8 smoke
+scenarios green end-to-end on a real inbox (full pipeline: enqueue →
+BullMQ → worker → template render → SMTP → ImprovMX catch-all →
+recipient inbox → accept → session cookie). A Fly-managed Upstash
+Redis DB was provisioned in `fra` to replace the exhausted free-tier
+DB (`REDIS_URL` swap via `fly secrets set`; no code change).
+Deferred carry-over: orphan `invited` admin_user rows when the email
+bounces / is lost — recoverable by operator delete+reinvite today;
+resend-invite button is a polish task.
+
+**sub-plan T02 (password reset, admin + buyer) 🟢 In Progress — platform-side shipped 2026-04-21 as `7b60363`.**
+One platform commit lands the full foundation: new `password_resets`
+table on the merchant branch DB (Prisma + Drizzle + lazy-migrate,
+shared admin + buyer via `actor_type` discriminator), three
+admin-side methods (`admin.auth.{requestAdminPasswordReset,
+verifyAdminPasswordResetToken, completeAdminPasswordReset}`), three
+buyer-side methods filling the
+[`packages/platform/src/domains/customers.ts:123`](../packages/platform/src/domains/customers.ts:123)
+stubs, shared token primitives at module scope, cross-actor-type
+rejection in `verify*` (buyer token can't cross into admin flow),
+async bcrypt on the new reset paths, 31 new unit tests (17 admin +
+14 buyer), parity check green at 161 exports per driver. Docs flip
+for T01 ✅ + T02 🟢 landed as `b3d1666` same day. Session recap in
+[`.memory/checkpoints/2026-04-21T0708.md`](../.memory/checkpoints/2026-04-21T0708.md).
+**Next commits on T02**: dashboard templates (`admin-password-reset.ts`
++ `buyer-password-reset.ts`) + 6 PUBLIC routes (`/api/admin/forgot-password` +
+`/api/admin/reset/[token]` × GET/complete + storefront equivalents)
++ Zod schemas; storefront pages (4 pre-auth/storefront-layout pages +
+"Forgot your password?" links under both login forms); live deploy +
+10-scenario smoke (EXPLICIT-GO). After T02 the sub-plan continues
+T03 (order confirm) → T04 (welcome) → T05 (verify) → T06 (trial-
+ending) → T07 (retrofit).
 
 **Merchant-admin scope remains CLOSED** (T01–T13 all ✅). T01 platform
 polish shipped as part of the new eaas-launch plan, NOT a reopening of
