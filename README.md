@@ -292,7 +292,9 @@ commerce.js/
 
 ## Contributing
 
-Contributions are welcome! This project uses [Changesets](https://github.com/changesets/changesets) for versioning.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, guidelines, and the release flow. New adapters and providers are the most valuable contribution — implement the interfaces from `@commercejs/types`, pass the contract tests, and ship.
+
+This project uses [Changesets](https://github.com/changesets/changesets) for versioning:
 
 ```bash
 # Create a changeset after making changes
@@ -325,8 +327,14 @@ Built with these excellent open source projects:
 - **[TypeScript](https://www.typescriptlang.org/)** — Type-safe JavaScript
 - **[pnpm](https://pnpm.io/)** — Fast, disk-efficient package manager
 
-## License
+## License & Open-Core Model
 
-This project is licensed under the [MIT License](LICENSE).
+All packages under `packages/` are licensed under the [MIT License](LICENSE) — the complete
+SDK, the platform engine, all adapters, and all providers are free to use, modify, and
+self-host in any project, commercial or otherwise. There are no license keys, feature gates,
+or usage limits in the open-source code.
 
-Core packages (`@commercejs/types`, `@commercejs/checkout`, `@commercejs/nuxt`, etc.) are MIT-licensed and free to use in any project. Premium adapters may use a separate commercial license — check individual package `LICENSE` files for details.
+**CommerceJS Cloud** — the hosted eCommerce-as-a-Service (managed storefront + admin + API +
+dedicated database per merchant) — is the commercial product built on this SDK. Its control
+plane lives in `apps/` and is not published. Self-hosting the full stack yourself is fully
+supported and documented; the cloud exists for teams who'd rather not run it.

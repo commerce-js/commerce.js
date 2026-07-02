@@ -128,3 +128,14 @@
 - **Decision:** BullMQ + Upstash Redis. Standalone `worker.ts` entry point as a separate Fly process.
 - **Job types:** `provision-store`, `send-email`, `dispatch-webhook`
 - **Built-in:** 3 retries with exponential backoff, failed job visibility (replaces DLQ plugin)
+
+## 2026-07-02: Open-core boundary — MIT SDK, proprietary Cloud control plane
+- **Context:** README claimed "premium adapters may use a separate commercial license" but no commercial package existed; the open-core boundary was aspirational and undefined. Needed a definitive line before the EaaS launch.
+- **Decision:** Everything under `packages/` stays MIT forever (SDK, platform engine, adapters, providers). The commercial product is CommerceJS Cloud — its control plane (`apps/dashboard`: tenant middleware, merchant provisioner, billing, plan enforcement) stays private in `apps/` and is never published. No AGPL/BSL relicensing.
+- **Rationale:** The moat is the managed GCC-native service (Tap/Armada rails, Arabic-first, DB-per-merchant, Bahrain hosting), not code secrecy. Medusa proves MIT-core + closed-cloud in commerce. Copyleft would tax adoption we don't yet have.
+- **Full analysis:** `.plans/business-plan.md` §4.
+
+## 2026-07-02: fly/eaas work happens on `claude/ecommerce-saas-planning-mus9v7`
+- **Context:** The locked migration plan calls for a `fly/eaas` branch. This remote session is mandated to develop and push only on `claude/ecommerce-saas-planning-mus9v7`.
+- **Decision:** All Fly.io EaaS migration work lands on `claude/ecommerce-saas-planning-mus9v7`. The owner may rename it to `fly/eaas` (or merge and re-branch) after review — the branch's *role* is exactly the `fly/eaas` role from the plan: diverges from `main`, Prisma-primary, becomes `main` if the EaaS validates.
+- **Rule:** Same cherry-pick discipline applies — platform parity fixes are main-compatible; the driver swap (`database/index.ts`, `adapter.ts`, `src/index.ts`) is branch-pinned.

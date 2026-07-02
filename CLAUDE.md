@@ -23,7 +23,7 @@ Then follow `.agent/rules/operating-protocol.md` for everything that follows.
 **CommerceJS** is a modular, provider-agnostic eCommerce toolkit for JavaScript/TypeScript. The core insight: every eCommerce platform (Salla, Shopify, Medusa, WooCommerce) speaks a different language. CommerceJS maps them all to a single unified API via an adapter pattern.
 
 It has two distinct product layers:
-1. **Open-source SDK** — 17 published npm packages (`@commercejs/*`) covering types, adapters, checkout engine, payments, delivery, notifications, analytics, storage, and a Nuxt module
+1. **Open-source SDK** — 18 published npm packages (`@commercejs/*`) covering types, adapters, checkout engine, payments, delivery, notifications, analytics, storage, and a Nuxt module
 2. **CommerceJS Cloud (EaaS)** — A multi-tenant eCommerce-as-a-Service platform (think Salla/Shopify, not Vercel). Merchants sign up, get a storefront + admin + API + dedicated database, and start selling
 
 ---
@@ -32,7 +32,7 @@ It has two distinct product layers:
 
 > **The project is pivoting from Cloudflare to Fly.io.** Do not suggest Cloudflare-specific solutions.
 
-The `main` branch is still on Cloudflare Pages. Active development is moving to a new `fly/eaas` branch (not yet created — this is the next task). The full migration plan is at `.plans/fly-migration-plan.md`.
+The `main` branch is still on Cloudflare Pages. Active development happens on `claude/ecommerce-saas-planning-mus9v7`, which carries the `fly/eaas` role from the migration plan (the owner may rename it to `fly/eaas` after review). The full migration plan is at `.plans/fly-migration-plan.md`; the business strategy is at `.plans/business-plan.md`.
 
 **Why the pivot:** Cloudflare's runtime has hard constraints that blocked progress — 50 subrequest limit, WASM-only Prisma, no standard Node.js APIs, D1/SQLite limitations. Fly.io runs standard Node.js with no such constraints.
 
@@ -53,7 +53,7 @@ packages/           # Published npm packages (@commercejs/*)
   core/             # createCommerce(), EventBus, WebhookDispatcher, Orchestrator
   checkout/         # Channel-agnostic checkout state machine
   platform/         # Built-in commerce engine (Drizzle + Prisma, Neon Postgres)
-  nuxt/             # Nuxt module — 16 composables, 46 REST routes, Zod validation
+  nuxt/             # Nuxt module — 17 composables, 74 REST route handlers, Zod validation
   ui/               # eCommerce UI components (33 components, Nuxt UI v4)
   adapter-salla/    # Salla platform adapter (9 domains)
   adapter-medusa/   # Medusa V2 adapter (7 domains, 44 contract tests)
