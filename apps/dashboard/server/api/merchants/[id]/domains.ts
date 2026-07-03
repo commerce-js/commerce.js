@@ -13,10 +13,12 @@
 
 import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { useDB } from '../../../utils/db'
+import { requireDashboardUser } from '../../../utils/session'
 
 const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
 
 export default defineEventHandler(async (event) => {
+  await requireDashboardUser(event)
   const db = useDB()
   const merchantId = getRouterParam(event, 'id')!
 

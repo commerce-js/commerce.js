@@ -7,10 +7,12 @@
 
 import { defineEventHandler, readBody, createError } from 'h3'
 import { useDB } from '../../utils/db'
+import { requireDashboardUser } from '../../utils/session'
 import { enqueueMerchantJob } from '../../utils/queue'
 import { isReservedSubdomain } from '../../../shared/utils/reservedSubdomains'
 
 export default defineEventHandler(async (event) => {
+  await requireDashboardUser(event)
   const db = useDB()
 
   if (event.method === 'GET') {

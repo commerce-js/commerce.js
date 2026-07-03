@@ -1,20 +1,32 @@
 // ---------------------------------------------------------------------------
 // GET    /api/merchants/:id — fetch one merchant
 // PATCH  /api/merchants/:id — partial update
-// DELETE /api/merchants/:id — remove (cascades to api_keys + domains)
+// DELETE /api/merchants/:id — suspend (default) or ?hard=true to also tear
+//        down the merchant's Neon project and remove the row
 // ---------------------------------------------------------------------------
 
-import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
+import { defineEventHandler, readBody, getRouterParam, getQuery, createError } from 'h3'
 import { useDB } from '../../../utils/db'
+import { requireDashboardUser } from '../../../utils/session'
+import { deleteMerchantProject } from '../../../utils/neon'
+import { invalidateMerchantCache } from '../../../utils/tenant'
 
 export default defineEventHandler(async (event) => {
+  await requireDashboardUser(event)
   const db = useDB()
   const id = getRouterParam(event, 'id')!
 
   if (event.method === 'GET') {
     const merchant = await db.merchant.findUnique({
       where: { id },
-      include: { domains: true, apiKeys: true },
+      include: {
+        domains: true,
+        // Never expose keyHash — the prefix is all the UI needs.
+        apiKeys: {
+          select: { id: true, name: true, keyPrefix: true, lastUsed: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     })
     if (!merchant) {
       throw createError({ statusCode: 404, message: 'Merchant not found' })
@@ -40,13 +52,15 @@ export default defineEventHandler(async (event) => {
     }>>(event)
 
     try {
-      return await db.merchant.update({
+      const merchant = await db.merchant.update({
         where: { id },
         data: {
           ...body,
           trialEndsAt: body.trialEndsAt ? new Date(body.trialEndsAt) : body.trialEndsAt,
         },
       })
+      invalidateMerchantCache(id)
+      return merchant
     }
     catch (error: any) {
       if (error?.code === 'P2025') {
@@ -57,15 +71,39 @@ export default defineEventHandler(async (event) => {
   }
 
   if (event.method === 'DELETE') {
-    try {
-      await db.merchant.delete({ where: { id } })
-      return { deleted: true }
+    const merchant = await db.merchant.findUnique({ where: { id } })
+    if (!merchant) {
+      throw createError({ statusCode: 404, message: 'Merchant not found' })
     }
-    catch (error: any) {
-      if (error?.code === 'P2025') {
-        throw createError({ statusCode: 404, message: 'Merchant not found' })
+
+    const hard = getQuery(event).hard === 'true'
+
+    if (!hard) {
+      // Default: suspend. Data (and the Neon project) survives until the
+      // operator confirms a hard delete.
+      await db.merchant.update({ where: { id }, data: { status: 'suspended' } })
+      invalidateMerchantCache(id)
+      return { deleted: false, suspended: true }
+    }
+
+    // Hard delete: tear down the Neon project FIRST — if that fails we keep
+    // the row so the infra handle isn't orphaned (the pre-fix behavior leaked
+    // one Neon project per deleted merchant).
+    if (merchant.neonProjectId) {
+      try {
+        await deleteMerchantProject(merchant.neonProjectId)
       }
-      throw error
+      catch (error) {
+        throw createError({
+          statusCode: 502,
+          message: `Neon project ${merchant.neonProjectId} could not be deleted — merchant retained. `
+            + `Retry, or remove the project in the Neon console first. (${(error as Error).message.slice(0, 200)})`,
+        })
+      }
     }
+
+    await db.merchant.delete({ where: { id } })
+    invalidateMerchantCache(id)
+    return { deleted: true, neonProjectDeleted: !!merchant.neonProjectId }
   }
 })

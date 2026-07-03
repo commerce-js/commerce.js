@@ -64,3 +64,22 @@ export async function clearDashboardSession(event: H3Event): Promise<void> {
   const session = await useSession<DashboardSession>(event, sessionOptions())
   await session.clear()
 }
+
+/**
+ * Require an authenticated dashboard operator. Control-plane routes
+ * (/api/merchants/**) MUST call this — the tenant middleware skip-lists
+ * them, so nothing else stands between the internet and merchant CRUD.
+ */
+export async function requireDashboardUser(
+  event: H3Event,
+  roles?: DashboardSession['role'][],
+): Promise<DashboardSession> {
+  const session = await getDashboardSession(event)
+  if (!session) {
+    throw createError({ statusCode: 401, message: 'Authentication required' })
+  }
+  if (roles && !roles.includes(session.role)) {
+    throw createError({ statusCode: 403, message: 'Insufficient permissions' })
+  }
+  return session
+}

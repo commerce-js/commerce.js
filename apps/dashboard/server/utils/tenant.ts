@@ -20,6 +20,7 @@
 
 // h3 helpers (getHeader, getRequestHost) are Nitro auto-imports — no `import from 'h3'` needed.
 import process from 'node:process'
+import { getHeader, getRequestHost } from 'h3'
 import type { H3Event } from 'h3'
 import { LRUCache } from 'lru-cache'
 import { useDB } from './db'

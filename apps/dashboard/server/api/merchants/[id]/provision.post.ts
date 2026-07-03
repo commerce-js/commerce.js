@@ -12,9 +12,11 @@
 
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { useDB } from '../../../utils/db'
+import { requireDashboardUser } from '../../../utils/session'
 import { enqueueMerchantJob } from '../../../utils/queue'
 
 export default defineEventHandler(async (event) => {
+  await requireDashboardUser(event)
   const id = getRouterParam(event, 'id')!
 
   const db = useDB()
