@@ -16,10 +16,9 @@ import { migrateDrizzle } from '../database/drizzle/migrate.js'
 import { seedDrizzle } from '../database/drizzle/seed.js'
 import { platformTestSuite } from './platform.suite.js'
 
-const DATABASE_URL = process.env.DATABASE_URL
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is required — create packages/platform/.env with your Neon connection string')
-}
+// Live-DB integration suite — skipped unless a database is configured.
+// Create packages/platform/.env with your Neon connection string to run it.
+const DATABASE_URL = process.env.DATABASE_URL ?? ''
 
 /**
  * Truncate all tables before re-seeding.
@@ -43,7 +42,7 @@ async function cleanDatabase() {
   CASCADE`)
 }
 
-describe('@commercejs/platform [drizzle]', () => {
+describe.skipIf(!DATABASE_URL)('@commercejs/platform [drizzle]', () => {
   platformTestSuite({
     setup: async () => {
       resetDb()

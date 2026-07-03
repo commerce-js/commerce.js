@@ -9,6 +9,8 @@ export default defineConfig({
       'packages/webhook-verifier',
       'packages/checkout',
       'packages/payment-tap',
+      'packages/platform',
+      'apps/dashboard',
     ],
     coverage: {
       provider: 'v8',
