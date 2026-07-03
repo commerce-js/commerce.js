@@ -5,6 +5,7 @@
 // once src/database/index.ts swaps the barrel (Step 3).
 
 import { getDb } from '../client.js'
+import { Prisma } from '../generated/client.js'
 
 // ---------------------------------------------------------------------------
 // Profiles
@@ -19,7 +20,10 @@ export async function createProfile(data: {
   preferences?: Record<string, any> | null
 }) {
   const id = data.id ?? crypto.randomUUID()
-  await getDb().profile.create({ data: { ...data, id } })
+  const { preferences, ...rest } = data
+  // Prisma Json columns reject a bare `null`; omitting the key lets the
+  // column take its NULL default.
+  await getDb().profile.create({ data: { ...rest, id, preferences: preferences ?? undefined } })
   return id
 }
 
@@ -37,7 +41,11 @@ export async function findProfileByPhone(phone: string) {
 }
 
 export async function updateProfile(id: string, data: Record<string, any>) {
-  await getDb().profile.update({ where: { id }, data: { ...data, updatedAt: new Date() } })
+  // Map an explicit `null` on the Json column to Prisma's DbNull sentinel
+  // (a bare `null` is a type error and a runtime reject).
+  const patch = { ...data }
+  if (patch.preferences === null) patch.preferences = Prisma.DbNull
+  await getDb().profile.update({ where: { id }, data: { ...patch, updatedAt: new Date() } })
 }
 
 export async function deleteProfile(id: string) {
@@ -107,7 +115,10 @@ export async function createProfilePaymentMethod(data: {
   billingAddress?: Record<string, any> | null
 }) {
   const id = data.id ?? crypto.randomUUID()
-  await getDb().profilePaymentMethod.create({ data: { ...data, id } })
+  const { billingAddress, ...rest } = data
+  await getDb().profilePaymentMethod.create({
+    data: { ...rest, id, billingAddress: billingAddress ?? undefined },
+  })
   return id
 }
 
