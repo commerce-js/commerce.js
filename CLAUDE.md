@@ -1,5 +1,8 @@
 # CommerceJS — Claude Context
 
+> This project runs the **Agentic Workflow** — see `docs/WORKFLOW.md` (protocol +
+> project profile §10). Owner status page: `docs/product/overview.html`.
+
 ## Session Start (Every Conversation — No Exceptions)
 
 Before doing anything else — before answering questions, before writing code:
