@@ -137,11 +137,23 @@ export async function createMerchantProject(
   }
 }
 
-/** Delete a Neon project (invoked from merchant.delete() flows later). */
+/**
+ * Delete a Neon project. Idempotent: a 404 (already gone — e.g. a prior
+ * partial hard-delete removed the project but failed to delete the control
+ * row, or an operator removed it in the Neon console) is treated as success
+ * so retrying a stuck hard-delete converges instead of 502-ing forever.
+ */
 export async function deleteMerchantProject(projectId: string): Promise<void> {
-  await neonFetch<void>(`/projects/${projectId}`, {
-    method: 'DELETE',
-    // Deletes can 423 briefly too if a branch operation is mid-flight.
-    retryOnLocked: true,
-  })
+  try {
+    await neonFetch<void>(`/projects/${projectId}`, {
+      method: 'DELETE',
+      // Deletes can 423 briefly too if a branch operation is mid-flight.
+      retryOnLocked: true,
+    })
+  }
+  catch (error) {
+    // neonFetch throws `Neon DELETE … → 404 …` for an already-deleted project.
+    if (error instanceof Error && /→ 404\b/.test(error.message)) return
+    throw error
+  }
 }

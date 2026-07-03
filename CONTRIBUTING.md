@@ -36,6 +36,11 @@ pnpm --filter @commercejs/checkout build
 pnpm --filter @commercejs/checkout test
 ```
 
+> **Note:** the Prisma query engine's postinstall download is intentionally
+> skipped (`pnpm.neverBuiltDependencies`) — the generated clients are committed,
+> so a normal build/test never needs it. Only `prisma migrate`/`generate` against
+> a live DB fetches the schema engine on first use.
+
 ## Project structure
 
 ```

@@ -153,7 +153,7 @@ These are final. Do not revisit without explicit instruction.
 - **Nitro preset is `node-server`.** Never `cloudflare-pages` on fly/eaas.
 - **No `@nuxthub/core`.** D1, KV, and Blob are Cloudflare-only. Remove from dashboard on fly/eaas.
 - **Two databases, two Prisma clients.** Control DB = singleton. Merchant DB = cached per-merchant client.
-- **Fly.io region: `bah` (Bahrain).** Primary market is GCC/MENA.
+- **Fly.io region: production runs `fra` (Frankfurt) today; `bah` (Bahrain) is the GCC-latency target.** Migrating/adding `bah` is an open owner decision (see `.plans/grand-plan.md`), not yet done. Primary market is GCC/MENA. Neon has no `bah` — merchant DBs stay `aws-eu-central-1` regardless.
 
 ### On main branch (Cloudflare)
 - **Migrations run at build time, not runtime.** Never call `migrateDrizzle()` from server plugins or request handlers.

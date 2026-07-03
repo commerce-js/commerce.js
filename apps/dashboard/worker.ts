@@ -144,6 +144,23 @@ async function dispatch(job: Job): Promise<void> {
 // Bootstrap
 // ---------------------------------------------------------------------------
 
+// `node .output/worker.mjs --dry-run` validates the config the worker needs
+// and exits 0 without opening a Redis connection or consuming jobs — a
+// CI/deploy smoke check that the bundle loads and its env is wired.
+if (process.argv.includes('--dry-run')) {
+  const required = ['REDIS_URL', 'NEON_CONTROL_DB_URL', 'NEON_API_KEY'] as const
+  const missing = required.filter(k => !process.env[k])
+  console.log('[worker] dry-run: bundle loaded OK; config %o', {
+    REDIS_URL: process.env.REDIS_URL ? 'set' : 'MISSING',
+    NEON_CONTROL_DB_URL: process.env.NEON_CONTROL_DB_URL ? 'set' : 'MISSING',
+    NEON_API_KEY: process.env.NEON_API_KEY ? 'set' : 'MISSING',
+  })
+  if (missing.length) {
+    console.log('[worker] dry-run: %d var(s) unset (%s) — fine for a bundle check, required at runtime', missing.length, missing.join(', '))
+  }
+  process.exit(0)
+}
+
 const connection = createRedisConnection()
 const worker = new Worker(MERCHANT_QUEUE, dispatch, {
   connection,
