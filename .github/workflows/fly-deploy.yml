@@ -1,0 +1,44 @@
+# Fly Deploy — deploy the EaaS stack to Fly.io.
+#
+# Gated on the FLY_API_TOKEN secret. Deploying is the human's call (see the HITL
+# boundary): this workflow only does anything once the owner adds FLY_API_TOKEN
+# to the repo secrets. Until then every run skips with a notice — it never fails
+# a branch for lack of a token, and no agent push can deploy on its own.
+#
+# Trigger: manual (workflow_dispatch) or a push to fly/eaas.
+
+name: Fly Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [fly/eaas]
+
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: flyctl deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Skip notice when unconfigured
+        if: env.FLY_API_TOKEN == ''
+        run: |
+          echo "::notice title=Fly deploy skipped::FLY_API_TOKEN is not set. Add it to repo secrets to enable auto-deploy to Fly.io."
+
+      - name: Checkout code
+        if: env.FLY_API_TOKEN != ''
+        uses: actions/checkout@v4
+
+      - name: Set up flyctl
+        if: env.FLY_API_TOKEN != ''
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        if: env.FLY_API_TOKEN != ''
+        run: flyctl deploy --remote-only
