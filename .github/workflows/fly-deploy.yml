@@ -37,7 +37,10 @@ jobs:
 
       - name: Set up flyctl
         if: env.FLY_API_TOKEN != ''
-        uses: superfly/flyctl-actions/setup-flyctl@master
+        # Pinned to an immutable commit SHA (not @master) — this job holds
+        # FLY_API_TOKEN, so a mutable ref would let an upstream compromise run
+        # with the deploy token in scope. Bump deliberately. SHA = tag v1.6.
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1.6
 
       - name: Deploy
         if: env.FLY_API_TOKEN != ''
