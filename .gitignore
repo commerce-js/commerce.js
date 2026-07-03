@@ -39,7 +39,6 @@ pnpm-debug.log*
 # Design assets and reference templates (local only)
 .templates/
 .research/
-.memory/
 
 apps/dashboard/.data
 

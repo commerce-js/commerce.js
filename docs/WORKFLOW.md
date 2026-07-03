@@ -326,7 +326,7 @@ finish line, not "PR open".
 | **Build** | `pnpm build` (turbo); product: `pnpm --filter @commercejs/dashboard build` (nuxt + `.output/worker.mjs`) |
 | **Datastore seed/reset** | Merchant DBs: programmatic `migratePrisma(client)` + `seedPrisma(client)` at provision time (never at request time). Control DB: `apps/dashboard/prisma/migrations` via `prisma migrate deploy`. Local: `packages/platform` `db:migrate:seed` |
 | **Deploy + live-verify** | Manual `fly deploy` (root `fly.toml`/`Dockerfile`; app `commercejs-cloud`, region `fra`, 3 processes via `scripts/start-web.sh`). Live-verify: `GET https://app.commercejs.cloud/api/_health` + provision a smoke merchant → `https://<sub>.commercejs.cloud`. CI deploy workflow planned (M0.5) |
-| **Eval suite** (behavioral, if any) | none yet — worker `--dry-run` + boot-smoke curls serve as runtime checks (see `.memory/` verification matrix) |
+| **Eval suite** (behavioral, if any) | none yet — the gate/smoke commands (incl. worker `--dry-run` and boot-smoke curls) live in `.memory/verification.md` |
 | **High-impact files** (docs-reminder targets) | `CLAUDE.md`, `.plans/grand-plan.md`, `.plans/business-plan.md`, `.memory/decisions.md`, `packages/platform/src/database/prisma/schema/`, `apps/dashboard/server/utils/{tenant,neon,merchant-provisioner}.ts` |
 | **Issue tracker** | GitHub Issues (`commerce-js/commerce.js`) via GitHub MCP tools — no `gh` CLI in remote sessions |
 
