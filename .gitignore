@@ -44,3 +44,6 @@ pnpm-debug.log*
 apps/dashboard/.data
 
 .secrets
+# Build artifacts
+node-compile-cache/
+coverage/

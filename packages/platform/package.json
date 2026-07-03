@@ -1,7 +1,7 @@
 {
   "name": "@commercejs/platform",
   "version": "0.5.4",
-  "description": "Native commerce engine — own your data, implement CommerceAdapter without external platforms",
+  "description": "Native commerce engine \u2014 own your data, implement CommerceAdapter without external platforms",
   "repository": {
     "type": "git",
     "url": "https://github.com/commerce-js/commerce.js.git",
@@ -42,6 +42,7 @@
     "@commercejs/types": "workspace:*",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-neon": "^7.6.0",
+    "@prisma/client": "^7.6.0",
     "bcrypt-ts": "^5.0.3",
     "drizzle-orm": "^0.45.1"
   },

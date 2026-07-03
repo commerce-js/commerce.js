@@ -5,11 +5,12 @@ import type { CommerceEvents } from '../events.js'
 
 describe('createWebhookDispatcher', () => {
   let bus: CommerceEventBus<CommerceEvents>
-  let mockFetch: ReturnType<typeof vi.fn>
+  // Cast: vi.fn() mocks don't satisfy the exact fetch signature under @types/node
+  let mockFetch: ReturnType<typeof vi.fn> & typeof globalThis.fetch
 
   beforeEach(() => {
     bus = new CommerceEventBus<CommerceEvents>()
-    mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 }) as typeof mockFetch
   })
 
   it('should dispatch events to subscribed endpoints', async () => {
