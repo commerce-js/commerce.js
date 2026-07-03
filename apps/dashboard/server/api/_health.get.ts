@@ -10,9 +10,11 @@
 // ---------------------------------------------------------------------------
 
 import { defineEventHandler } from 'h3'
+import { configGuard } from '../utils/configGuard'
 
 export default defineEventHandler(() => ({
   ok: true,
   service: 'commercejs-cloud',
+  sessionSealSecure: configGuard.sessionSealSecure,
   ts: Date.now(),
 }))

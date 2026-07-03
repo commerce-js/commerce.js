@@ -10,7 +10,9 @@
 // in production — see CLAUDE.md gotcha about cookie sealing).
 // ---------------------------------------------------------------------------
 
+import { createError, useSession } from 'h3'
 import type { H3Event } from 'h3'
+import { resolveSessionPassword } from './sessionPassword'
 
 export interface DashboardSession {
   userId: string
@@ -22,20 +24,9 @@ export interface DashboardSession {
 const COOKIE_NAME = 'cjs-dashboard-session'
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7 // 7 days
 
-function sessionPassword(): string {
-  const config = useRuntimeConfig()
-  const pw = config.sessionPassword || process.env.NUXT_SESSION_PASSWORD
-  if (!pw || pw.length < 32) {
-    // Dev fallback only — 32-char deterministic string so cookies survive
-    // server restarts in development.
-    return 'dev-only-session-key-32-chars-min!'
-  }
-  return pw
-}
-
 function sessionOptions() {
   return {
-    password: sessionPassword(),
+    password: resolveSessionPassword(),
     name: COOKIE_NAME,
     cookie: {
       httpOnly: true,
@@ -66,6 +57,23 @@ export async function clearDashboardSession(event: H3Event): Promise<void> {
 }
 
 /**
+ * Pure authorization decision (unit-tested). Throws 401 when unauthenticated,
+ * 403 when the session's role isn't in `roles`; returns the session otherwise.
+ */
+export function authorizeDashboardSession(
+  session: DashboardSession | null,
+  roles?: DashboardSession['role'][],
+): DashboardSession {
+  if (!session) {
+    throw createError({ statusCode: 401, message: 'Authentication required' })
+  }
+  if (roles && !roles.includes(session.role)) {
+    throw createError({ statusCode: 403, message: 'Insufficient permissions' })
+  }
+  return session
+}
+
+/**
  * Require an authenticated dashboard operator. Control-plane routes
  * (/api/merchants/**) MUST call this — the tenant middleware skip-lists
  * them, so nothing else stands between the internet and merchant CRUD.
@@ -74,12 +82,5 @@ export async function requireDashboardUser(
   event: H3Event,
   roles?: DashboardSession['role'][],
 ): Promise<DashboardSession> {
-  const session = await getDashboardSession(event)
-  if (!session) {
-    throw createError({ statusCode: 401, message: 'Authentication required' })
-  }
-  if (roles && !roles.includes(session.role)) {
-    throw createError({ statusCode: 403, message: 'Insufficient permissions' })
-  }
-  return session
+  return authorizeDashboardSession(await getDashboardSession(event), roles)
 }

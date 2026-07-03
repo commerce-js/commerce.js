@@ -19,6 +19,7 @@
 // ---------------------------------------------------------------------------
 
 import type { H3Event } from 'h3'
+import { resolveSessionPassword } from './sessionPassword'
 
 export interface MerchantSession {
   /** admin_users.id on the merchant's Neon branch */
@@ -33,20 +34,9 @@ export interface MerchantSession {
 const COOKIE_NAME = 'cjs-merchant-session'
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7 // 7 days — matches dashboard session
 
-function sessionPassword(): string {
-  const config = useRuntimeConfig()
-  const pw = config.sessionPassword || process.env.NUXT_SESSION_PASSWORD
-  if (!pw || pw.length < 32) {
-    // Dev fallback — 32-char deterministic string so cookies survive
-    // server restarts in development. Production MUST set the env var.
-    return 'dev-only-session-key-32-chars-min!'
-  }
-  return pw
-}
-
 function sessionOptions() {
   return {
-    password: sessionPassword(),
+    password: resolveSessionPassword(),
     name: COOKIE_NAME,
     cookie: {
       httpOnly: true,
