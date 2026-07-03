@@ -128,3 +128,11 @@
 - **Decision:** BullMQ + Upstash Redis. Standalone `worker.ts` entry point as a separate Fly process.
 - **Job types:** `provision-store`, `send-email`, `dispatch-webhook`
 - **Built-in:** 3 retries with exponential backoff, failed job visibility (replaces DLQ plugin)
+
+## 2026-07-03: Session seal is fail-closed in production
+- **Context:** The dashboard's three sealed cookies (operator, merchant staff, buyer) each fell back to a hardcoded 32-char key (`dev-only-session-key-32-chars-min!`) when `NUXT_SESSION_PASSWORD` was missing/short — and that fallback fired in production, making every session cookie forgeable.
+- **Decision:** One shared policy in `apps/dashboard/server/utils/sessionSeal.ts`. `pickSessionPassword(secret, isDev)` returns a strong secret if present, falls back to the dev key ONLY when `import.meta.dev`, and otherwise **throws**. A Nitro plugin (`server/plugins/00-validate-session-seal.ts`) re-checks at startup so a misconfigured prod deploy **refuses to boot** (verified: `node .output/server/index.mjs` exits 1 with no secret). `/api/_health` exposes `sessionSealSecure`.
+- **Rules:**
+  - Never reintroduce a production-reachable hardcoded seal fallback.
+  - All three session utils go through `resolveSessionPassword()` — don't inline the check per file (it drifted before).
+  - Production MUST set `NUXT_SESSION_PASSWORD` to ≥32 random chars, or the app will not start.
