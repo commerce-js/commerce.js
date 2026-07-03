@@ -7,23 +7,14 @@
 // once. Storefronts send it as `X-Commerce-Key`.
 // ---------------------------------------------------------------------------
 
-import { randomBytes } from 'node:crypto'
-import { createHash } from 'node:crypto'
 import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { useDB } from '../../../utils/db'
 import { requireDashboardUser } from '../../../utils/session'
-
-/** Per-plan API key allowance (enterprise = effectively unlimited). */
-const KEY_LIMITS: Record<string, number> = {
-  trial: 1,
-  starter: 2,
-  pro: 5,
-  business: 20,
-  enterprise: 100,
-}
+import { generateApiKey } from '../../../utils/apiKey'
+import { KEY_LIMITS } from '../../../utils/planLimits'
 
 export default defineEventHandler(async (event) => {
-  await requireDashboardUser(event)
+  await requireDashboardUser(event, ['admin'])
   const db = useDB()
   const id = getRouterParam(event, 'id')!
 
@@ -39,6 +30,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const limit = KEY_LIMITS[merchant.plan] ?? KEY_LIMITS.trial!
+  // Soft plan limit — a concurrent double-mint could momentarily exceed it by
+  // one. Acceptable: keys are operator-created, the cap is a billing nudge not
+  // a security boundary, and revoke is one click.
   if (merchant._count.apiKeys >= limit) {
     throw createError({
       statusCode: 402,
@@ -46,17 +40,10 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Prefix must be unique as a bare token (tenant.ts splits on the first "_").
-  const prefix = `cjs${randomBytes(5).toString('hex')}`
-  const plaintext = `${prefix}_${randomBytes(24).toString('hex')}`
+  const { plaintext, keyPrefix, keyHash } = generateApiKey()
 
   const apiKey = await db.apiKey.create({
-    data: {
-      merchantId: id,
-      name,
-      keyPrefix: prefix,
-      keyHash: createHash('sha256').update(plaintext).digest('hex'),
-    },
+    data: { merchantId: id, name, keyPrefix, keyHash },
     select: { id: true, name: true, keyPrefix: true, createdAt: true },
   })
 

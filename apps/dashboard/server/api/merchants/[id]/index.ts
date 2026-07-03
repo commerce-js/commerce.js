@@ -10,16 +10,19 @@ import { useDB } from '../../../utils/db'
 import { requireDashboardUser } from '../../../utils/session'
 import { deleteMerchantProject } from '../../../utils/neon'
 import { invalidateMerchantCache } from '../../../utils/tenant'
+import { PUBLIC_MERCHANT_SELECT, toPublicMerchant } from '../../../utils/merchantView'
 
 export default defineEventHandler(async (event) => {
-  await requireDashboardUser(event)
   const db = useDB()
   const id = getRouterParam(event, 'id')!
 
   if (event.method === 'GET') {
+    await requireDashboardUser(event)
     const merchant = await db.merchant.findUnique({
       where: { id },
-      include: {
+      select: {
+        // Safe fields only — never databaseUrl or passwordHash.
+        ...PUBLIC_MERCHANT_SELECT,
         domains: true,
         // Never expose keyHash — the prefix is all the UI needs.
         apiKeys: {
@@ -33,6 +36,9 @@ export default defineEventHandler(async (event) => {
     }
     return merchant
   }
+
+  // Everything below mutates — admin only.
+  await requireDashboardUser(event, ['admin'])
 
   if (event.method === 'PATCH') {
     const body = await readBody<Partial<{
@@ -60,7 +66,7 @@ export default defineEventHandler(async (event) => {
         },
       })
       invalidateMerchantCache(id)
-      return merchant
+      return toPublicMerchant(merchant)
     }
     catch (error: any) {
       if (error?.code === 'P2025') {

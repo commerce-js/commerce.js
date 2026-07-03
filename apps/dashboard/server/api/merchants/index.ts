@@ -9,17 +9,22 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { useDB } from '../../utils/db'
 import { requireDashboardUser } from '../../utils/session'
 import { enqueueMerchantJob } from '../../utils/queue'
+import { PUBLIC_MERCHANT_SELECT, toPublicMerchant } from '../../utils/merchantView'
 import { isReservedSubdomain } from '../../../shared/utils/reservedSubdomains'
 
 export default defineEventHandler(async (event) => {
-  await requireDashboardUser(event)
   const db = useDB()
 
   if (event.method === 'GET') {
+    await requireDashboardUser(event)
     return db.merchant.findMany({
       orderBy: { createdAt: 'desc' },
+      select: PUBLIC_MERCHANT_SELECT,
     })
   }
+
+  // Creating a merchant is a mutating operation — admin only.
+  await requireDashboardUser(event, ['admin'])
 
   const body = await readBody<{
     name: string
@@ -70,7 +75,7 @@ export default defineEventHandler(async (event) => {
       data: { merchantId: merchant.id },
     })
 
-    return merchant
+    return toPublicMerchant(merchant)
   }
   catch (error: any) {
     if (error?.code === 'P2002') {

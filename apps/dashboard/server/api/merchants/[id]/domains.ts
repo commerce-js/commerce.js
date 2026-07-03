@@ -18,7 +18,8 @@ import { requireDashboardUser } from '../../../utils/session'
 const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
 
 export default defineEventHandler(async (event) => {
-  await requireDashboardUser(event)
+  // Reads open to any authenticated operator; mutations are admin-only.
+  await requireDashboardUser(event, event.method === 'GET' ? undefined : ['admin'])
   const db = useDB()
   const merchantId = getRouterParam(event, 'id')!
 

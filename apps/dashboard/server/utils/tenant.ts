@@ -18,11 +18,13 @@
 // only deals with resolution and caching.
 // ---------------------------------------------------------------------------
 
-// h3 helpers (getHeader, getRequestHost) are Nitro auto-imports — no `import from 'h3'` needed.
+// h3 helpers are imported explicitly (not relying on Nitro auto-imports) so
+// this module also compiles under the worker esbuild bundle and vitest.
 import process from 'node:process'
 import { getHeader, getRequestHost } from 'h3'
 import type { H3Event } from 'h3'
 import { LRUCache } from 'lru-cache'
+import { extractKeyPrefix, hashApiKey } from './apiKey'
 import { useDB } from './db'
 import type { Merchant } from '../generated/prisma/client'
 
@@ -164,9 +166,9 @@ async function resolveByCustomDomain(domain: string): Promise<MerchantContext | 
 }
 
 async function resolveByApiKey(apiKey: string): Promise<MerchantContext | null> {
-  // API keys are formatted as `<prefix>_<secret>`. The prefix alone uniquely
-  // identifies the key row; the full key is verified by hash comparison.
-  const prefix = apiKey.split('_')[0]
+  // Format/hash logic is shared with the mint route (utils/apiKey.ts) so the
+  // two can't drift: prefix = token before the first `_`, verified by hash.
+  const prefix = extractKeyPrefix(apiKey)
   if (!prefix) return null
 
   const db = useDB()
@@ -175,8 +177,7 @@ async function resolveByApiKey(apiKey: string): Promise<MerchantContext | null> 
     include: { merchant: true },
   })
 
-  const { createHash } = await import('node:crypto')
-  const hash = createHash('sha256').update(apiKey).digest('hex')
+  const hash = hashApiKey(apiKey)
   const match = rows.find(r => r.keyHash === hash)
   if (!match) return null
 

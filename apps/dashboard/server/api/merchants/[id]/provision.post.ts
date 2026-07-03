@@ -16,7 +16,7 @@ import { requireDashboardUser } from '../../../utils/session'
 import { enqueueMerchantJob } from '../../../utils/queue'
 
 export default defineEventHandler(async (event) => {
-  await requireDashboardUser(event)
+  await requireDashboardUser(event, ['admin'])
   const id = getRouterParam(event, 'id')!
 
   const db = useDB()

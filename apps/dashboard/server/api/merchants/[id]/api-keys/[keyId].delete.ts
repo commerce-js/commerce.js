@@ -8,7 +8,7 @@ import { requireDashboardUser } from '../../../../utils/session'
 import { invalidateMerchantCache } from '../../../../utils/tenant'
 
 export default defineEventHandler(async (event) => {
-  await requireDashboardUser(event)
+  await requireDashboardUser(event, ['admin'])
   const db = useDB()
   const id = getRouterParam(event, 'id')!
   const keyId = getRouterParam(event, 'keyId')!
@@ -19,8 +19,9 @@ export default defineEventHandler(async (event) => {
   }
 
   await db.apiKey.delete({ where: { id: keyId } })
-  // The tenant resolver caches merchant lookups keyed by resolved id —
-  // drop them so a revoked key stops working within one cache window.
+  // API-key resolution (tenant.ts resolveByApiKey) hits the DB on every
+  // request, so revocation takes effect immediately. This just clears any
+  // cached merchant *config* keyed by id — harmless, kept for consistency.
   invalidateMerchantCache(id)
 
   return { revoked: true }
