@@ -19,7 +19,7 @@ describe('createWebhookDispatcher', () => {
         url: 'https://example.com/hook',
         events: ['order.created'],
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
     })
 
     await bus.emit('order.created', { order: { id: 'ord_1' } as any })
@@ -41,7 +41,7 @@ describe('createWebhookDispatcher', () => {
         url: 'https://example.com/hook',
         events: ['order.created'],
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
     })
 
     await bus.emit('cart.created', { cart: {} as any })
@@ -56,7 +56,7 @@ describe('createWebhookDispatcher', () => {
         url: 'https://analytics.example.com/hook',
         events: ['*'],
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
     })
 
     await bus.emit('order.created', { order: { id: 'ord_1' } as any })
@@ -73,7 +73,7 @@ describe('createWebhookDispatcher', () => {
         events: ['order.created'],
         active: false,
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
     })
 
     await bus.emit('order.created', { order: { id: 'ord_1' } as any })
@@ -88,7 +88,7 @@ describe('createWebhookDispatcher', () => {
         url: 'https://crm.example.com/hook',
         events: ['order.created'],
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
     })
 
     await bus.emit('order.created', { order: { id: 'ord_1' } as any })
@@ -109,7 +109,7 @@ describe('createWebhookDispatcher', () => {
         events: ['order.created'],
         secret: 'my-secret',
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
       sign,
     })
 
@@ -131,7 +131,7 @@ describe('createWebhookDispatcher', () => {
         url: 'https://example.com/hook',
         events: ['order.created'],
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
       maxRetries: 3,
     })
 
@@ -152,7 +152,7 @@ describe('createWebhookDispatcher', () => {
         url: 'https://example.com/hook',
         events: ['order.created'],
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
       maxRetries: 3,
     })
 
@@ -169,7 +169,7 @@ describe('createWebhookDispatcher', () => {
         url: 'https://example.com/hook',
         events: ['order.created'],
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
     })
 
     unsubscribe()
@@ -185,7 +185,7 @@ describe('createWebhookDispatcher', () => {
         url: 'https://example.com/hook',
         events: ['order.created'],
       }],
-      fetch: mockFetch,
+      fetch: mockFetch as unknown as typeof fetch,
     })
 
     await bus.emit('order.created', { order: { id: 'ord_1' } as any })

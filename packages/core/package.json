@@ -32,6 +32,7 @@
     "consola": "^3.4.0"
   },
   "devDependencies": {
+    "@types/node": "^22.19.11",
     "tsdown": "^0.12.9",
     "typescript": "^5.8.3",
     "vitest": "^4.0.0"
