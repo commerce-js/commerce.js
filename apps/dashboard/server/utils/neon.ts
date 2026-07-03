@@ -119,6 +119,9 @@ export async function createMerchantProject(
         pg_version: 16,
       },
     }),
+    // The 423 window only affects post-create control-API calls, but creates
+    // can still hit transient 429/5xx — retry those with the same backoff.
+    retryOnLocked: true,
   })
 
   const connectionUri = response.connection_uris?.[0]?.connection_uri ?? ''

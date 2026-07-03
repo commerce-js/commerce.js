@@ -41,6 +41,8 @@ model Merchant {
   neonProjectId  String?   @map("neon_project_id")
   neonBranchId   String?   @map("neon_branch_id")
   status         String    @default("provisioning")
+  /// Last provisioning error (transient or permanent) — cleared on success
+  provisionError String?   @map("provision_error")
   dashboardRole  String    @default("owner") @map("dashboard_role")
   provisionedBy  String?   @map("provisioned_by")
   // Tap is the platform's billing provider for merchant subscriptions
