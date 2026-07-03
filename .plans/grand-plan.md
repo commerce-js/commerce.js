@@ -20,7 +20,7 @@
 | **🛍️ Store** | Premium hosted Nuxt storefront, conversion-optimized, MENA-aware | `*.commercejs.cloud` (SSR) + `@commercejs/ui` components | 🟢 |
 | **💳 Checkout** | Universal channel-agnostic state machine — web, mobile, POS QR, AI agent payment links | `checkout.commercejs.cloud` + `@commercejs/checkout` SDK | 🟢 |
 
-Full vision → [`.research/best-ecommerce-strategy.md`](../.research/best-ecommerce-strategy.md).
+Full backlog + architecture vision → [`roadmap.md`](roadmap.md).
 
 > **Pillars vs phases.** Pillars are product-shape framing; phases are delivery framing. They overlap but are not 1:1 — e.g. Phase 7 covers Pillar 1 Cloud almost entirely, most of Pillar 2 Store, and ships the hosted-checkout surface for Pillar 3. Use pillars to explain *what we sell*; use phases to track *what we're building*.
 
@@ -32,7 +32,7 @@ Full vision → [`.research/best-ecommerce-strategy.md`](../.research/best-ecomm
 - **Three co-supervised Fly processes** per web machine — dashboard `:3000`, storefront `:3001`, hosted-checkout `:3002` — orchestrated by `scripts/start-web.sh` with hostname-routing middleware.
 - **Async work** — BullMQ + Upstash Redis standalone worker process (`worker.ts`) handles Neon provisioning, webhook dispatch, and (soon) transactional email.
 
-Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commercejs/SKILL.md). Locked architectural decisions → [`.memory/decisions.md`](../.memory/decisions.md).
+Full patterns → [`../CLAUDE.md`](../CLAUDE.md). Locked architectural decisions → [`.memory/decisions.md`](../.memory/decisions.md).
 
 ---
 
@@ -135,10 +135,8 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 | Fly.io infrastructure plan (Steps 1–8, LOCKED) | [`fly-migration-plan.md`](fly-migration-plan.md) |
 | Current gate — merchant admin UI (T01–T05) | [`merchant-admin/plan.md`](merchant-admin/plan.md) |
 | Storefront EaaS architecture + lessons | [`storefront-eaas/plan.md`](storefront-eaas/plan.md) |
-| Product vision (three pillars) | [`../.research/best-ecommerce-strategy.md`](../.research/best-ecommerce-strategy.md) |
-| Multi-tenancy architecture research | [`../.research/cloud-architecture.md`](../.research/cloud-architecture.md) |
-| Build chain, package map, agent protocol | [`../.agent/skills/commercejs/SKILL.md`](../.agent/skills/commercejs/SKILL.md) |
-| Project-wide Claude instructions | [`../CLAUDE.md`](../CLAUDE.md) |
+| All planning docs (index) | [`README.md`](README.md) |
+| Build chain, package map, patterns | [`../CLAUDE.md`](../CLAUDE.md) |
 
 ## Emoji Legend
 
