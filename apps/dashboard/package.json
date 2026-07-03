@@ -10,7 +10,8 @@
     "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node22 --outfile=.output/worker.mjs --banner:js='import { createRequire } from \"node:module\"; const require = createRequire(import.meta.url);' --packages=external",
     "preview": "nuxt preview",
     "generate": "nuxt generate",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run"
   },
   "dependencies": {
     "@commercejs/platform": "workspace:*",
@@ -31,7 +32,9 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.89",
     "esbuild": "^0.24.0",
+    "h3": "^1.15.4",
     "prisma": "^7.6.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.0"
   }
 }
