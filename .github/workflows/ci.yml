@@ -100,10 +100,11 @@ jobs:
           (cd apps/dashboard && npx prisma generate)
 
       # worker-send-email.test.ts imports server/utils/worker-handlers.ts, which
-      # pulls @commercejs/platform — a workspace dep resolved through its dist/
-      # build. Build it (turbo-cached) before the tests can import it.
-      - name: Build @commercejs/platform (dashboard tests import it)
-        run: pnpm turbo run build --filter=@commercejs/platform
+      # pulls @commercejs/platform and @commercejs/notification-smtp — workspace
+      # deps resolved through their dist/ builds. `^...` builds dashboard's full
+      # dependency closure (turbo-cached) without building dashboard itself.
+      - name: Build dashboard's workspace deps (tests import them)
+        run: pnpm turbo run build --filter=@commercejs/dashboard^...
 
       - name: Dashboard unit tests (offline)
         run: pnpm --filter @commercejs/dashboard test
