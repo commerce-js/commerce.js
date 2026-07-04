@@ -26,6 +26,7 @@ import { createHash, createHmac } from 'node:crypto'
 import { Worker } from 'bullmq'
 import type { Job } from 'bullmq'
 import { getPrismaClient, runWithDb } from '@commercejs/platform'
+import type { NotificationProvider } from '@commercejs/types'
 import { createRedisConnection } from './server/utils/redis'
 import { MERCHANT_QUEUE } from './server/utils/queue'
 import type {
@@ -54,27 +55,75 @@ async function handleProvisionStore(data: ProvisionStoreJob['data']): Promise<vo
   )
 }
 
+// SMTP provider is built once and reused (nodemailer connection pool). The
+// dynamic import keeps nodemailer out of the worker's startup / --dry-run path
+// — it's only loaded the first time an email job actually runs.
+let _emailProvider: Promise<NotificationProvider> | null = null
+function emailProvider(): Promise<NotificationProvider> {
+  if (!_emailProvider) {
+    _emailProvider = (async () => {
+      const { createSmtpProvider } = await import('@commercejs/notification-smtp')
+      const port = Number.parseInt(process.env.SMTP_PORT ?? '587', 10)
+      return createSmtpProvider({
+        host: process.env.SMTP_HOST!,
+        port,
+        // Implicit TLS on 465; STARTTLS otherwise. Override with SMTP_SECURE.
+        secure: process.env.SMTP_SECURE === 'true' || port === 465,
+        auth: { user: process.env.SMTP_USER!, pass: process.env.SMTP_PASS! },
+        from: process.env.SMTP_FROM!,
+        pool: true,
+      })
+    })()
+  }
+  return _emailProvider
+}
+
+function escapeHtml(s: string): string {
+  const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }
+  return s.replace(/[&<>"']/g, c => map[c]!)
+}
+
+// Minimal generic renderer. Per-event templates (order confirmation,
+// trial-ending, password reset) get added here as they're introduced; until
+// then the job's subject + vars produce a plain body so the transport works
+// end-to-end. `vars` values are HTML-escaped.
+function renderEmail(subject: string, vars: Record<string, unknown> = {}): { text: string, html: string } {
+  const lines = Object.entries(vars).map(([k, v]) => `${k}: ${String(v)}`)
+  const text = [subject, '', ...lines].join('\n').trim()
+  const list = lines.length ? `<ul>${lines.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>` : ''
+  const html = `<div><h2>${escapeHtml(subject)}</h2>${list}</div>`
+  return { text, html }
+}
+
 async function handleSendEmail(data: SendEmailJob['data']): Promise<void> {
   // SMTP credentials live in the monorepo-root .secrets file / Fly secrets.
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env
+  const { SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
     throw new Error('send-email: SMTP_* env vars are missing')
   }
 
-  // Deliberately leaving the transport off the hot path for Step 5 — the
-  // notification-smtp provider gets wired in alongside the Step 7 UI work
-  // so we don't drag a templating engine into the worker bundle yet.
+  const provider = await emailProvider()
+  const { text, html } = renderEmail(data.subject, data.vars)
+  const result = await provider.send('email', {
+    to: data.to,
+    subject: data.subject,
+    template: data.template,
+    text,
+    html,
+  })
+
+  if (!result.success) {
+    // Throw so BullMQ retries (3 attempts, exponential backoff).
+    throw new Error(`send-email failed merchant=${data.merchantId} to=${data.to}: ${result.error}`)
+  }
+
   console.log(
-    '[worker] send-email stub — merchant=%s to=%s subject=%o (template=%s)',
+    '[worker] send-email OK merchant=%s to=%s template=%s messageId=%s',
     data.merchantId,
     data.to,
-    data.subject,
     data.template,
+    result.messageId,
   )
-
-  // Log the connection parameters so operators can sanity-check secrets
-  // without leaking the password.
-  console.log('  SMTP target: %s:%s as %s', SMTP_HOST, SMTP_PORT ?? '587', SMTP_USER)
 }
 
 async function handleDispatchWebhook(data: DispatchWebhookJob['data']): Promise<void> {

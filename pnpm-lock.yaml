@@ -29,6 +29,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@commercejs/notification-smtp':
+        specifier: workspace:*
+        version: link:../../packages/notification-smtp
       '@commercejs/platform':
         specifier: workspace:*
         version: link:../../packages/platform
