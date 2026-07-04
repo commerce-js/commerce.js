@@ -8,6 +8,7 @@ import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { useDB } from '../../../utils/db'
 import { requireDashboardSession } from '../../../utils/authorize'
 import { PUBLIC_API_KEY_SELECT } from '../../../utils/apiKeySelect'
+import { toPublicMerchant } from '../../../utils/publicMerchant'
 
 export default defineEventHandler(async (event) => {
   const db = useDB()
@@ -23,7 +24,7 @@ export default defineEventHandler(async (event) => {
     if (!merchant) {
       throw createError({ statusCode: 404, message: 'Merchant not found' })
     }
-    return merchant
+    return toPublicMerchant(merchant)
   }
 
   // All mutations to a merchant row are admin-only.
@@ -47,13 +48,14 @@ export default defineEventHandler(async (event) => {
     }>>(event)
 
     try {
-      return await db.merchant.update({
+      const updated = await db.merchant.update({
         where: { id },
         data: {
           ...body,
           trialEndsAt: body.trialEndsAt ? new Date(body.trialEndsAt) : body.trialEndsAt,
         },
       })
+      return toPublicMerchant(updated)
     }
     catch (error: any) {
       if (error?.code === 'P2025') {

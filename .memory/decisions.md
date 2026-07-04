@@ -143,5 +143,6 @@
 - **Rules:**
   - New `/api/merchants/*` (and any control-DB) route MUST call `requireDashboardSession` first.
   - Never return `api_keys.keyHash` to the client — use `PUBLIC_API_KEY_SELECT`.
+  - Never return merchant secrets to the client — every route that returns a `Merchant` row runs it through `toPublicMerchant` (utils/publicMerchant.ts), which drops `passwordHash` and masks the password inside `databaseUrl` **server-side** (the UI previously masked it client-side, so the raw Neon credential was still shipped to the browser).
   - API keys: format + hashing live in `utils/apiKey.ts`, shared by the mint route and the tenant resolver so they can't drift. Only the SHA-256 is stored; plaintext is shown once at mint.
   - SSR pages fetching gated routes must forward the cookie (`useRequestHeaders(['cookie'])` on the server) — in-process SSR fetches don't inherit request headers.
