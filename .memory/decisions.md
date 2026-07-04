@@ -128,3 +128,21 @@
 - **Decision:** BullMQ + Upstash Redis. Standalone `worker.ts` entry point as a separate Fly process.
 - **Job types:** `provision-store`, `send-email`, `dispatch-webhook`
 - **Built-in:** 3 retries with exponential backoff, failed job visibility (replaces DLQ plugin)
+
+## 2026-07-03: Session seal is fail-closed in production
+- **Context:** The dashboard's three sealed cookies (operator, merchant staff, buyer) each fell back to a hardcoded 32-char key (`dev-only-session-key-32-chars-min!`) when `NUXT_SESSION_PASSWORD` was missing/short — and that fallback fired in production, making every session cookie forgeable.
+- **Decision:** One shared policy in `apps/dashboard/server/utils/sessionSeal.ts`. `pickSessionPassword(secret, isDev)` returns a strong secret if present, falls back to the dev key ONLY when `import.meta.dev`, and otherwise **throws**. A Nitro plugin (`server/plugins/00-validate-session-seal.ts`) re-checks at startup so a misconfigured prod deploy **refuses to boot** (verified: `node .output/server/index.mjs` exits 1 with no secret). `/api/_health` exposes `sessionSealSecure`.
+- **Rules:**
+  - Never reintroduce a production-reachable hardcoded seal fallback.
+  - All three session utils go through `resolveSessionPassword()` — don't inline the check per file (it drifted before).
+  - Production MUST set `NUXT_SESSION_PASSWORD` to ≥32 random chars, or the app will not start.
+
+## 2026-07-04: Control-plane routes require an authenticated operator
+- **Context:** Every `/api/merchants/*` route (list/create/update/delete merchant, provision, domains) ran with **no auth check** — anyone reaching `app.commercejs.cloud` could enumerate tenants or create merchants (which triggers billable Neon provisioning). `GET /api/merchants/:id` also returned `api_keys.keyHash`.
+- **Decision:** Gate all control-plane routes with `requireDashboardSession(event, access)` (util `authorize.ts`). Reads require any authenticated operator (`read`); mutations require `role === 'admin'` (`admin`). `support` is read-only. The policy is a pure `authorizeDashboardSession()` (unit-tested); the guard runs before any control-DB access so unauthenticated calls 401 cleanly.
+- **Rules:**
+  - New `/api/merchants/*` (and any control-DB) route MUST call `requireDashboardSession` first.
+  - Never return `api_keys.keyHash` to the client — use `PUBLIC_API_KEY_SELECT`.
+  - Never return merchant secrets to the client — every route that returns a `Merchant` row runs it through `toPublicMerchant` (utils/publicMerchant.ts), which drops `passwordHash` and masks the password inside `databaseUrl` **server-side** (the UI previously masked it client-side, so the raw Neon credential was still shipped to the browser).
+  - API keys: format + hashing live in `utils/apiKey.ts`, shared by the mint route and the tenant resolver so they can't drift. Only the SHA-256 is stored; plaintext is shown once at mint.
+  - SSR pages fetching gated routes must forward the cookie (`useRequestHeaders(['cookie'])` on the server) — in-process SSR fetches don't inherit request headers.

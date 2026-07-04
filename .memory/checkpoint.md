@@ -1,11 +1,23 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-17T1800.md`](checkpoints/2026-04-17T1800.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-16T1900.md`](checkpoints/2026-04-16T1900.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-07-03T1930.md`](checkpoints/2026-07-03T1930.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-17T1800.md`](checkpoints/2026-04-17T1800.md)
 
 ## Current Phase
 
-**Phase 7 merchant-admin T01 — code complete + reviewed + build green. Uncommitted on working tree; awaiting smoke-password verification + deploy + live curl test to close.** Previously: T01–T04 storefront EaaS + phase-1 composables + smoke seed + hosted-checkout card payments all SHIPPED and browser-verified.
+**2026-07-03 — security + baseline hardening + M0.5 docs/CI reorg on a branch cut from live `fly/eaas`.** See the latest checkpoint above for the full story. In brief: a handoff describing an "M0" reconciliation was found to be disconnected from this container (that work was never pushed and is unrecoverable here — see checkpoint "Context reconciliation"). Instead, shipped the premise-independent, high-value parts on `claude/commercejs-m0-m05-push-il5lep` (fast-forwarded onto `origin/fly/eaas` `6c10626`): a **fail-closed session seal** (prod refuses to boot without `NUXT_SESSION_PASSWORD` ≥32 — boot-verified both ways), a `@commercejs/core` typecheck fix (restores 37/37), and the M0.5 `.plans`/CLAUDE.md/root-hygiene/CI reorg. All §7 gates green; 301 tests; 1 confirmed security-review finding fixed. **Nothing pushed to `fly/eaas`; open owner decisions listed in the latest checkpoint.**
+
+**2026-07-04 follow-up (same branch, after PR #50 opened):** closed a real
+unauthenticated-control-plane hole — every `/api/merchants/*` route ran with no
+auth (anyone could list tenants / create merchants → billable provisioning).
+Added `requireDashboardSession` (read/admin) + `authorizeDashboardSession` +
+API-key mint/revoke/list; stopped leaking merchant DB credentials
+(`toPublicMerchant`) and `api_keys.keyHash`; wired the transactional-email SMTP
+transport into `worker.ts`. Independent reviewer + security agents on each diff
+(both clean; their pre-existing-leak finding drove the creds fix). +13 dashboard
+unit tests. See `.memory/decisions.md` (2026-07-04) and grand-plan Change Log.
+
+Earlier context (still valid): T01–T05 merchant-admin + T01–T04 storefront EaaS + hosted-checkout card payments SHIPPED and browser-verified; live on Fly `fra`.
 
 The Fly.io EaaS pipeline (Steps 1–8) provisions merchant Neon branches in
 ~6 seconds. On top of that, the full four-layer storefront architecture

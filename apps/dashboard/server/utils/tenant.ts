@@ -23,6 +23,7 @@ import process from 'node:process'
 import type { H3Event } from 'h3'
 import { LRUCache } from 'lru-cache'
 import { useDB } from './db'
+import { apiKeyLookupPrefix, hashApiKey } from './apiKey'
 import type { Merchant } from '../generated/prisma/client'
 
 export type MerchantContext = Merchant
@@ -163,9 +164,10 @@ async function resolveByCustomDomain(domain: string): Promise<MerchantContext | 
 }
 
 async function resolveByApiKey(apiKey: string): Promise<MerchantContext | null> {
-  // API keys are formatted as `<prefix>_<secret>`. The prefix alone uniquely
-  // identifies the key row; the full key is verified by hash comparison.
-  const prefix = apiKey.split('_')[0]
+  // Format (`<prefix>_<secret>`), prefix parsing, and hashing all live in
+  // utils/apiKey.ts — shared with the mint route so they can't drift. The
+  // indexed prefix narrows the query; the full key is verified by hash.
+  const prefix = apiKeyLookupPrefix(apiKey)
   if (!prefix) return null
 
   const db = useDB()
@@ -174,8 +176,7 @@ async function resolveByApiKey(apiKey: string): Promise<MerchantContext | null> 
     include: { merchant: true },
   })
 
-  const { createHash } = await import('node:crypto')
-  const hash = createHash('sha256').update(apiKey).digest('hex')
+  const hash = hashApiKey(apiKey)
   const match = rows.find(r => r.keyHash === hash)
   if (!match) return null
 

@@ -20,7 +20,7 @@
 | **🛍️ Store** | Premium hosted Nuxt storefront, conversion-optimized, MENA-aware | `*.commercejs.cloud` (SSR) + `@commercejs/ui` components | 🟢 |
 | **💳 Checkout** | Universal channel-agnostic state machine — web, mobile, POS QR, AI agent payment links | `checkout.commercejs.cloud` + `@commercejs/checkout` SDK | 🟢 |
 
-Full vision → [`.research/best-ecommerce-strategy.md`](../.research/best-ecommerce-strategy.md).
+Full backlog + architecture vision → [`roadmap.md`](roadmap.md).
 
 > **Pillars vs phases.** Pillars are product-shape framing; phases are delivery framing. They overlap but are not 1:1 — e.g. Phase 7 covers Pillar 1 Cloud almost entirely, most of Pillar 2 Store, and ships the hosted-checkout surface for Pillar 3. Use pillars to explain *what we sell*; use phases to track *what we're building*.
 
@@ -32,7 +32,7 @@ Full vision → [`.research/best-ecommerce-strategy.md`](../.research/best-ecomm
 - **Three co-supervised Fly processes** per web machine — dashboard `:3000`, storefront `:3001`, hosted-checkout `:3002` — orchestrated by `scripts/start-web.sh` with hostname-routing middleware.
 - **Async work** — BullMQ + Upstash Redis standalone worker process (`worker.ts`) handles Neon provisioning, webhook dispatch, and (soon) transactional email.
 
-Full patterns → [`.agent/skills/commercejs/SKILL.md`](../.agent/skills/commercejs/SKILL.md). Locked architectural decisions → [`.memory/decisions.md`](../.memory/decisions.md).
+Full patterns → [`../CLAUDE.md`](../CLAUDE.md). Locked architectural decisions → [`.memory/decisions.md`](../.memory/decisions.md).
 
 ---
 
@@ -135,10 +135,8 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 | Fly.io infrastructure plan (Steps 1–8, LOCKED) | [`fly-migration-plan.md`](fly-migration-plan.md) |
 | Current gate — merchant admin UI (T01–T05) | [`merchant-admin/plan.md`](merchant-admin/plan.md) |
 | Storefront EaaS architecture + lessons | [`storefront-eaas/plan.md`](storefront-eaas/plan.md) |
-| Product vision (three pillars) | [`../.research/best-ecommerce-strategy.md`](../.research/best-ecommerce-strategy.md) |
-| Multi-tenancy architecture research | [`../.research/cloud-architecture.md`](../.research/cloud-architecture.md) |
-| Build chain, package map, agent protocol | [`../.agent/skills/commercejs/SKILL.md`](../.agent/skills/commercejs/SKILL.md) |
-| Project-wide Claude instructions | [`../CLAUDE.md`](../CLAUDE.md) |
+| All planning docs (index) | [`README.md`](README.md) |
+| Build chain, package map, patterns | [`../CLAUDE.md`](../CLAUDE.md) |
 
 ## Emoji Legend
 
@@ -157,6 +155,8 @@ Fly region: `fra` (Frankfurt). IPv4: `149.248.222.30` (dedicated). IPv6: `2a09:8
 
 ## Change Log
 
+- **2026-07-04** — Control-plane hardening + email transport (branch `…il5lep`, follow-up to PR #50). **Authenticated the control plane**: every `/api/merchants/*` route was unauthenticated (anyone could list tenants or create merchants → billable Neon provisioning); added `requireDashboardSession` (read vs admin) + pure `authorizeDashboardSession` + API-key mint/revoke/list (shared `apiKey.ts` with the resolver). **Stopped leaking merchant DB credentials** to the browser (`toPublicMerchant` masks `databaseUrl`, drops `passwordHash`) and `api_keys.keyHash` (`PUBLIC_API_KEY_SELECT`). Indexed `keyPrefix`. **Transactional email transport wired** into `worker.ts handleSendEmail` (`@commercejs/notification-smtp`, pooled, retryable). Independent reviewer + security agents on each diff. +13 dashboard unit tests. All verified: build/typecheck 37/37, vitest, dashboard build, worker `--dry-run`, boot smoke (401 gate + fail-closed seal).
+- **2026-07-03** — Security + baseline hardening + M0.5 docs/CI reorg (branch `claude/commercejs-m0-m05-push-il5lep`, cut from live `fly/eaas`). **Fail-closed session seal**: prod now refuses to boot without a ≥32-char `NUXT_SESSION_PASSWORD` (was silently falling back to a public key — forgeable operator/merchant/buyer cookies); shared `sessionSeal.ts` + boot plugin + `/api/_health.sessionSealSecure`, boot-verified both ways, locked in `.memory/decisions.md`. Fixed `@commercejs/core` standalone typecheck (`@types/node`) — it was red on `fly/eaas` because **CI never ran there**; `ci.yml` now triggers on `fly/eaas`/`claude/**` and gained a dashboard job (prisma generate → build → worker `--dry-run`). New `docker.yml` (build, no push) + gated `fly-deploy.yml`. Docs: `.plans/README.md` index + `archive/`, CLAUDE.md rewritten for live reality (dead `.agent/*` refs removed), `CONTRIBUTING.md` from `CI_CD_GUIDE.md`, coverage/node-cache un-tracked. Note: a handoff-described "M0" reconciliation (11 commits) was found unrecoverable in this container — see `.memory/checkpoints/2026-07-03T1930.md`. **Open owner decisions**: Neon sharding (repo locks branch-per-merchant; handoff said project-per-merchant), region (`fra` live / `bah` target), recover lost M0 work?
 - **2026-04-17** — Dashboard tenant middleware migrated to per-event Prisma binding. New Nitro plugin at `apps/dashboard/server/plugins/platform-event-resolver.ts` registers `useEvent()` with `@commercejs/platform`. `apps/dashboard/server/middleware/tenant.ts` now sets `event.context.db = prismaClient` before `ensureAdapter()` and drops the `bindDb()` call. Mirror of the pattern that `apps/hosted-checkout` has been running in prod. The "Parallel (non-blocking) track" row in "What's Next" flipped from pending → shipped, and the matching open carry-over was cleared from State Snapshot. No API surface change — all 22 admin/storefront handlers continue reading `event.context.adapter`/`admin`/`merchant`. Verified live on smoke.commercejs.cloud: login, admin.listOrders, admin.listProducts, admin.stats, storefront catalog/store, and SSR homepage all still return 200.
 - **2026-04-17** — Merchant-admin T05 shipped (orders list + detail, read-first). Phase 7 → Merchant admin workstream flips 🟡 → ✅ (T01 + T02 + T03 + T04 + T05 all ✅; merchant-admin plan fully closed). State Snapshot bumped: last major milestone points to T05 (four new `/api/admin/orders/*` routes + two pages wrapping `admin.listOrders/getOrder/fulfillOrder/refundOrder`); current blocker cleared — the only remaining item is the explicit-go `fly deploy` + 8-scenario acceptance on `smoke.commercejs.cloud`. "What's Next" section revised to reflect plan closure. **Gate decision documented**: History panel SKIPPED because `AdminAPI.getOrder` returns `Order` without an audit trail (the platform's domain-layer `getOrderHistory` is intentionally not surfaced on the admin API — per T05 gate rule, don't extend the platform API in this task). **Status enum clarification**: platform uses `pending | processing | shipped | delivered | cancelled | refunded | returned` — no `paid` / `fulfilled`; "Mark fulfilled" writes `status='shipped'`.
 - **2026-04-17** — Merchant-admin T04 shipped. Phase 7 → Merchant admin workstream stays 🟡 (T01 ✅ + T02 ✅ + T03 ✅ + T04 ✅; T05 next). State Snapshot bumped: last major milestone points to image upload + Fly Tigris provisioning, blocker rolled forward to T05 (orders list + detail). New carry-over added: changeset pending for the upstream `@commercejs/storage-s3` presign signature bug fix (X-Amz-Expires was being set post-sign, invalidating the signature) — v0.2.0 → 0.2.1 patch bump. Admin row in the Phase 7 workstreams table shows T04 ✅.

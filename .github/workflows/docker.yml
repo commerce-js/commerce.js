@@ -1,0 +1,50 @@
+# Docker Build — verify the production image builds. No push.
+#
+# The Fly.io deployment builds from the root Dockerfile (all three web processes
+# + the worker). This catches Dockerfile / dependency / build breakage on a PR
+# before it reaches a deploy. Path-filtered so it only runs when something that
+# affects the image changes.
+
+name: Docker Build
+
+on:
+  pull_request:
+    branches: [fly/eaas]
+    paths: &docker_paths
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'fly.toml'
+      - 'pnpm-lock.yaml'
+      - 'packages/platform/**'
+      - 'apps/dashboard/**'
+      - 'apps/storefront/**'
+      - 'apps/hosted-checkout/**'
+      - '.github/workflows/docker.yml'
+  push:
+    branches: [fly/eaas]
+    paths: *docker_paths
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker:
+    name: docker build (no push)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

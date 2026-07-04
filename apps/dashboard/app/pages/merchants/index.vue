@@ -15,7 +15,11 @@ interface Merchant {
 
 // Polling — merchants in `provisioning` flip to `active` out-of-band; refresh
 // every 5 s while at least one is in flight so operators see the transition.
-const { data: merchants, refresh } = await useFetch<Merchant[]>('/api/merchants')
+// Forward the operator's session cookie on SSR — /api/merchants is now
+// auth-gated, and in-process SSR fetches don't inherit request headers.
+const { data: merchants, refresh } = await useFetch<Merchant[]>('/api/merchants', {
+  headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined,
+})
 
 let timer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {

@@ -77,6 +77,9 @@ model ApiKey {
   merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
   @@index([keyHash])
+  // Resolver narrows by keyPrefix before hash-verifying (utils/tenant.ts) — a
+  // hot path on every X-Commerce-Key request, so keep it indexed.
+  @@index([keyPrefix])
   @@map("api_keys")
 }
 

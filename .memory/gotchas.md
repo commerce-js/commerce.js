@@ -99,3 +99,13 @@ This bit twice — Google Maps first session, Tap public key the session after. 
 Server-side runtime config (top-level `runtimeConfig.*`, not `.public.*`) uses `NUXT_<UPPER_SNAKE>` and has the same rule. Plain env names like `TAP_SECRET_KEY` are fine for direct `process.env.*` reads but do NOT map into `useRuntimeConfig()`.
 
 **Fix**: `fly secrets set NUXT_PUBLIC_<KEY>=value --app …`. Use `--stage` if you're about to deploy new code so the restart is bundled. Verify by curling a page and grepping the rendered HTML for `"<camelCaseKey>":"<value>"` in the injected `window.__NUXT__` config.
+
+## `@types/*` Is Not Hoisted — Declare `@types/node` on Any Package That Uses Node/DOM Globals (2026-07-03)
+`.npmrc` sets `shamefully-hoist=false` and only public-hoists `@prisma/client`. `tsconfig.base.json` uses `lib: ["ES2022"]` (no DOM) with no explicit `types`, so a package that references `setTimeout`, `globalThis.fetch`, `process`, etc. only type-checks if it declares `@types/node` **itself**. `@commercejs/core` used those globals without declaring it and `tsc --noEmit` failed with 5 errors (`Cannot find name 'setTimeout'`, `globalThis has no index signature`). It appeared to "work before" only because a previous lockfile happened to hoist `@types/node` to the root.
+
+**Fix**: Add `@types/node` (match CI's Node major — currently `^22.x`) to the `devDependencies` of any package that touches Node/DOM globals. Convention already followed by `cli`, `notification-smtp`, `webhook-verifier`. Adding real `fetch` types can surface latent `vi.fn()`-mock type mismatches in tests — cast the mock to `typeof fetch` at the call site.
+
+## CI Never Ran on `fly/eaas` — Pushes Bypassed All Checks (2026-07-03)
+`.github/workflows/ci.yml` triggered only on `pull_request: branches: [main]`. `fly/eaas` is developed with direct pushes (not PRs to `main`), so build/typecheck/test **never ran** on it — which is how the `@commercejs/core` typecheck break above sat on the production-live branch undetected.
+
+**Fix**: `ci.yml` now also triggers on `push`/`pull_request` for `fly/eaas`. When adding a package or changing tsconfig/deps, run `pnpm turbo run build typecheck` and `pnpm vitest run` locally before pushing — don't rely on the merge-to-main gate.
