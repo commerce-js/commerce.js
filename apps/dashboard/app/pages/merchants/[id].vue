@@ -29,7 +29,11 @@ interface Merchant {
 const route = useRoute()
 const id = computed(() => route.params.id as string)
 
-const { data: merchant, refresh } = await useFetch<Merchant>(`/api/merchants/${id.value}`)
+// Forward the operator's session cookie on SSR — /api/merchants/:id is now
+// auth-gated, and in-process SSR fetches don't inherit request headers.
+const { data: merchant, refresh } = await useFetch<Merchant>(`/api/merchants/${id.value}`, {
+  headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined,
+})
 
 // Auto-refresh while provisioning.
 let timer: ReturnType<typeof setInterval> | null = null

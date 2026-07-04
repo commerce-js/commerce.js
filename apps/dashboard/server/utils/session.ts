@@ -22,20 +22,10 @@ export interface DashboardSession {
 const COOKIE_NAME = 'cjs-dashboard-session'
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7 // 7 days
 
-function sessionPassword(): string {
-  const config = useRuntimeConfig()
-  const pw = config.sessionPassword || process.env.NUXT_SESSION_PASSWORD
-  if (!pw || pw.length < 32) {
-    // Dev fallback only — 32-char deterministic string so cookies survive
-    // server restarts in development.
-    return 'dev-only-session-key-32-chars-min!'
-  }
-  return pw
-}
-
 function sessionOptions() {
   return {
-    password: sessionPassword(),
+    // Fail-closed in prod — see server/utils/sessionSeal.ts.
+    password: resolveSessionPassword(),
     name: COOKIE_NAME,
     cookie: {
       httpOnly: true,

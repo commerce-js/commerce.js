@@ -1,22 +1,64 @@
 # Checkpoint
 
-> Latest detailed checkpoint: [`.memory/checkpoints/2026-04-21T1214.md`](checkpoints/2026-04-21T1214.md)
-> Previous checkpoint: [`.memory/checkpoints/2026-04-21T0708.md`](checkpoints/2026-04-21T0708.md)
+> Latest detailed checkpoint: [`.memory/checkpoints/2026-07-03T1930.md`](checkpoints/2026-07-03T1930.md)
+> Previous checkpoint: [`.memory/checkpoints/2026-04-21T1600.md`](checkpoints/2026-04-21T1600.md)
 
 ## Current Phase
 
-**transactional-emails T01 ✅ + T02 ✅** both deployed +
-smoke-accepted on `commercejs-cloud.fly.dev` 2026-04-21. Full email
-pipeline (enqueue → BullMQ → worker → render → SMTP → ImprovMX →
-recipient inbox) proven end-to-end on T01; full API + audit + page
-shape proven on T02 via curl; T02 email roundtrip proven by
-concurrent-session smoke that surfaced + fixed `834cfc5` status
-edge case. Fly-managed Upstash Redis DB in `fra` still in place
-from T01.
+**2026-07-04 — two work lines merged on `fly/eaas`.** Local line
+(transactional-emails T01–T03 + eaas-launch, below) merged with
+`origin/fly/eaas` (PR #50: control-plane hardening + CI, next).
+Merge conflicts resolved: `worker.ts` kept the extracted-handlers
+architecture + real templates and ported remote's `--dry-run` block
+(CI depends on it); `vitest.config.ts` kept the wider
+`**/__tests__/**` glob; docs unioned; lockfile regenerated.
 
-**T03 (order confirmation) is next.** Template lands on hosted-
-checkout finalize; see `.plans/transactional-emails/plan.md`
-Implementation Plan for scope.
+### Remote line (PR #50 — control-plane hardening, 2026-07-03/04)
+
+**2026-07-03 — security + baseline hardening + M0.5 docs/CI reorg on a branch cut from live `fly/eaas`.** In brief: a handoff describing an "M0" reconciliation was found to be disconnected from that container (never pushed, unrecoverable — see checkpoint "Context reconciliation"). Instead, shipped the premise-independent, high-value parts on `claude/commercejs-m0-m05-push-il5lep`: a **fail-closed session seal** (prod refuses to boot without `NUXT_SESSION_PASSWORD` ≥32 — boot-verified both ways), a `@commercejs/core` typecheck fix (restores 37/37), and the M0.5 `.plans`/CLAUDE.md/root-hygiene/CI reorg. All §7 gates green; 301 tests; 1 confirmed security-review finding fixed.
+
+**2026-07-04 follow-up (same branch, after PR #50 opened):** closed a real
+unauthenticated-control-plane hole — every `/api/merchants/*` route ran with no
+auth (anyone could list tenants / create merchants → billable provisioning).
+Added `requireDashboardSession` (read/admin) + `authorizeDashboardSession` +
+API-key mint/revoke/list; stopped leaking merchant DB credentials
+(`toPublicMerchant`) and `api_keys.keyHash`; wired the transactional-email SMTP
+transport into `worker.ts` (superseded on merge by the extracted-handlers
+version — same feature, kept local architecture + remote's `--dry-run`).
+Independent reviewer + security agents on each diff (both clean; their
+pre-existing-leak finding drove the creds fix). +13 dashboard unit tests.
+See `.memory/decisions.md` (2026-07-04) and grand-plan Change Log.
+**Open owner decisions** from that line: Neon sharding (branch-per-merchant
+vs project-per-merchant), region (`fra` live / `bah` target), recover lost
+M0 work?
+
+### Local line (transactional-emails)
+
+**transactional-emails T01 ✅ + T02 ✅ + T03 🟢** — T03 (order
+confirmation) code-complete + deployed 2026-04-21 evening to
+`commercejs-cloud.fly.dev` (image
+`deployment-01KPR2EB4F8KRW9Q7JNE5M3KDH`, 4 machines green in `fra`).
+Two feature commits: `3c76e04` (template + 13 render tests + T03
+scaffold) + `0ddb411` (triggers on both finalize paths — storefront-
+native `checkout/complete.post.ts` unconditional + hosted-checkout
+Tap path split across `cart-confirm.get.ts` + `webhooks/tap-payment`
+with status-before-update check as natural dedup; `cart-pay.post.ts`
+propagates merchantId/buyerEmail/buyerName through Tap `metadata`
+and appends `?merchant=<subdomain>` to `webhookUrl`; hosted-checkout
+gains `bullmq` + `ioredis` and producer-only `utils/{queue,redis,
+orderConfirmationEmail}.ts` mirrors).
+
+Curl-level smoke on live: health 200, smoke storefront SSR 200 on
+home + `/order-confirmation`, hosted-checkout webhook on
+`checkout.commercejs.cloud` correctly enforces `?merchant=` (400
+without, 401 with bad sig — both expected); `cart-pay` 400
+validation reachable.
+
+**T03 awaiting live-purchase acceptance.** Real card order through
+`smoke.commercejs.cloud/checkout` → Tap 3DS → email at buyer inbox
+is the only path not reachable via curl. Once confirmed, T03 flips
+🟢 → ✅ with Execution Summary + plan.md close-out + grand-plan
+phase-7 row update.
 
 **T02 (password reset, admin + buyer) code-complete on all 3 surfaces
 2026-04-21.** Three feature commits landed by a concurrent session:

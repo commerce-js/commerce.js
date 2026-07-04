@@ -14,5 +14,10 @@ import { defineEventHandler } from 'h3'
 export default defineEventHandler(() => ({
   ok: true,
   service: 'commercejs-cloud',
+  // Confirms a >= 32-char NUXT_SESSION_PASSWORD is configured. In production
+  // the app refuses to boot when this would be false (see
+  // server/plugins/00-validate-session-seal.ts), so a served response always
+  // reports true there; exposed for smoke tests and local visibility.
+  sessionSealSecure: isSessionSealSecure(),
   ts: Date.now(),
 }))

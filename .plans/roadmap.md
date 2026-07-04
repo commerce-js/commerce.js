@@ -244,8 +244,11 @@
 ### Built-in Services
 - [x] **Admin auth** — DB-backed, bcrypt, session cookie
 - [x] **Provisioning emails** — stub in worker (SMTP transport pending)
-- [ ] **Transactional emails** — order confirmations, shipping updates, password resets
-  (wire `notification-smtp` package into `handleSendEmail` in `worker.ts`)
+- [~] **Transactional emails** — SMTP transport WIRED into `handleSendEmail` in
+  `worker.ts` (2026-07-04): `@commercejs/notification-smtp` sends via a lazily-built,
+  pooled provider; generic subject+vars renderer; throws on failure so BullMQ
+  retries. TODO: per-event templates (order confirmation, shipping, password
+  reset) and the enqueue sites that fire `send-email` jobs.
 - [ ] **Merchant admin** — merchant-facing dashboard (manage products, orders, customers). Currently blocks the smoke-to-live story: merchants can sign up but have no way to populate a catalog. See `.plans/storefront-eaas/plan.md` "Next Steps" for the recommendation.
 - [ ] **Custom domains** — cert provisioning via `fly certs add` on domain verification
 

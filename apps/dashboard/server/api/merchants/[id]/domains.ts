@@ -13,10 +13,14 @@
 
 import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { useDB } from '../../../utils/db'
+import { requireDashboardSession } from '../../../utils/authorize'
 
 const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
 
 export default defineEventHandler(async (event) => {
+  // Reads need any operator; POST/DELETE mutate control-DB rows → admin only.
+  await requireDashboardSession(event, event.method === 'GET' ? 'read' : 'admin')
+
   const db = useDB()
   const merchantId = getRouterParam(event, 'id')!
 

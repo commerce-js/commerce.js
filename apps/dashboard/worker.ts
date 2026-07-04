@@ -61,6 +61,26 @@ async function dispatch(job: Job): Promise<void> {
 // Bootstrap
 // ---------------------------------------------------------------------------
 
+// `--dry-run` validates configuration and exits 0 WITHOUT opening a Redis
+// connection or starting the worker. Used by CI (no Redis/secrets available)
+// and as a post-build/deploy smoke check. Reports presence only — never values.
+if (process.argv.includes('--dry-run')) {
+  const present = (v: string | undefined): string => (v && v.length > 0 ? 'set' : 'MISSING')
+  const hasRedis = !!process.env.REDIS_URL
+    || (!!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN)
+  const hasSmtp = !!process.env.SMTP_HOST && !!process.env.SMTP_USER
+    && !!process.env.SMTP_PASS && !!process.env.SMTP_FROM
+  console.log('[worker] --dry-run — configuration presence (no connections opened):')
+  console.log('  REDIS_URL / Upstash pair : %s', hasRedis ? 'set' : 'MISSING')
+  console.log('  NEON_CONTROL_DB_URL      : %s', present(process.env.NEON_CONTROL_DB_URL))
+  console.log('  NEON_API_KEY             : %s', present(process.env.NEON_API_KEY))
+  console.log('  NUXT_SESSION_PASSWORD    : %s', present(process.env.NUXT_SESSION_PASSWORD))
+  console.log('  SMTP_* (host/user/pass/from) : %s', hasSmtp ? 'set' : 'MISSING')
+  console.log('  WORKER_CONCURRENCY       : %s', process.env.WORKER_CONCURRENCY ?? '5 (default)')
+  console.log('[worker] --dry-run OK — config parsed, exiting 0')
+  process.exit(0)
+}
+
 const connection = createRedisConnection()
 const worker = new Worker(MERCHANT_QUEUE, dispatch, {
   connection,

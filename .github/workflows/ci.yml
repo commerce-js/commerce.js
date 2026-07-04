@@ -1,28 +1,80 @@
-# CI — Runs on every pull request to catch issues before merging.
+# CI — build, typecheck, and test on PRs and on the active branches.
 #
-# What it does:
-#   1. Installs dependencies (cached for speed)
-#   2. Builds all packages (checks for compile errors)
-#   3. Runs type checking (catches type bugs)
-#   4. Runs tests (catches logic bugs)
-#
-# If any step fails, the PR gets a red ❌ and you should fix the issue before merging.
+# Triggers on PRs to main/fly/eaas, on direct pushes to fly/eaas (the
+# production-live EaaS branch is developed with pushes, not PRs — it previously
+# had NO CI at all), and on claude/** agent working branches so automated work
+# can self-verify before a human opens a PR.
 
 name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, fly/eaas]
+  push:
+    branches: [fly/eaas, 'claude/**']
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  ci:
+  build-test:
     name: Build, Typecheck & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm # caches the pnpm store, keyed on pnpm-lock.yaml
+
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build & Typecheck
+        run: pnpm turbo run build typecheck --filter='!@commercejs/dashboard' --filter='!docs' --cache-dir=.turbo
+
+      - name: Test with coverage
+        run: pnpm vitest run --coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+
+      - name: Query parity (Drizzle/Prisma)
+        run: bash packages/platform/scripts/check-query-parity.sh
+
+  dashboard:
+    name: Dashboard build + worker dry-run + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # `prisma generate` (run by the platform build) hard-errors at config load
+      # without DATABASE_URL, even though it never touches a database. Placeholder
+      # values keep the build offline-safe — no real DB/Redis is contacted.
+      DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      NEON_CONTROL_DB_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
 
     steps:
       - name: Checkout code
@@ -38,10 +90,27 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
+        run: pnpm install --frozen-lockfile
 
-      - name: Build & Typecheck
-        run: pnpm turbo run build typecheck --filter='!@commercejs/dashboard' --filter='!docs'
+      # The generated Prisma clients aren't committed; nuxt build imports them.
+      # `prisma generate` needs its URL env at config-load time but touches no DB.
+      - name: Generate Prisma clients (platform merchant DB + dashboard control DB)
+        run: |
+          (cd packages/platform && npx prisma generate)
+          (cd apps/dashboard && npx prisma generate)
 
-      - name: Test with coverage
-        run: pnpm vitest run --coverage
+      - name: Dashboard unit tests (offline)
+        run: pnpm --filter @commercejs/dashboard test
+
+      - name: Build dashboard (nuxt build + worker bundle)
+        run: pnpm turbo run build --filter=@commercejs/dashboard
+
+      # The worker bundle is built `--packages=external`, so it needs a runtime
+      # node_modules to resolve @prisma/client / @commercejs/platform — exactly
+      # what the Dockerfile assembles via `pnpm deploy`. Mirror that here so the
+      # dry-run exercises the real worker.mjs offline (no Redis/DB contacted).
+      - name: Worker --dry-run from a prod deploy tree (offline)
+        run: |
+          pnpm --filter @commercejs/dashboard deploy --prod /tmp/worker-deploy
+          cp -r apps/dashboard/.output /tmp/worker-deploy/.output
+          node /tmp/worker-deploy/.output/worker.mjs --dry-run

@@ -57,8 +57,8 @@ Visit the full documentation at **[commerce.js.org](https://commerce.js.org)**
 | [`@commercejs/notification-smtp`](packages/notification-smtp) | [![npm](https://img.shields.io/npm/v/@commercejs/notification-smtp?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/notification-smtp) | SMTP email notification provider |
 | [`@commercejs/analytics-ga`](packages/analytics-ga) | [![npm](https://img.shields.io/npm/v/@commercejs/analytics-ga?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/analytics-ga) | Google Analytics 4 provider |
 | [`@commercejs/storage-s3`](packages/storage-s3) | [![npm](https://img.shields.io/npm/v/@commercejs/storage-s3?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/storage-s3) | S3-compatible storage provider (AWS, R2, Spaces, MinIO) |
-| [`@commercejs/cloud`](packages/cloud) | [![npm](https://img.shields.io/npm/v/@commercejs/cloud?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/cloud) | Cloud infrastructure orchestration |
-| [`@commercejs/cli`](packages/cli) | [![npm](https://img.shields.io/npm/v/@commercejs/cli?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/cli) | CLI tool — deploy, init, env |
+| [`@commercejs/cloud`](packages/cloud) | [![npm](https://img.shields.io/npm/v/@commercejs/cloud?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/cloud) | Cloud infrastructure orchestration — _frozen; `main` branch only (Cloudflare-era; superseded by the Fly.io platform)_ |
+| [`@commercejs/cli`](packages/cli) | [![npm](https://img.shields.io/npm/v/@commercejs/cli?color=CB3837&label=)](https://www.npmjs.com/package/@commercejs/cli) | CLI tool — deploy, init, env — _frozen; `main` branch only (Cloudflare-era; superseded by the Fly.io platform)_ |
 
 ### Applications (private)
 
@@ -292,11 +292,15 @@ commerce.js/
 
 ## Contributing
 
-Contributions are welcome! This project uses [Changesets](https://github.com/changesets/changesets) for versioning.
+Contributions are welcome! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for local
+setup, the development workflow, CI, and how releases work.
+
+In short — this project uses [Changesets](https://github.com/changesets/changesets)
+for versioning:
 
 ```bash
 # Create a changeset after making changes
-pnpm release
+pnpm changeset
 
 # Follow the prompts to select packages and describe your change
 # Commit the generated changeset file with your PR
