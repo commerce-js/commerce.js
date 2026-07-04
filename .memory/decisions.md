@@ -136,3 +136,12 @@
   - Never reintroduce a production-reachable hardcoded seal fallback.
   - All three session utils go through `resolveSessionPassword()` — don't inline the check per file (it drifted before).
   - Production MUST set `NUXT_SESSION_PASSWORD` to ≥32 random chars, or the app will not start.
+
+## 2026-07-04: Control-plane routes require an authenticated operator
+- **Context:** Every `/api/merchants/*` route (list/create/update/delete merchant, provision, domains) ran with **no auth check** — anyone reaching `app.commercejs.cloud` could enumerate tenants or create merchants (which triggers billable Neon provisioning). `GET /api/merchants/:id` also returned `api_keys.keyHash`.
+- **Decision:** Gate all control-plane routes with `requireDashboardSession(event, access)` (util `authorize.ts`). Reads require any authenticated operator (`read`); mutations require `role === 'admin'` (`admin`). `support` is read-only. The policy is a pure `authorizeDashboardSession()` (unit-tested); the guard runs before any control-DB access so unauthenticated calls 401 cleanly.
+- **Rules:**
+  - New `/api/merchants/*` (and any control-DB) route MUST call `requireDashboardSession` first.
+  - Never return `api_keys.keyHash` to the client — use `PUBLIC_API_KEY_SELECT`.
+  - API keys: format + hashing live in `utils/apiKey.ts`, shared by the mint route and the tenant resolver so they can't drift. Only the SHA-256 is stored; plaintext is shown once at mint.
+  - SSR pages fetching gated routes must forward the cookie (`useRequestHeaders(['cookie'])` on the server) — in-process SSR fetches don't inherit request headers.

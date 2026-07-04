@@ -8,16 +8,22 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { useDB } from '../../utils/db'
 import { enqueueMerchantJob } from '../../utils/queue'
+import { requireDashboardSession } from '../../utils/authorize'
 import { isReservedSubdomain } from '../../../shared/utils/reservedSubdomains'
 
 export default defineEventHandler(async (event) => {
   const db = useDB()
 
   if (event.method === 'GET') {
+    // Any authenticated operator may list merchants.
+    await requireDashboardSession(event, 'read')
     return db.merchant.findMany({
       orderBy: { createdAt: 'desc' },
     })
   }
+
+  // Creating a merchant provisions billable Neon infrastructure — admin only.
+  await requireDashboardSession(event, 'admin')
 
   const body = await readBody<{
     name: string

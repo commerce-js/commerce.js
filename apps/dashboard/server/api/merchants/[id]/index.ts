@@ -6,21 +6,28 @@
 
 import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { useDB } from '../../../utils/db'
+import { requireDashboardSession } from '../../../utils/authorize'
+import { PUBLIC_API_KEY_SELECT } from '../../../utils/apiKeySelect'
 
 export default defineEventHandler(async (event) => {
   const db = useDB()
   const id = getRouterParam(event, 'id')!
 
   if (event.method === 'GET') {
+    await requireDashboardSession(event, 'read')
     const merchant = await db.merchant.findUnique({
       where: { id },
-      include: { domains: true, apiKeys: true },
+      // Never expose api_keys.keyHash to the client — safe metadata only.
+      include: { domains: true, apiKeys: { select: PUBLIC_API_KEY_SELECT, orderBy: { createdAt: 'desc' } } },
     })
     if (!merchant) {
       throw createError({ statusCode: 404, message: 'Merchant not found' })
     }
     return merchant
   }
+
+  // All mutations to a merchant row are admin-only.
+  await requireDashboardSession(event, 'admin')
 
   if (event.method === 'PATCH') {
     const body = await readBody<Partial<{

@@ -13,8 +13,11 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { useDB } from '../../../utils/db'
 import { enqueueMerchantJob } from '../../../utils/queue'
+import { requireDashboardSession } from '../../../utils/authorize'
 
 export default defineEventHandler(async (event) => {
+  // Re-provisioning enqueues billable Neon work — admin only.
+  await requireDashboardSession(event, 'admin')
   const id = getRouterParam(event, 'id')!
 
   const db = useDB()
