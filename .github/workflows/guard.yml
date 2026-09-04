@@ -1,0 +1,28 @@
+name: guard
+
+# The unfiltered tripwire. Deliberately has NO path filters and never will.
+#
+# ci.yml only runs on pull_request, release.yml only on push to main, and
+# deploy-docs.yml is path-filtered. A push whose diff is empty — a same-tree
+# force-push (history rewritten, tree unchanged), an `--allow-empty` commit, or
+# an existing SHA pushed to a new ref — matches `paths` on nothing, so any
+# path-filtered workflow skips it. That is exactly the shape of the 2026-07-18
+# forged-history push that rewrote eight branches of this repo. One cheap job
+# on every push to every branch, forever. The other workflows keep their own
+# copy because their jobs `needs:` it and cross-workflow `needs` does not exist;
+# the script is idempotent and stateless.
+#
+# DO NOT add `paths`/`paths-ignore` here. The lack of a filter IS the feature.
+on: push
+
+jobs:
+  security-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Repo integrity guard (forged-merge + obfuscation signatures)
+        run: node scripts/ci/security-guard.mjs
