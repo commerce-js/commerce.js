@@ -30,8 +30,8 @@ export async function findProducts(opts: {
       case 'like': return ilike(col, c.value)
       case 'ilike': return ilike(col, c.value)
       case 'search': return or(ilike(schema.products.name, c.value), ilike(schema.products.description, c.value))!
-      case 'gte': return sql`${col} >= ${c.value}`
-      case 'lte': return sql`${col} <= ${c.value}`
+      case 'gte': return gte(col, c.value)
+      case 'lte': return lte(col, c.value)
       case 'in': return sql`${col} IN (${c.value})`
       default: return eq(col, c.value)
     }

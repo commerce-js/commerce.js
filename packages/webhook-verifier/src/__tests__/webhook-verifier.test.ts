@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import crypto from 'node:crypto'
 import { WebhookVerifier } from '../webhook-verifier.js'
 import type { WebhookConfig } from '../webhook-verifier.js'

@@ -11,6 +11,7 @@ import {
   deleteWishlistItem,
   findWishlistItemByProduct,
   findProductById,
+  findProductImages,
 } from '../database/index.js'
 import { localized, discountablePrice, img } from './helpers.js'
 
@@ -27,7 +28,10 @@ async function buildWishlist(wishlistId: string): Promise<Wishlist> {
 
   const mapped = await Promise.all(
     items.map(async (item: any) => {
-      const product = await findProductById(item.productId)
+      const [product, images] = await Promise.all([
+        findProductById(item.productId),
+        findProductImages(item.productId),
+      ])
       return {
         id: item.id,
         product: product
@@ -36,7 +40,7 @@ async function buildWishlist(wishlistId: string): Promise<Wishlist> {
               name: localized(product.name, product.nameAr),
               slug: product.slug,
               price: discountablePrice(product.price, product.compareAtPrice, product.currency),
-              gallery: [],
+              gallery: images.map((i: any) => img(i.url, i.altText)),
               inStock: product.inStock,
             }
           : { id: item.productId, name: localized('Unknown', 'غير معروف'), slug: '', price: null, gallery: [], inStock: false },

@@ -3,7 +3,7 @@ import { createOrchestrator } from '../orchestrator.js'
 import { createCompositeOrchestrator } from '../composite.js'
 import { withPlatformFallback } from '../fallback.js'
 import { CommerceError } from '@commercejs/types'
-import type { CatalogAdapter, StoreAdapter, CartAdapter, CustomerAdapter, DomainMap } from '@commercejs/types'
+import type { CatalogAdapter, StoreAdapter, CartAdapter, CustomerAdapter } from '@commercejs/types'
 
 // ---- Helpers ----
 

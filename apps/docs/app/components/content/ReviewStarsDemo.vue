@@ -11,7 +11,10 @@ const rating = ref(3)
       </div>
       <div class="flex items-center gap-3">
         <span class="text-sm text-muted">Interactive:</span>
-        <CReviewStars v-model="rating" interactive />
+        <CReviewStars
+          v-model="rating"
+          interactive
+        />
         <span class="text-sm text-muted">({{ rating }})</span>
       </div>
     </div>

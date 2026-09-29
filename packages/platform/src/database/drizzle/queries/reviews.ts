@@ -2,7 +2,7 @@
 // Drizzle: Reviews queries
 // ---------------------------------------------------------------------------
 
-import { eq, avg, count, asc, desc } from 'drizzle-orm'
+import { eq, avg, count, desc } from 'drizzle-orm'
 import { getDb } from '../client.js'
 import * as schema from '../schema/index.js'
 

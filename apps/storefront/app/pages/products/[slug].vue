@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import type { Product } from '@commercejs/types'
-
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
-const { data: product, status } = useProduct({ id: slug.value })
+// Pass a getter, not a plain object: useProduct watches the resolved id, so
+// navigating between products re-fetches instead of showing the first product.
+const { data: product, status } = useProduct(() => ({ id: slug.value }))
 
 const { t } = useLocalizedString()
-const { formatPrice, hasDiscount, formatOriginal } = usePrice()
 const { addItem, createCart, cartId } = useCart()
 
 // Selected options (optionId → selected valueId)
@@ -51,7 +50,7 @@ async function handleAddToCart() {
     })
 
     // No success toast — the cart drawer slides open automatically as confirmation
-  } catch (e) {
+  } catch {
     toast.add({
       title: 'Error',
       description: 'Could not add item to cart.',
@@ -120,7 +119,7 @@ useSeoMeta({
         <!-- Product info -->
         <div class="space-y-6">
           <!-- Name -->
-          <h1 class="text-2xl md:text-3xl font-bold text-highlighted">
+          <h1 class="text-2xl md:text-3xl font-semibold text-highlighted">
             {{ t(product.name) }}
           </h1>
 

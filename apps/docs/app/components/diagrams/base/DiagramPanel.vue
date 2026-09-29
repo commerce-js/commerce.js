@@ -18,7 +18,7 @@ const colorHexMap: Record<PanelColor, string> = {
   info: '#3b82f6',
   primary: '#3b82f6',
   secondary: '#64748b',
-  tertiary: '#94a3b8',
+  tertiary: '#94a3b8'
 }
 
 const labelBg = computed(() => colorHexMap[props.color])
@@ -36,7 +36,7 @@ const panelClasses = computed(() => {
     info: 'border-info-300 dark:border-info-500/40 bg-info-50/30 dark:bg-info-950/15',
     primary: 'border-primary-300 dark:border-primary-500/40 bg-primary-50/30 dark:bg-primary-950/15',
     secondary: 'border-secondary-300 dark:border-secondary-500/40 bg-secondary-50/30 dark:bg-secondary-950/15',
-    tertiary: 'border-tertiary-300 dark:border-tertiary-500/40 bg-tertiary-50/30 dark:bg-tertiary-950/15',
+    tertiary: 'border-tertiary-300 dark:border-tertiary-500/40 bg-tertiary-50/30 dark:bg-tertiary-950/15'
   }
 
   return [base, borderStyle, colorMap[props.color]]

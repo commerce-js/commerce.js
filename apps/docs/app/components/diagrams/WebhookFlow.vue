@@ -10,7 +10,7 @@ const participants = [
   { label: 'Customer Browser', icon: '🌐', color: '#f59e0b' },
   { label: 'Your Server', icon: '🖥', color: '#3b82f6' },
   { label: 'Dev Tunnel', icon: '🔗', color: '#10b981' },
-  { label: 'Payment Gateway', icon: '💳', color: '#8b5cf6' },
+  { label: 'Payment Gateway', icon: '💳', color: '#8b5cf6' }
 ]
 
 const messages: Message[] = [
@@ -20,13 +20,19 @@ const messages: Message[] = [
   { from: 0, to: 3, label: 'Complete Verification' },
   { from: 3, to: 2, label: 'POST webhook (payload + signature)', dashed: true },
   { from: 2, to: 1, label: 'Forward to localhost', dashed: true },
-  { from: 1, to: 1, label: 'Verify Signature → Update Order' },
+  { from: 1, to: 1, label: 'Verify Signature → Update Order' }
 ]
 </script>
 
 <template>
-  <DiagramContainer icon="i-lucide-webhook" max-width="max-w-5xl">
-    <DiagramHeader title="Webhook Flow" subtitle="Development Tunnel" />
+  <DiagramContainer
+    icon="i-lucide-webhook"
+    max-width="max-w-5xl"
+  >
+    <DiagramHeader
+      title="Webhook Flow"
+      subtitle="Development Tunnel"
+    />
 
     <div class="mt-8 overflow-x-auto">
       <div class="min-w-[600px]">
@@ -51,7 +57,11 @@ const messages: Message[] = [
         <div class="relative mt-2">
           <!-- Vertical lifelines -->
           <div class="absolute inset-0 grid grid-cols-4 gap-4">
-            <div v-for="p in participants" :key="p.label" class="flex justify-center">
+            <div
+              v-for="p in participants"
+              :key="p.label"
+              class="flex justify-center"
+            >
               <div
                 class="h-full w-0.5 opacity-20"
                 :style="{ backgroundColor: p.color }"
@@ -83,7 +93,7 @@ const messages: Message[] = [
                 <div
                   class="flex items-center"
                   :style="{
-                    gridColumn: `${Math.min(msg.from, msg.to) + 1} / ${Math.max(msg.from, msg.to) + 2}`,
+                    gridColumn: `${Math.min(msg.from, msg.to) + 1} / ${Math.max(msg.from, msg.to) + 2}`
                   }"
                 >
                   <div class="relative flex w-full items-center">
@@ -96,7 +106,7 @@ const messages: Message[] = [
                       :class="[
                         msg.to > msg.from
                           ? 'right-0 border-l-8 border-l-zinc-400 dark:border-l-zinc-500'
-                          : 'left-0 border-r-8 border-r-zinc-400 dark:border-r-zinc-500',
+                          : 'left-0 border-r-8 border-r-zinc-400 dark:border-r-zinc-500'
                       ]"
                     />
                     <span

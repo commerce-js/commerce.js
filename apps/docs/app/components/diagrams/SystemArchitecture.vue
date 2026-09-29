@@ -5,8 +5,8 @@ const layers = [
     color: 'success' as const,
     nodes: [
       { label: 'Storefront UI', icon: 'i-lucide-monitor' },
-      { label: 'Framework Module', icon: 'i-lucide-puzzle' },
-    ],
+      { label: 'Framework Module', icon: 'i-lucide-puzzle' }
+    ]
   },
   {
     label: 'Commerce Engine',
@@ -14,8 +14,8 @@ const layers = [
     nodes: [
       { label: 'Unified Data Model', icon: 'i-lucide-database' },
       { label: 'Orchestration', icon: 'i-lucide-workflow' },
-      { label: 'Checkout Engine', icon: 'i-lucide-shopping-cart' },
-    ],
+      { label: 'Checkout Engine', icon: 'i-lucide-shopping-cart' }
+    ]
   },
   {
     label: 'Integration Layer',
@@ -23,26 +23,35 @@ const layers = [
     nodes: [
       { label: 'Platform Adapters', icon: 'i-lucide-blocks' },
       { label: 'Payment Providers', icon: 'i-lucide-credit-card' },
-      { label: 'Webhook Security', icon: 'i-lucide-shield-check' },
-    ],
-  },
+      { label: 'Webhook Security', icon: 'i-lucide-shield-check' }
+    ]
+  }
 ]
 
 const externals = [
   { label: 'Stripe', icon: 'i-lucide-credit-card' },
   { label: 'SendGrid', icon: 'i-lucide-mail' },
   { label: 'Algolia', icon: 'i-lucide-search' },
-  { label: 'ShipStation', icon: 'i-lucide-truck' },
+  { label: 'ShipStation', icon: 'i-lucide-truck' }
 ]
 </script>
 
 <template>
-  <DiagramContainer icon="i-lucide-network" max-width="max-w-5xl">
-    <DiagramHeader title="System Architecture" subtitle="Package Layer Diagram" />
+  <DiagramContainer
+    icon="i-lucide-network"
+    max-width="max-w-5xl"
+  >
+    <DiagramHeader
+      title="System Architecture"
+      subtitle="Package Layer Diagram"
+    />
 
     <div class="mt-8 flex flex-col items-center gap-2">
       <!-- Render each architectural layer -->
-      <template v-for="(layer, i) in layers" :key="layer.label">
+      <template
+        v-for="(layer, i) in layers"
+        :key="layer.label"
+      >
         <!-- Layer with rotated side label -->
         <div class="flex w-full items-stretch gap-0">
           <!-- Rotated side label -->
@@ -51,7 +60,7 @@ const externals = [
             :class="{
               'border-success-500 dark:border-success-400/60 bg-success-50/50 dark:bg-success-950/20': layer.color === 'success',
               'border-primary-300 dark:border-primary-500/40 bg-primary-50/50 dark:bg-primary-950/20': layer.color === 'primary',
-              'border-info-300 dark:border-info-500/40 bg-info-50/50 dark:bg-info-950/20': layer.color === 'info',
+              'border-info-300 dark:border-info-500/40 bg-info-50/50 dark:bg-info-950/20': layer.color === 'info'
             }"
           >
             <span
@@ -59,7 +68,7 @@ const externals = [
               :class="{
                 'text-success-600 dark:text-success-400': layer.color === 'success',
                 'text-primary-500 dark:text-primary-400': layer.color === 'primary',
-                'text-info-500 dark:text-info-400': layer.color === 'info',
+                'text-info-500 dark:text-info-400': layer.color === 'info'
               }"
               style="writing-mode: vertical-rl; transform: rotate(180deg)"
             >
@@ -73,7 +82,7 @@ const externals = [
             :class="{
               'border-success-500 dark:border-success-400/60 bg-success-50/20 dark:bg-success-950/10': layer.color === 'success',
               'border-primary-300 dark:border-primary-500/40 bg-primary-50/20 dark:bg-primary-950/10': layer.color === 'primary',
-              'border-info-300 dark:border-info-500/40 bg-info-50/20 dark:bg-info-950/10': layer.color === 'info',
+              'border-info-300 dark:border-info-500/40 bg-info-50/20 dark:bg-info-950/10': layer.color === 'info'
             }"
           >
             <DiagramNode
@@ -109,7 +118,10 @@ const externals = [
           <div class="h-10 w-px border-l-2 border-dashed border-zinc-300 dark:border-zinc-600" />
           <!-- Icon box -->
           <div class="flex size-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
-            <UIcon :name="ext.icon" class="size-5 text-zinc-500 dark:text-zinc-400" />
+            <UIcon
+              :name="ext.icon"
+              class="size-5 text-zinc-500 dark:text-zinc-400"
+            />
           </div>
           <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
             {{ ext.label }}
@@ -123,7 +135,7 @@ const externals = [
         { color: '#10b981', label: 'Application' },
         { color: '#3b82f6', label: 'Engine' },
         { color: '#06b6d4', label: 'Integration' },
-        { color: '#64748b', label: 'External' },
+        { color: '#64748b', label: 'External' }
       ]"
       document-id="COMMERCE_JS_ARCH_01"
     />

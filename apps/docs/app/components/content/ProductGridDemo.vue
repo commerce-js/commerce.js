@@ -47,6 +47,9 @@ const products: Product[] = [
 
 <template>
   <ComponentDemo label="Preview — 4-column grid">
-    <CProductGrid :products="products" :columns="4" />
+    <CProductGrid
+      :products="products"
+      :columns="4"
+    />
   </ComponentDemo>
 </template>

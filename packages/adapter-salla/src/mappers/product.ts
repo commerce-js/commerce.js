@@ -14,7 +14,7 @@ import type {
   LocalizedString,
   Price,
 } from '@commercejs/types'
-import type { SallaRawProduct, SallaRawSku, SallaRawImage, SallaRawOption } from '../types.js'
+import type { SallaRawProduct, SallaRawSku, SallaRawImage } from '../types.js'
 
 /** Map Salla product type string → our ProductType discriminator */
 function mapProductType(type: SallaRawProduct['type']): ProductType {
@@ -63,9 +63,7 @@ export function mapSallaProduct(raw: SallaRawProduct, locale: string = 'ar'): Pr
   const productType = mapProductType(raw.type)
 
   const price: Maybe<DiscountablePrice> = {
-    amount: raw.price.amount,
-    currency: raw.price.currency,
-    formatted: formatAmount(raw.price.amount, raw.price.currency),
+    ...toPrice(raw.price.amount, raw.price.currency),
     originalAmount: raw.regular_price.amount !== raw.price.amount ? raw.regular_price.amount : undefined,
     discountPercent: raw.sale_price
       ? Math.round(((raw.regular_price.amount - raw.sale_price.amount) / raw.regular_price.amount) * 100)
@@ -77,7 +75,16 @@ export function mapSallaProduct(raw: SallaRawProduct, locale: string = 'ar'): Pr
 
   const gallery: Image[] = raw.images.map(mapImage)
 
-  const variants: ProductVariant[] = raw.skus.map((sku) => mapSallaSku(sku, raw, locale))
+  const variants: ProductVariant[] = raw.skus.map((sku) => mapSallaSku(sku, raw))
+
+  const options: ProductOption[] = raw.options.map((opt) => ({
+    id: String(opt.id),
+    name: toLocalized(opt.name, locale),
+    values: opt.values.map((v) => ({
+      id: String(v.id),
+      name: toLocalized(v.name, locale),
+    })),
+  }))
 
   // Only show options as specifications when there are no SKU variants,
   // otherwise they are already represented in the Variants section
@@ -103,14 +110,7 @@ export function mapSallaProduct(raw: SallaRawProduct, locale: string = 'ar'): Pr
     gallery,
     rating: raw.rating ? { average: raw.rating.average, count: raw.rating.count } : null,
     variants,
-    options: raw.options.map((opt) => ({
-      id: String(opt.id),
-      name: toLocalized(opt.name, locale),
-      values: opt.values.map((v) => ({
-        id: String(v.id),
-        name: toLocalized(v.name, locale),
-      })),
-    })),
+    options,
     attributes,
     quantityLimit: raw.max_quantity_per_order,
     categories: raw.categories.map((cat) => ({
@@ -148,7 +148,7 @@ export function mapSallaProduct(raw: SallaRawProduct, locale: string = 'ar'): Pr
 }
 
 /** Map Salla SKU → ProductVariant */
-function mapSallaSku(sku: SallaRawSku, product: SallaRawProduct, locale: string): ProductVariant {
+function mapSallaSku(sku: SallaRawSku, product: SallaRawProduct): ProductVariant {
   // Note: In Salla, SKU resolution is done server-side when adding to cart.
   // The frontend sends selected option value IDs (e.g. { optionId: valueId })
   // and Salla resolves the correct SKU + price. We don't map variant attributes
@@ -158,9 +158,7 @@ function mapSallaSku(sku: SallaRawSku, product: SallaRawProduct, locale: string)
     sku: sku.sku,
     name: null,
     price: {
-      amount: sku.price.amount,
-      currency: sku.price.currency,
-      formatted: formatAmount(sku.price.amount, sku.price.currency),
+      ...toPrice(sku.price.amount, sku.price.currency),
       originalAmount: sku.regular_price.amount !== sku.price.amount ? sku.regular_price.amount : undefined,
       discountPercent: sku.sale_price
         ? Math.round(((sku.regular_price.amount - sku.sale_price.amount) / sku.regular_price.amount) * 100)

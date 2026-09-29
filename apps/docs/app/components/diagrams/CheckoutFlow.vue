@@ -5,32 +5,45 @@ const phases = [
     color: 'primary' as const,
     steps: [
       { emoji: '👤', label: 'Collect Info' },
-      { emoji: '📦', label: 'Shipping Details' },
-    ],
+      { emoji: '📦', label: 'Shipping Details' }
+    ]
   },
   {
     label: 'Payment',
     color: 'info' as const,
     steps: [
       { emoji: '💳', label: 'Process Payment' },
-      { emoji: '🔒', label: 'Verify & Capture' },
-    ],
-  },
+      { emoji: '🔒', label: 'Verify & Capture' }
+    ]
+  }
 ]
 </script>
 
 <template>
-  <DiagramContainer icon="i-lucide-git-branch-plus" max-width="max-w-5xl">
-    <DiagramHeader title="Checkout Flow" subtitle="State Machine" />
+  <DiagramContainer
+    icon="i-lucide-git-branch-plus"
+    max-width="max-w-5xl"
+  >
+    <DiagramHeader
+      title="Checkout Flow"
+      subtitle="State Machine"
+    />
 
     <!-- Horizontal phase layout -->
     <div class="mt-8 grid grid-cols-1 items-stretch gap-6 md:grid-cols-3">
       <!-- Collection + Payment phases -->
-      <template v-for="phase in phases" :key="phase.label">
-        <DiagramPanel :label="phase.label" :color="phase.color" variant="dashed">
+      <template
+        v-for="phase in phases"
+        :key="phase.label"
+      >
+        <DiagramPanel
+          :label="phase.label"
+          :color="phase.color"
+          variant="dashed"
+        >
           <div class="flex w-full flex-col items-center gap-2">
             <DiagramNode
-              v-for="(step, i) in phase.steps"
+              v-for="step in phase.steps"
               :key="step.label"
               :label="`${step.emoji} ${step.label}`"
               :color="phase.color"
@@ -43,10 +56,22 @@ const phases = [
       </template>
 
       <!-- Result phase -->
-      <DiagramPanel label="Result" color="secondary" variant="dashed">
+      <DiagramPanel
+        label="Result"
+        color="secondary"
+        variant="dashed"
+      >
         <div class="flex w-full flex-col items-center gap-3">
-          <DiagramNode label="✅ Order Complete" color="success" variant="solid" />
-          <DiagramNode label="❌ Payment Failed" color="error" variant="solid" />
+          <DiagramNode
+            label="✅ Order Complete"
+            color="success"
+            variant="solid"
+          />
+          <DiagramNode
+            label="❌ Payment Failed"
+            color="error"
+            variant="solid"
+          />
           <p class="mt-2 text-center text-[10px] font-medium uppercase tracking-wider text-zinc-400">
             Failed → Retry → Payment
           </p>
@@ -71,7 +96,7 @@ const phases = [
         { color: '#3b82f6', label: 'Collection' },
         { color: '#06b6d4', label: 'Payment' },
         { color: '#10b981', label: 'Success' },
-        { color: '#ef4444', label: 'Failure' },
+        { color: '#ef4444', label: 'Failure' }
       ]"
       document-id="COMMERCE_JS_FLOW_01"
     />

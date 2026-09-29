@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Product } from '@commercejs/types'
 
-const props = defineProps<{
+defineProps<{
   product: Product
 }>()
 
@@ -19,7 +19,7 @@ async function handleAddToCart(product: Product) {
       quantity: 1,
     })
     // No success toast — the cart drawer slides open automatically as confirmation
-  } catch (e) {
+  } catch {
     toast.add({
       title: 'Failed to add to cart',
       icon: 'i-heroicons-exclamation-triangle',

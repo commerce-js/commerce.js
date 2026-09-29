@@ -2,7 +2,7 @@
 // Wholesale / B2B commerce types
 // ---------------------------------------------------------------------------
 
-import type { Id, LocalizedString, Maybe, Price, PaginatedResult } from './common.js'
+import type { Id, LocalizedString, Maybe, Price } from './common.js'
 
 // ---- Volume Pricing ----
 

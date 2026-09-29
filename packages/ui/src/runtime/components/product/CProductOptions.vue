@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppConfig } from '#imports'
-import type { ProductOption, LocalizedString, Id } from '@commercejs/types'
+import type { ProductOption, LocalizedString } from '@commercejs/types'
 
 /**
  * CProductOptions — Variant option selector (size, color, etc.)

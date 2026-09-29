@@ -178,7 +178,7 @@ const rootTag = computed(() => props.as || resolveComponent('NuxtLink'))
 
     <!-- Body -->
     <div :class="slotClasses.body">
-      <slot name="title" :name="productName">
+      <slot name="title" :title="productName">
         <h3 :class="slotClasses.title">{{ productName }}</h3>
       </slot>
 

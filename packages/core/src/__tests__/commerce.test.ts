@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createCommerce } from '../commerce.js'
 import { CommerceError } from '@commercejs/types'
-import type { CommerceAdapter, PaymentProvider, PaymentSession, CreatePaymentSessionInput, RefundInput, DeliveryProvider, Delivery, DeliveryEstimate } from '@commercejs/types'
+import type { CommerceAdapter, PaymentProvider, PaymentSession, DeliveryProvider, Delivery, DeliveryEstimate } from '@commercejs/types'
 
 // ---- Mock Adapter ----
 

@@ -10,7 +10,6 @@ import {
   updateCategoryById,
   deleteCategoryById,
   findCategoryChildren,
-  findCategories,
 } from '../database/index.js'
 import { localized, img } from '../domains/helpers.js'
 

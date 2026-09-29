@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { t } = useLocalizedString()
 const { formatPrice } = usePrice()
-const { cart, loading, updateItem, removeItem, refresh, itemCount, createCart, cartId } = useCart()
+const { cart, loading, updateItem, removeItem, refresh, itemCount, cartId } = useCart()
 
 // await + lazy = blocks SSR, doesn't block SPA navigation
 // getCachedData: () => undefined forces re-fetch on every visit
@@ -40,7 +40,7 @@ useHead({ title: 'Cart — CommerceJS' })
       class="mb-8"
     />
 
-    <h1 class="text-2xl md:text-3xl font-bold text-highlighted mb-8">
+    <h1 class="text-2xl md:text-3xl font-semibold text-highlighted mb-8">
       Shopping Cart
     </h1>
 
@@ -141,7 +141,7 @@ useHead({ title: 'Cart — CommerceJS' })
 
           <USeparator />
 
-          <div class="flex justify-between text-lg font-bold">
+          <div class="flex justify-between text-lg font-semibold">
             <span>Total</span>
             <span class="text-primary">{{ formatPrice(total) }}</span>
           </div>

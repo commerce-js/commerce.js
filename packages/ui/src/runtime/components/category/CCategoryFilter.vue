@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppConfig } from '#imports'
-import type { Facet, FacetValue, LocalizedString } from '@commercejs/types'
+import type { Facet, LocalizedString } from '@commercejs/types'
 
 /**
  * CCategoryFilter — Faceted category/attribute sidebar filter.

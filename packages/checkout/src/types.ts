@@ -124,6 +124,6 @@ export interface CheckoutEvents {
   complete: { paymentSession: PaymentSession }
   /** Fired on any error */
   error: { error: Error; state: CheckoutState }
-  /** Fired when the session expires */
-  expired: {}
+  /** Fired when the session expires (no payload) */
+  expired: Record<string, never>
 }

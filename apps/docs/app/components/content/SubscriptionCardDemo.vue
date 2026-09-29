@@ -19,7 +19,10 @@ const product = {
 <template>
   <ComponentDemo>
     <div class="w-72">
-      <CSubscriptionCard :product="product" featured />
+      <CSubscriptionCard
+        :product="product"
+        featured
+      />
     </div>
   </ComponentDemo>
 </template>

@@ -37,7 +37,9 @@ function handleRemove() {
         @apply="handleApply"
         @remove="handleRemove"
       />
-      <p class="text-xs text-muted mt-2">Try code: <code class="px-1 py-0.5 bg-elevated rounded text-xs font-mono">SAVE20</code></p>
+      <p class="text-xs text-muted mt-2">
+        Try code: <code class="px-1 py-0.5 bg-elevated rounded text-xs font-mono">SAVE20</code>
+      </p>
     </div>
   </ComponentDemo>
 </template>

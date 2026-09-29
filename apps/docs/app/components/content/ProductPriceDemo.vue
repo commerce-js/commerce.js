@@ -26,15 +26,21 @@ const regularPrice = {
   <ComponentDemo>
     <div class="flex items-center gap-8">
       <div class="text-center">
-        <div class="text-xs text-[var(--ui-text-muted)] mb-1">With Discount</div>
+        <div class="text-xs text-[var(--ui-text-muted)] mb-1">
+          With Discount
+        </div>
         <CProductPrice :price="price" />
       </div>
       <div class="text-center">
-        <div class="text-xs text-[var(--ui-text-muted)] mb-1">50% Off</div>
+        <div class="text-xs text-[var(--ui-text-muted)] mb-1">
+          50% Off
+        </div>
         <CProductPrice :price="salePrice" />
       </div>
       <div class="text-center">
-        <div class="text-xs text-[var(--ui-text-muted)] mb-1">Regular</div>
+        <div class="text-xs text-[var(--ui-text-muted)] mb-1">
+          Regular
+        </div>
         <CProductPrice :price="regularPrice" />
       </div>
     </div>

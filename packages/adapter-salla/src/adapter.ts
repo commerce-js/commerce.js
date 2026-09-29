@@ -257,7 +257,7 @@ export class SallaAdapter implements CommerceAdapter {
     return notImplemented('getCustomer')
   }
 
-  async updateCustomer(input: UpdateCustomerInput): Promise<Customer> {
+  async updateCustomer(_input: UpdateCustomerInput): Promise<Customer> {
     // Requires customer ID from session context
     // When session management is added, this will use PUT /customers/{id}
     return notImplemented('updateCustomer')

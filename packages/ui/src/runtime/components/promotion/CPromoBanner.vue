@@ -134,7 +134,7 @@ const slotClasses = computed(() => {
             backgroundImage ? 'bg-white/20 backdrop-blur-sm text-white' : 'bg-elevated text-highlighted',
           ]"
         >
-          <span class="text-lg font-bold font-mono block leading-tight">{{ String(val).padStart(2, '0') }}</span>
+          <span class="text-lg font-semibold font-mono block leading-tight">{{ String(val).padStart(2, '0') }}</span>
           <span class="text-[10px] uppercase opacity-70">{{ label }}</span>
         </div>
       </div>

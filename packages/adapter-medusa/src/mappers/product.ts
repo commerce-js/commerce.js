@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import type { Product, ProductVariant, ProductOption, Attribute, Category, Image, DiscountablePrice } from '@commercejs/types'
-import type { MedusaProduct, MedusaProductVariant, MedusaProductCategory } from '../types.js'
+import type { MedusaProduct, MedusaProductVariant } from '../types.js'
 import { mapMedusaCategory } from './category.js'
 
 /** Build a localized string from a plain string (Medusa doesn't do i18n by default) */
@@ -21,7 +21,7 @@ function toPrice(amount: number, currency: string): DiscountablePrice {
 }
 
 /** Map a single Medusa variant to Commerce.js ProductVariant */
-function mapVariant(v: MedusaProductVariant, currency: string): ProductVariant {
+function mapVariant(v: MedusaProductVariant): ProductVariant {
   const calculatedPrice = v.calculated_price
   const price = calculatedPrice
     ? {
@@ -77,8 +77,8 @@ function mapImages(product: MedusaProduct): Image[] {
 }
 
 /** Map MedusaProduct → Commerce.js Product */
-export function mapMedusaProduct(p: MedusaProduct, currency = 'usd'): Product {
-  const variants = (p.variants ?? []).map(v => mapVariant(v, currency))
+export function mapMedusaProduct(p: MedusaProduct): Product {
+  const variants = (p.variants ?? []).map(v => mapVariant(v))
   const images = mapImages(p)
   const firstVariantPrice = variants[0]?.price ?? null
   const categories: Category[] = (p.categories ?? []).map(c => mapMedusaCategory(c))

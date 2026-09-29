@@ -39,7 +39,7 @@ useSeoMeta({
             New Collection Available
           </UBadge>
 
-          <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-highlighted leading-tight mb-6">
+          <h1 class="text-4xl md:text-5xl lg:text-6xl font-semibold text-highlighted leading-tight mb-6">
             Discover
             <span class="text-primary">Premium</span>
             Products
@@ -67,7 +67,7 @@ useSeoMeta({
       <UContainer>
         <div class="flex items-center justify-between mb-8">
           <div>
-            <h2 class="text-2xl md:text-3xl font-bold text-highlighted">
+            <h2 class="text-2xl md:text-3xl font-semibold text-highlighted">
               Featured Products
             </h2>
             <p class="text-muted mt-1">Handpicked for you</p>
@@ -91,7 +91,7 @@ useSeoMeta({
     <section class="py-16 md:py-24 bg-elevated">
       <UContainer>
         <div class="text-center mb-12">
-          <h2 class="text-2xl md:text-3xl font-bold text-highlighted">
+          <h2 class="text-2xl md:text-3xl font-semibold text-highlighted">
             Shop by Category
           </h2>
           <p class="text-muted mt-2">Find exactly what you're looking for</p>
@@ -119,7 +119,7 @@ useSeoMeta({
 
             <!-- Content -->
             <div class="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-              <h3 class="font-bold text-white text-lg md:text-xl">
+              <h3 class="font-semibold text-white text-lg md:text-xl">
                 {{ t(cat.name) }}
               </h3>
               <p v-if="cat.productCount" class="text-white/70 text-sm mt-1">

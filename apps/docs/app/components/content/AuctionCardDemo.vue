@@ -6,7 +6,7 @@ const product = {
   type: 'auction',
   status: 'active',
   primaryImage: { url: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop', alt: 'Vintage Watch' },
-  price: { amount: 2500, currency: 'USD', formatted: '$2,500.00' },
+  price: { amount: 2500, currency: 'USD', formatted: '$2,500.00' }
 } as any
 
 const auction = {
@@ -21,7 +21,10 @@ const auction = {
 <template>
   <ComponentDemo>
     <div class="w-72">
-      <CAuctionCard :product="product" :auction="auction" />
+      <CAuctionCard
+        :product="product"
+        :auction="auction"
+      />
     </div>
   </ComponentDemo>
 </template>

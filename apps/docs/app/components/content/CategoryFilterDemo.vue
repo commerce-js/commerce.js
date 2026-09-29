@@ -9,7 +9,7 @@ const facets = [
       { value: 'accessories', label: { en: 'Accessories' }, count: 28 },
       { value: 'home', label: { en: 'Home & Garden' }, count: 19 },
       { value: 'sports', label: { en: 'Sports' }, count: 12 },
-      { value: 'books', label: { en: 'Books' }, count: 8 },
+      { value: 'books', label: { en: 'Books' }, count: 8 }
     ]
   },
   {
@@ -19,7 +19,7 @@ const facets = [
       { value: 'apple', label: { en: 'Apple' }, count: 15 },
       { value: 'samsung', label: { en: 'Samsung' }, count: 12 },
       { value: 'sony', label: { en: 'Sony' }, count: 9 },
-      { value: 'nike', label: { en: 'Nike' }, count: 7 },
+      { value: 'nike', label: { en: 'Nike' }, count: 7 }
     ]
   },
   {
@@ -29,7 +29,7 @@ const facets = [
       { value: 'under_50', label: { en: 'Under $50' }, count: 34 },
       { value: '50_100', label: { en: '$50 - $100' }, count: 28 },
       { value: '100_250', label: { en: '$100 - $250' }, count: 19 },
-      { value: 'over_250', label: { en: 'Over $250' }, count: 11 },
+      { value: 'over_250', label: { en: 'Over $250' }, count: 11 }
     ]
   }
 ] as any
@@ -44,7 +44,11 @@ const selected = ref({
 <template>
   <ComponentDemo>
     <div class="w-full max-w-xs">
-      <CCategoryFilter v-model="selected" :facets="facets" show-counts />
+      <CCategoryFilter
+        v-model="selected"
+        :facets="facets"
+        show-counts
+      />
     </div>
   </ComponentDemo>
 </template>

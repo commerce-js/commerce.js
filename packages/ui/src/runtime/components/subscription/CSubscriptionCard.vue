@@ -86,7 +86,7 @@ const slotClasses = computed(() => {
     <div class="p-6 space-y-4">
       <!-- Header -->
       <div :class="['text-center', slotClasses.header]">
-        <slot name="title" :name="productName">
+        <slot name="title" :title="productName">
           <h3 class="text-lg font-semibold text-highlighted">{{ productName }}</h3>
         </slot>
         <slot name="description">
@@ -101,7 +101,7 @@ const slotClasses = computed(() => {
         <slot name="pricing" :subscription="subMeta">
           <div v-if="subMeta" class="space-y-1">
             <div class="flex items-baseline justify-center gap-1">
-              <span class="text-4xl font-bold text-highlighted">{{ subMeta.recurringPrice.formatted }}</span>
+              <span class="text-4xl font-semibold text-highlighted">{{ subMeta.recurringPrice.formatted }}</span>
               <span class="text-muted text-sm">/ {{ intervalLabel }}</span>
             </div>
             <p v-if="subMeta.trialDays > 0" class="text-sm text-success font-medium">

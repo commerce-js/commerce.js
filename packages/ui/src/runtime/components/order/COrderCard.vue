@@ -88,7 +88,7 @@ const slotClasses = computed(() => {
         <div class="flex items-center gap-3">
           <div class="flex -space-x-2">
             <div
-              v-for="(item, i) in order.items.slice(0, 4)"
+              v-for="item in order.items.slice(0, 4)"
               :key="item.id"
               class="size-10 rounded-lg ring-2 ring-default overflow-hidden bg-elevated shrink-0"
             >

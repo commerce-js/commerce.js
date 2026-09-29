@@ -2,7 +2,7 @@
 // Promotions schema
 // ---------------------------------------------------------------------------
 
-import { pgTable, text, integer, boolean, numeric, doublePrecision, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, text, integer, boolean, numeric, timestamp } from 'drizzle-orm/pg-core'
 
 export const promotions = pgTable('promotions', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),

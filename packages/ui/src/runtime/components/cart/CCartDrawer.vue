@@ -186,7 +186,7 @@ function handleClose() {
     <template v-if="cartItems.length > 0" #footer>
       <div class="flex items-center justify-between">
         <span class="text-sm text-muted">Subtotal ({{ count }} items)</span>
-        <span class="text-base font-bold text-highlighted">{{ subtotalFormatted }}</span>
+        <span class="text-base font-semibold text-highlighted">{{ subtotalFormatted }}</span>
       </div>
       <p class="text-xs text-dimmed">Shipping & taxes calculated at checkout</p>
 

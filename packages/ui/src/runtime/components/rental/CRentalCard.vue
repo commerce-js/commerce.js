@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppConfig } from '#imports'
-import type { Product, RentalProductMeta, AvailabilitySlot } from '@commercejs/types'
+import type { Product, RentalProductMeta } from '@commercejs/types'
 
 /**
  * CRentalCard — Product card for rental items.
@@ -90,14 +90,14 @@ const slotClasses = computed(() => {
 
     <!-- Body -->
     <div :class="['p-4 space-y-2', slotClasses.body]">
-      <slot name="title" :name="productName">
+      <slot name="title" :title="productName">
         <h3 :class="['font-medium text-sm text-highlighted line-clamp-2', slotClasses.title]">{{ productName }}</h3>
       </slot>
 
       <!-- Pricing -->
       <slot name="pricing" :rental="rentalMeta">
         <div v-if="rentalMeta" :class="['flex items-baseline gap-1', slotClasses.pricing]">
-          <span class="text-lg font-bold text-highlighted">{{ rentalMeta.pricePerUnit.formatted }}</span>
+          <span class="text-lg font-semibold text-highlighted">{{ rentalMeta.pricePerUnit.formatted }}</span>
           <span class="text-xs text-muted">/ {{ unitLabel }}</span>
         </div>
       </slot>

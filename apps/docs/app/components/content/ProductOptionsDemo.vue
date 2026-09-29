@@ -31,7 +31,10 @@ const selected = ref<Record<string, string>>({
 <template>
   <ComponentDemo>
     <div class="w-full max-w-sm">
-      <CProductOptions v-model="selected" :items="items" />
+      <CProductOptions
+        v-model="selected"
+        :items="items"
+      />
     </div>
   </ComponentDemo>
 </template>

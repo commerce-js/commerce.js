@@ -72,7 +72,7 @@ export class CloudflareProvider {
   /**
    * Deploy to a Pages project (direct upload).
    */
-  async deployPages(projectName: string, outputDir: string): Promise<{
+  async deployPages(projectName: string, _outputDir: string): Promise<{
     id: string
     url: string
     environment: string

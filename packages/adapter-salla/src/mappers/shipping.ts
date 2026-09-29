@@ -2,7 +2,7 @@
 // Salla → Shipping mapper
 // ---------------------------------------------------------------------------
 
-import type { ShippingMethod, LocalizedString, Price } from '@commercejs/types'
+import type { ShippingMethod, LocalizedString } from '@commercejs/types'
 import type { SallaRawShippingCompany } from '../types.js'
 
 function toLocalized(value: string | null, locale: string = 'ar'): LocalizedString {

@@ -2,6 +2,7 @@
 const route = useRoute()
 const componentName = route.params.component
 </script>
+
 <template>
-    {{ componentName }}
+  <div>{{ componentName }}</div>
 </template>

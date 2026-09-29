@@ -35,8 +35,16 @@ const isOpen = ref(false)
 <template>
   <ComponentDemo>
     <div class="w-full">
-      <UButton icon="i-heroicons-shopping-cart" @click="isOpen = true">Open Cart Drawer</UButton>
-      <CCartDrawer v-model:open="isOpen" :cart="cart" />
+      <UButton
+        icon="i-heroicons-shopping-cart"
+        @click="isOpen = true"
+      >
+        Open Cart Drawer
+      </UButton>
+      <CCartDrawer
+        v-model:open="isOpen"
+        :cart="cart"
+      />
     </div>
   </ComponentDemo>
 </template>

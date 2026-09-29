@@ -35,7 +35,7 @@ useHead({
           />
         </div>
 
-        <p class="text-6xl font-bold text-highlighted mb-2">
+        <p class="text-6xl font-semibold text-highlighted mb-2">
           {{ error.statusCode }}
         </p>
 
