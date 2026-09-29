@@ -93,9 +93,11 @@ live.
 Where things stand, measured rather than estimated:
 
 - 18 packages build and typecheck clean.
-- 447 tests pass across 24 files, up from 294 across 14 before the linting work in
-  this branch. The gap was a Vitest config that only registered 6 of 18 packages, so
-  `core` had 59 tests that neither `pnpm test` nor CI ever ran.
+- 403 tests pass across 20 source files. Before this branch, `pnpm test` ran 10 of the
+  24 test files in the repository, because the root Vitest config registered only 6 of
+  18 packages. `core`'s 59 tests were never executed by `pnpm test` or by CI. The four
+  still excluded are the `cloud` and `platform` integration suites, which need live
+  credentials and a real database.
 - `pnpm lint` covers all 31 workspace projects and reports no errors. It leaves 545
   `no-explicit-any` warnings on purpose, as a ratchet rather than a wall.
 - CI runs build, typecheck, lint and tests on every pull request.

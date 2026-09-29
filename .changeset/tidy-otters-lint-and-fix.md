@@ -46,8 +46,12 @@ Bugs fixed:
 
 Tests:
 
-- Register the remaining hermetic packages as Vitest projects. `pnpm test` ran 14 of 24
-  test files (294 tests); it now runs all 24 (447 tests). This includes `core`, whose
-  59 tests were never executed by `pnpm test` or CI.
+- Register the remaining hermetic packages as Vitest projects. The root config listed 6
+  of 18 packages, so `pnpm test` ran 10 of the repository's 24 test files, and `core`'s
+  59 tests were never executed by `pnpm test` or CI. It now runs 20 files and 403 tests.
+  `cloud` and `platform` stay excluded, since their tests need live credentials or a
+  real database.
+- Stop `types` and `webhook-verifier` running their suites twice: tsc emits the compiled
+  tests into `dist`, which neither project excluded.
 - Update three stale `delivery-armada` expectations that still asserted the pre-v2
   Armada API (`/estimate/static`, `origin_format: "branch"`, flat `payment_type`).
