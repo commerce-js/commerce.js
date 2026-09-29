@@ -26,6 +26,7 @@
   ],
   "scripts": {
     "build": "nuxt-module-build build && node scripts/fix-esm-extensions.mjs",
+    "lint": "eslint .",
     "dev": "nuxi dev playground",
     "typecheck": "nuxt-module-build build",
     "clean": "rm -rf dist .nuxt"

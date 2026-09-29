@@ -23,6 +23,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsdown src/index.ts --format esm --dts",
+    "lint": "eslint .",
     "dev": "tsdown src/index.ts --format esm --dts --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

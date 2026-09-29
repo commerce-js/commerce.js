@@ -26,6 +26,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/cli.ts",
     "clean": "rm -rf dist"
