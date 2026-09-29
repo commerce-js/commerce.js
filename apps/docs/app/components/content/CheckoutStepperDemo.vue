@@ -16,8 +16,21 @@ const currentStep = ref(0)
         :steps="steps"
       />
       <div class="mt-4 flex justify-center gap-2">
-        <UButton size="sm" variant="soft" :disabled="currentStep === 0" @click="currentStep--">Back</UButton>
-        <UButton size="sm" :disabled="currentStep === steps.length - 1" @click="currentStep++">Next</UButton>
+        <UButton
+          size="sm"
+          variant="soft"
+          :disabled="currentStep === 0"
+          @click="currentStep--"
+        >
+          Back
+        </UButton>
+        <UButton
+          size="sm"
+          :disabled="currentStep === steps.length - 1"
+          @click="currentStep++"
+        >
+          Next
+        </UButton>
       </div>
     </div>
   </ComponentDemo>

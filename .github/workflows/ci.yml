@@ -4,7 +4,8 @@
 #   1. Installs dependencies (cached for speed)
 #   2. Builds all packages (checks for compile errors)
 #   3. Runs type checking (catches type bugs)
-#   4. Runs tests (catches logic bugs)
+#   4. Runs lint (catches unused code, Vue/TS mistakes, unsafe `any` creep)
+#   5. Runs tests (catches logic bugs)
 #
 # If any step fails, the PR gets a red ❌ and you should fix the issue before merging.
 
@@ -42,6 +43,9 @@ jobs:
 
       - name: Build & Typecheck
         run: pnpm turbo run build typecheck --filter='!@commercejs/dashboard' --filter='!docs'
+
+      - name: Lint
+        run: pnpm turbo run lint --filter='!@commercejs/dashboard'
 
       - name: Test with coverage
         run: pnpm vitest run --coverage

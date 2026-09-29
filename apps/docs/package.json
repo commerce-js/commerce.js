@@ -6,8 +6,8 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare || true",
-    "lint": "eslint .",
+    "postinstall": "nuxt prepare || exit 0",
+    "lint": "nuxt prepare && eslint .",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {

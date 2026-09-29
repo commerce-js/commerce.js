@@ -6,8 +6,9 @@
     "build": "pnpm --filter @commercejs/platform db:migrate && nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
+    "lint": "nuxt prepare && eslint .",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare || true"
+    "postinstall": "nuxt prepare || exit 0"
   },
   "dependencies": {
     "@commercejs/nuxt": "workspace:*",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@iconify-json/heroicons": "^1.2.3",
-    "@iconify-json/lucide": "^1.2.89"
+    "@iconify-json/lucide": "^1.2.89",
+    "@nuxt/eslint": "^1.15.1"
   }
 }

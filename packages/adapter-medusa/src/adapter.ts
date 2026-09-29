@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// MedusaAdapter — Medusa V2 Store API adapter for CommerceJS
+// MedusaAdapter â€” Medusa V2 Store API adapter for CommerceJS
 // ---------------------------------------------------------------------------
 // Implements the full CommerceAdapter contract. Supports:
 //   catalog, cart, checkout, customers, orders, store, countries
@@ -89,7 +89,7 @@ export class MedusaAdapter implements CommerceAdapter {
       const res = await this.client.get<{ product: MedusaProduct }>(`/products/${params.id}`, {
         fields: '+variants.calculated_price',
       })
-      return mapMedusaProduct(res.product, this.defaultCurrency)
+      return mapMedusaProduct(res.product)
     }
 
     if (params.slug) {
@@ -102,7 +102,7 @@ export class MedusaAdapter implements CommerceAdapter {
       if (!res.products?.length) {
         throw new CommerceError(`Product with slug "${params.slug}" not found`, 'NOT_FOUND', 404)
       }
-      return mapMedusaProduct(res.products[0], this.defaultCurrency)
+      return mapMedusaProduct(res.products[0])
     }
 
     throw new CommerceError('Either id or slug must be provided', 'VALIDATION', 400)
@@ -124,7 +124,7 @@ export class MedusaAdapter implements CommerceAdapter {
 
     return {
       products: {
-        items: result.data.map(p => mapMedusaProduct(p, this.defaultCurrency)),
+        items: result.data.map(p => mapMedusaProduct(p)),
         total: result.total,
         page: result.page,
         perPage: result.perPage,
@@ -203,7 +203,7 @@ export class MedusaAdapter implements CommerceAdapter {
   }
 
   async removeCoupon(cartId: string): Promise<Cart> {
-    // Medusa V2 doesn't have a direct "remove coupon" — refresh cart
+    // Medusa V2 doesn't have a direct "remove coupon" â€” refresh cart
     const res = await this.client.get<{ cart: MedusaCart }>(`/carts/${cartId}`)
     return mapMedusaCart(res.cart)
   }
@@ -267,7 +267,7 @@ export class MedusaAdapter implements CommerceAdapter {
 
   async getPaymentMethods(_cartId: string): Promise<PaymentMethod[]> {
     // Medusa V2 payment is handled via payment collections + sessions
-    // Return empty — payment is managed via payment session initialization
+    // Return empty â€” payment is managed via payment session initialization
     return []
   }
 
@@ -339,7 +339,7 @@ export class MedusaAdapter implements CommerceAdapter {
     try {
       await this.client.authDelete('/auth/session')
     } catch {
-      // Ignore errors — just clear the token
+      // Ignore errors â€” just clear the token
     }
     this.client.clearToken()
   }

@@ -2,7 +2,7 @@
 // SMTP Notification Provider for CommerceJS
 // ---------------------------------------------------------------------------
 
-import { createTransport, type Transporter, type TransportOptions } from 'nodemailer'
+import { createTransport, type Transporter } from 'nodemailer'
 import type SMTPTransport from 'nodemailer/lib/smtp-transport/index.js'
 import type {
   NotificationProvider,

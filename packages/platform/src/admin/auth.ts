@@ -12,7 +12,7 @@ import {
   findAllAdminUsers,
   countAdminUsers,
 } from '../database/index.js'
-import type { AdminUser, AdminUserSafe } from './types.js'
+import type { AdminUserSafe } from './types.js'
 
 /** Strip passwordHash from admin user for safe responses */
 function toSafe(row: any): AdminUserSafe {

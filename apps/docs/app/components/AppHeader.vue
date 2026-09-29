@@ -32,7 +32,10 @@ const { header } = useAppConfig()
       <span v-if="header?.title">
         {{ header.title }}
       </span>
-      <UBadge color="primary" variant="soft">
+      <UBadge
+        color="primary"
+        variant="soft"
+      >
         {{ header.version }}
       </UBadge>
     </template>

@@ -1,3 +1,3 @@
 <template>
-    Components Index Page
+  <div>Components Index Page</div>
 </template>

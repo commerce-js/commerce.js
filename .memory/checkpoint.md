@@ -2,76 +2,91 @@
 
 ## Current Phase
 
-**Fly.io EaaS Migration — Not Yet Started**
+**Lint + bug-fix pass on `main` — shipped on `chore/eslint-and-bugfixes`**
 
-The project has completed Phases 1–5 and the Phase 7 CF infrastructure sprint. A strategic decision has been made to pivot away from Cloudflare and rebuild the Cloud platform on Fly.io as a true multi-tenant EaaS (like Salla/Shopify). The `fly/eaas` branch does not exist yet — **creating it is the immediate next task.**
+The `fly/eaas` migration has not started. This branch is quality work on `main`
+instead: it adds the linting the repo declared but never had, and fixes the defects
+that surfaced. `ARCHITECTURE.md` (new, at the repo root) documents the project and
+lists what to do next.
 
-## Strategic Context
+## What this branch changed
 
-- **Goal**: EaaS platform (merchant signs up → gets storefront + admin + API + dedicated DB) AND open-source SDK recognition (like Medusa)
-- **Why Fly.io**: CF Workers hit hard limits — 50 subrequest cap, WASM-only Prisma, no standard Node.js. Fly.io = standard Node.js, no constraints.
-- **OSS story**: Depends on the platform running on plain Node.js first. Ship Fly.io EaaS → then open-source story becomes credible.
-- **Market**: MENA-first (Bahrain region, Arabic RTL, Tap/stcpay/Mada/Tabby/Tamara). No Western competitor owns this stack.
+### Tooling (the gap that prompted it)
 
-## Current Codebase State (main branch)
+`package.json` declared `"lint": "turbo run lint"` and `turbo.json` had a `lint` task,
+but only `apps/docs` had a `lint` script. Everything else — all 18 packages and 3 apps
+— was silently unlinted, and CI never ran lint.
 
-| Item | State |
-|------|-------|
-| `fly/eaas` branch | ❌ Does not exist yet |
-| Prisma version | 7.4.0 — needs upgrade to 7.6.0 |
-| `runtime` in schema.prisma | `"cloudflare"` — must change to `"node"` |
-| `@prisma/adapter-neon` | Missing from `packages/platform/package.json` |
-| `apps/dashboard` preset | `cloudflare-pages` — must change to `node-server` |
-| `@nuxthub/core` in dashboard | Present — must be removed on `fly/eaas` |
-| Dockerfile | Does not exist |
-| fly.toml | Does not exist |
-| Tenant middleware | Does not exist |
-| BullMQ worker | Does not exist |
-| Merchant provisioner | Does not exist |
-| CLAUDE.md | ✅ Created — comprehensive project context |
-| `.agent/` system | ✅ Rules, workflows, skills all in place |
+- Root `eslint.config.mjs` covers the 18 packages (typescript-eslint + Vue for
+  `packages/ui`). `no-undef` is off because `tsc` already does it with types.
+  `no-explicit-any` is a warning, as a ratchet.
+- `"lint": "eslint ."` added to all 18 package.json files.
+- `@nuxt/eslint` added to `apps/storefront`; both `storefront` and `docs` now use
+  `"lint": "nuxt prepare && eslint ."` so linting works on a fresh clone and in CI.
+- `turbo.json` lint task now `dependsOn: ["^build"]`.
+- CI gained a lint step.
 
-## What Was Done This Session (2026-04-14)
+### Bugs fixed
 
-- Created `CLAUDE.md` at monorepo root — full project context, branch rules, locked decisions, gotchas, Prisma setup, agent system map
-- Updated `.agent/skills/commercejs/SKILL.md` — added Active Branch Context table, **Autonomous Decision Rules** (when to decide vs. pause), fixed platform/apps descriptions, added storage-s3, added EaaS Architecture section, fixed Prisma anti-patterns to be branch-aware, **compressed Package Taxonomy** (CLAUDE.md is now source of truth for package list)
-- Trimmed `.agent/rules/operating-protocol.md` — replaced 35-line dead skill table with 12-line accurate skill table, **extracted Checkpoint Procedure to `.agent/rules/checkpointing.md`**
-- Created `.agent/rules/checkpointing.md` — checkpoint procedure extracted for lazy loading
-- Made `ci-monitor-protocol.md` **lazy-loaded** (removed `always_on` trigger — only needed after git push)
-- Progressive disclosure applied: CLAUDE.md ~90 lines saved (Architecture Patterns, Critical Gotchas, Prisma Setup → pointers); SKILL.md ~40 lines saved (Package Taxonomy condensed)
-- Fixed dead references in `meta-cognitive-protocol.md`, `scaffold-package.md`, `dev.md`
-- Evaluated all plans, research, and strategy documents
+- `core` did not typecheck on `main`: tsconfig lacked `DOM` in `lib` while the code
+  uses `globalThis.fetch` and `setTimeout`. CI was red before this branch.
+- `platform` wishlist returned an empty image gallery (images are a separate table).
+- `platform` `findProducts` used raw SQL for `gte`/`lte` instead of Drizzle helpers.
+- `platform` `platformTestSuite` accepted a `timeout` option and never applied it.
+- `platform/scripts/create-delivery-job.cjs` had a committed Armada API token, now
+  `ARMADA_API_KEY`. **The committed token needs rotating — it is in git history.**
+- `ui` had `<slot name="title" :name="...">` in 6 components, which overrides the
+  slot's own name so `#title` never matched. Now `:title`.
+- `adapter-medusa` `mapMedusaProduct` had a dead `currency` argument; removed
+  (breaking for direct callers of the exported mapper).
+- `adapter-salla` product mapper duplicated price construction instead of using its
+  own `toPrice` helper.
+- `storefront` product page passed a non-reactive slug to `useProduct`, so navigating
+  between products showed a stale product. `useProduct` already accepted a getter.
+- `storefront` had a dead local `usePrice` usage; the module's version shadows it.
+- `hosted-checkout` `cart-pay` left orders stuck in `pending` forever when the Tap
+  session could not be created. Now cancelled, guarded so the original error wins.
+- `hosted-checkout` hardcoded `saveCard: true` server-side while the frontend already
+  tracked consent in `saveCardSelected` and never sent it. Now sent and honoured.
+- `hosted-checkout` `useTapCard.tokenize()` never cleared its 30s timer and leaked the
+  error watcher on success.
+- 3 stale `delivery-armada` tests asserted the pre-v2 Armada API.
 
-## Immediate Next Steps
+### Tests
 
-### Step 1: Pre-migration fixes on `main` (do first, ~30 min)
-1. Bump Prisma to 7.6.0 across all package.json files
-2. Add `@prisma/adapter-neon: "^7.6.0"` to `packages/platform/package.json`
-3. Change `runtime = "cloudflare"` → `runtime = "node"` in `packages/platform/src/database/prisma/schema/schema.prisma`
-4. Run `cd packages/platform && npx prisma generate` to verify
-5. Commit: `chore: upgrade prisma to 7.6.0, fix runtime for fly/eaas`
+The root `vitest.config.ts` registered only 6 of 18 packages, so `pnpm test` ran 14 of
+24 test files. `core`'s 59 tests never ran in CI. Now 24 files / 447 tests, up from
+14 / 294. `cloud` and `platform` stay excluded: they need live credentials or a DB.
 
-### Step 2: Create fly/eaas branch and execute migration plan
-Full plan at `.plans/fly-migration-plan.md` — 9 steps, ~13 days to agency MVP.
+### Typography
 
-Critical path:
-- Day 1: `git checkout -b fly/eaas` → change nuxt.config preset → add Dockerfile + fly.toml
-- Days 2–3: Dashboard control DB (Prisma schema for Merchant, ApiKey, Domain, DashboardUser)
-- Day 4: Platform switches to `initPrisma()` instead of `initDrizzle()`
-- Day 5: Tenant middleware (subdomain/API key resolution, LRU cache)
-- Day 6: BullMQ worker.ts (provision-store, send-email, dispatch-webhook)
-- Days 7–8: Merchant provisioner (Neon branch creation + migrations)
-- Days 9–12: Dashboard UI refactor (merchants instead of projects, email/password auth)
-- Day 13: `fly deploy` to Bahrain region
+The storefront loaded Inter from Google Fonts but never applied it — no `--font-sans`
+token existed, so Nuxt UI's default stack won and the font request was wasted. Fixed
+with a `@theme { --font-sans }` token. Font weights trimmed to 400/500/600, and all 25
+`font-bold` in the storefront and `packages/ui` reduced to `font-semibold`.
 
-## Key Files to Know
+## State after this branch
 
-| File | Purpose |
-|------|---------|
-| `.plans/fly-migration-plan.md` | LOCKED DOWN — complete step-by-step migration |
-| `.plans/roadmap.md` | Master roadmap — phases 1–7 |
-| `.memory/decisions.md` | 15 locked architectural decisions |
-| `.memory/gotchas.md` | CF Workers bugs (context for why we're leaving) |
-| `packages/platform/src/database/prisma/schema/schema.prisma` | Change runtime here |
-| `apps/dashboard/nuxt.config.ts` | Change preset here |
-| `apps/dashboard/server/utils/db.ts` | Rewrite from D1/Drizzle to Prisma/Neon |
+- `pnpm lint` — 31/31 projects, 0 errors, 545 `any` warnings (intentional)
+- `pnpm turbo run build typecheck --filter="./packages/*"` — 35/35 green
+- `pnpm test` — 24 files, 447 tests green
+- Changeset added covering 6 packages
+
+## Immediate next steps
+
+1. Rotate the leaked Armada token (`main_50380d6b76a34cf441f48bdmddag9r6`).
+2. Merge this PR and watch CI.
+3. Resume the Fly.io migration: `.plans/fly-migration-plan.md`, starting with
+   `git checkout -b fly/eaas`. The pre-migration Prisma work in Step 1 of that plan
+   is already done — `packages/platform` is on Prisma 7.6 with `runtime = "nodejs"`
+   and `@prisma/adapter-neon`.
+
+## Known follow-ups (full list in ARCHITECTURE.md)
+
+- `dashboard` and `hosted-checkout` still have no ESLint config
+- `storefront` and `hosted-checkout` have no `typecheck` script and are excluded from
+  the CI typecheck step
+- No formatter, so formatting is enforced nowhere
+- `platform` has the largest surface and no tests that run without a live database
+- `admin/categories.ts` has no list method
+- `CLAUDE.md` references an `.agent/` directory and `.research/` that do not exist

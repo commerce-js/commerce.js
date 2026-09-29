@@ -95,7 +95,7 @@ export class PreviewManager {
   /**
    * List all active preview environments for a project.
    */
-  async listPreviews(projectName: string): Promise<string[]> {
+  async listPreviews(_projectName: string): Promise<string[]> {
     const neonProjectId = this.config.neon.projectId
     if (!neonProjectId) return []
 

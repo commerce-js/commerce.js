@@ -86,7 +86,7 @@ const slotClasses = computed(() => {
     <!-- Current bid display -->
     <div :class="['text-center p-6 rounded-xl bg-elevated ring ring-default', slotClasses.currentBid]">
       <p class="text-sm text-muted mb-1">{{ auction.bidCount > 0 ? 'Current Highest Bid' : 'Starting Price' }}</p>
-      <p class="text-4xl font-bold text-highlighted">
+      <p class="text-4xl font-semibold text-highlighted">
         {{ auction.currentBid?.formatted || auction.startingPrice.formatted }}
       </p>
       <p class="text-xs text-muted mt-2">

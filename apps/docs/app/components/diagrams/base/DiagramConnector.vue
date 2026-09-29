@@ -21,18 +21,22 @@ const endpoints = computed(() => {
   const span = viewBoxWidth - padding * 2
   if (props.count <= 1) return [viewBoxWidth / 2]
   return Array.from({ length: props.count }, (_, i) =>
-    padding + (span * i) / (props.count - 1),
+    padding + (span * i) / (props.count - 1)
   )
 })
 
 const centerX = viewBoxWidth / 2
 const strokeAttrs = computed(() =>
-  props.dashed ? { 'stroke-dasharray': '5,5' } : {},
+  props.dashed ? { 'stroke-dasharray': '5,5' } : {}
 )
 </script>
 
 <template>
-  <div class="-my-1 w-full mx-auto" :class="wide ? '' : 'max-w-[400px]'" :style="{ height: `${svgHeight}px` }">
+  <div
+    class="-my-1 w-full mx-auto"
+    :class="wide ? '' : 'max-w-[400px]'"
+    :style="{ height: `${svgHeight}px` }"
+  >
     <svg
       class="block h-full w-full"
       :viewBox="`0 0 ${viewBoxWidth} ${svgHeight}`"
@@ -49,7 +53,12 @@ const strokeAttrs = computed(() =>
         stroke-width="2"
         v-bind="strokeAttrs"
       />
-      <circle :cx="centerX" cy="5" r="4" :fill="color" />
+      <circle
+        :cx="centerX"
+        cy="5"
+        r="4"
+        :fill="color"
+      />
     </svg>
   </div>
 </template>

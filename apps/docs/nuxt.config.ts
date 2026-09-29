@@ -11,16 +11,16 @@ export default defineNuxtConfig({
     '@commercejs/ui'
   ],
 
+  components: [{
+    path: '~/components',
+    pathPrefix: false
+  }],
+
   devtools: {
     enabled: true
   },
 
   css: ['~/assets/css/main.css'],
-
-  components: [{
-    path: '~/components',
-    pathPrefix: false
-  }],
 
   content: {
     build: {
@@ -32,8 +32,33 @@ export default defineNuxtConfig({
     }
   },
 
+  experimental: {
+    asyncContext: true
+  },
+
+  compatibilityDate: '2024-07-11',
+
+  nitro: {
+    prerender: {
+      routes: [
+        '/'
+      ],
+      crawlLinks: true,
+      autoSubfolderIndex: false,
+      failOnError: false,
+      ignore: [
+        '/checkout',
+        '/products',
+        '/orders',
+        '/about',
+        '/products/**',
+        '/orders/**'
+      ]
+    }
+  },
+
   hooks: {
-    'content:file:beforeParse': async (ctx: { file: { id: string; body: string } }) => {
+    'content:file:beforeParse': async (ctx: { file: { id: string, body: string } }) => {
       if (!ctx.file.id.endsWith('.md')) return
 
       const mermaidBlockRegex = /```mermaid\n([\s\S]*?)```/g
@@ -76,37 +101,11 @@ export default defineNuxtConfig({
           const id = `mermaid-${Math.random().toString(36).slice(2, 10)}`
           const { svg } = await mermaid.render(id, diagram.trim())
           body = body.replace(match[0], `<div class="mermaid-diagram">${svg}</div>`)
-        }
-        catch (error) {
+        } catch (error) {
           console.warn(`[mermaid] Failed to render in ${ctx.file.id}:`, error)
         }
       }
       ctx.file.body = body
-    }
-  },
-
-  experimental: {
-    asyncContext: true
-  },
-
-  compatibilityDate: '2024-07-11',
-
-  nitro: {
-    prerender: {
-      routes: [
-        '/'
-      ],
-      crawlLinks: true,
-      autoSubfolderIndex: false,
-      failOnError: false,
-      ignore: [
-        '/checkout',
-        '/products',
-        '/orders',
-        '/about',
-        '/products/**',
-        '/orders/**'
-      ]
     }
   },
 

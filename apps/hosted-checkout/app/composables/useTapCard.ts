@@ -169,37 +169,48 @@ export function useTapCard() {
         return
       }
 
+      // Reset before watching, so a token left over from a previous attempt
+      // cannot resolve this one.
+      tokenData.value = null
+      error.value = null
+
+      let unwatch: (() => void) | null = null
+      let unwatchError: (() => void) | null = null
+      let timer: ReturnType<typeof setTimeout> | null = null
+
+      // Every exit path runs this so no watcher or timer outlives the promise.
+      const cleanup = () => {
+        unwatch?.()
+        unwatchError?.()
+        if (timer) {
+          clearTimeout(timer)
+          timer = null
+        }
+      }
+
       // Watch for token via the onSuccess callback
-      const unwatch = watch(tokenData, (data) => {
+      unwatch = watch(tokenData, (data) => {
         if (data?.id) {
-          unwatch()
+          cleanup()
           resolve(data)
         }
       })
 
       // Also watch for errors
-      const unwatchError = watch(error, (err) => {
+      unwatchError = watch(error, (err) => {
         if (err) {
-          unwatch()
-          unwatchError()
+          cleanup()
           reject(new Error(err))
         }
       })
-
-      // Reset previous token data
-      tokenData.value = null
-      error.value = null
 
       // Trigger tokenization
       CardSDK.tokenize()
 
       // Timeout after 30s
-      setTimeout(() => {
-        unwatch()
-        unwatchError()
-        if (!tokenData.value) {
-          reject(new Error('Tokenization timed out'))
-        }
+      timer = setTimeout(() => {
+        cleanup()
+        reject(new Error('Tokenization timed out'))
       }, 30000)
     })
   }

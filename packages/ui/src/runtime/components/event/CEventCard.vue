@@ -86,7 +86,7 @@ const slotClasses = computed(() => {
 
       <!-- Date overlay -->
       <div v-if="eventDate" :class="['absolute top-3 start-3 bg-default/90 backdrop-blur-sm rounded-lg w-14 text-center py-1.5 ring ring-default', slotClasses.dateOverlay]">
-        <span class="text-[10px] font-bold text-primary block leading-none">{{ formattedMonth }}</span>
+        <span class="text-[10px] font-semibold text-primary block leading-none">{{ formattedMonth }}</span>
         <span class="text-xl font-black text-highlighted block leading-tight">{{ formattedDay }}</span>
       </div>
 
@@ -99,7 +99,7 @@ const slotClasses = computed(() => {
 
     <!-- Body -->
     <div :class="['p-4 space-y-2', slotClasses.body]">
-      <slot name="title" :name="productName">
+      <slot name="title" :title="productName">
         <h3 :class="['font-medium text-sm text-highlighted line-clamp-2', slotClasses.title]">{{ productName }}</h3>
       </slot>
 

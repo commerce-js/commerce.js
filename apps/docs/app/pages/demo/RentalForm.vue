@@ -15,7 +15,10 @@ const rental = {
 <template>
   <ComponentDemo>
     <div class="w-full max-w-md">
-      <CRentalBookingForm :rental="rental" product-id="rental_1"/>
+      <CRentalBookingForm
+        :rental="rental"
+        product-id="rental_1"
+      />
     </div>
   </ComponentDemo>
 </template>

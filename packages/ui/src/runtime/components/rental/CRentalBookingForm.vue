@@ -180,7 +180,7 @@ const slotClasses = computed(() => {
         <span class="font-medium text-highlighted">{{ rental.securityDeposit.formatted }}</span>
       </div>
       <USeparator />
-      <div class="flex justify-between text-base font-bold">
+      <div class="flex justify-between text-base font-semibold">
         <span>Estimated Total</span>
         <span class="text-primary">{{ effectiveUnitPrice.formatted }} × {{ duration }}</span>
       </div>

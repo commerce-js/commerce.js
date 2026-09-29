@@ -7,7 +7,7 @@ const product = {
   type: 'event',
   status: 'active',
   primaryImage: { url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop', alt: 'Conference' },
-  price: { amount: 149, currency: 'USD', formatted: '$149.00' },
+  price: { amount: 149, currency: 'USD', formatted: '$149.00' }
 } as any
 
 const event = {
@@ -23,7 +23,10 @@ const event = {
 <template>
   <ComponentDemo>
     <div class="w-72">
-      <CEventCard :product="product" :event="event" />
+      <CEventCard
+        :product="product"
+        :event="event"
+      />
     </div>
   </ComponentDemo>
 </template>

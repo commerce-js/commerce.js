@@ -94,7 +94,7 @@ const slotClasses = computed(() => {
 
     <!-- Details -->
     <div :class="slotClasses.body">
-      <slot name="title" :name="itemName">
+      <slot name="title" :title="itemName">
         <h4 :class="slotClasses.title">{{ itemName }}</h4>
       </slot>
 

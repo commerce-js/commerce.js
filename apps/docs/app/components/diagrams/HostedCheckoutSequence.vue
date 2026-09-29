@@ -10,7 +10,7 @@ const participants = [
   { label: 'Merchant Server', icon: '🖥', color: '#3b82f6' },
   { label: 'Checkout Page', icon: '📄', color: '#10b981' },
   { label: 'Payment Gateway', icon: '💳', color: '#8b5cf6' },
-  { label: 'Customer Browser', icon: '🌐', color: '#f59e0b' },
+  { label: 'Customer Browser', icon: '🌐', color: '#f59e0b' }
 ]
 
 const messages: Message[] = [
@@ -22,13 +22,19 @@ const messages: Message[] = [
   { from: 2, to: 3, label: '3D Secure Verification' },
   { from: 3, to: 1, label: 'Return from 3DS' },
   { from: 1, to: 2, label: 'Confirm Payment' },
-  { from: 2, to: 1, label: 'Webhook — Captured', dashed: true },
+  { from: 2, to: 1, label: 'Webhook — Captured', dashed: true }
 ]
 </script>
 
 <template>
-  <DiagramContainer icon="i-lucide-layout-dashboard" max-width="max-w-5xl">
-    <DiagramHeader title="Hosted Checkout" subtitle="Sequence Diagram" />
+  <DiagramContainer
+    icon="i-lucide-layout-dashboard"
+    max-width="max-w-5xl"
+  >
+    <DiagramHeader
+      title="Hosted Checkout"
+      subtitle="Sequence Diagram"
+    />
 
     <div class="mt-8 overflow-x-auto">
       <div class="min-w-[600px]">
@@ -53,7 +59,11 @@ const messages: Message[] = [
         <div class="relative mt-2">
           <!-- Vertical lifelines -->
           <div class="absolute inset-0 grid grid-cols-4 gap-4">
-            <div v-for="p in participants" :key="p.label" class="flex justify-center">
+            <div
+              v-for="p in participants"
+              :key="p.label"
+              class="flex justify-center"
+            >
               <div
                 class="h-full w-0.5 opacity-20"
                 :style="{ backgroundColor: p.color }"
@@ -72,7 +82,7 @@ const messages: Message[] = [
               <div
                 class="flex items-center"
                 :style="{
-                  gridColumn: `${Math.min(msg.from, msg.to) + 1} / ${Math.max(msg.from, msg.to) + 2}`,
+                  gridColumn: `${Math.min(msg.from, msg.to) + 1} / ${Math.max(msg.from, msg.to) + 2}`
                 }"
               >
                 <div class="relative flex w-full items-center">
@@ -87,7 +97,7 @@ const messages: Message[] = [
                     :class="[
                       msg.to > msg.from
                         ? 'right-0 border-l-8 border-l-zinc-400 dark:border-l-zinc-500'
-                        : 'left-0 border-r-8 border-r-zinc-400 dark:border-r-zinc-500',
+                        : 'left-0 border-r-8 border-r-zinc-400 dark:border-r-zinc-500'
                     ]"
                   />
                   <!-- Label centered on arrow -->

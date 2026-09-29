@@ -27,7 +27,10 @@ defineProps<{
         </span>
       </div>
     </div>
-    <div v-if="documentId" class="text-[10px] font-bold uppercase tracking-tight text-zinc-400/40">
+    <div
+      v-if="documentId"
+      class="text-[10px] font-bold uppercase tracking-tight text-zinc-400/40"
+    >
       Documentation Asset // {{ documentId }}
     </div>
   </div>

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { ArmadaDeliveryProvider } from '../armada-provider.js'
-import type { ArmadaProviderConfig, ArmadaRawOrder, ArmadaRawEstimate } from '../types.js'
+import type { ArmadaRawOrder, ArmadaRawEstimate } from '../types.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -92,10 +92,10 @@ describe('ArmadaDeliveryProvider', () => {
       expect(result.currency).toBe('KWD')
       expect(result.estimatedDuration).toBe(30) // 30 minutes
       expect(fetch).toHaveBeenCalledWith(
-        'https://api.armadadelivery.com/v1/deliveries/estimate/static',
+        'https://api.armadadelivery.com/v1/deliveries/estimate',
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining('"origin_format":"branch"'),
+          body: expect.stringContaining('"origin_format":"branch_format"'),
         }),
       )
     })
@@ -125,7 +125,7 @@ describe('ArmadaDeliveryProvider', () => {
       expect(fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          body: expect.stringContaining('"origin_format":"location"'),
+          body: expect.stringContaining('"origin_format":"location_format"'),
         }),
       )
     })
@@ -166,8 +166,7 @@ describe('ArmadaDeliveryProvider', () => {
       // Verify request body
       const callBody = JSON.parse(fetch.mock.calls[0][1].body)
       expect(callBody.reference).toBe('order_abc123')
-      expect(callBody.payment_type).toBe('cash_on_delivery')
-      expect(callBody.payment_amount).toBe(15)
+      expect(callBody.payment).toEqual({ type: 'cash', amount: 15 })
     })
   })
 

@@ -52,7 +52,7 @@ useHead({ title: computed(() => category.value ? `${t(category.value.name)} — 
 
     <!-- Category header -->
     <div class="mb-8">
-      <h1 class="text-2xl md:text-3xl font-bold text-highlighted">
+      <h1 class="text-2xl md:text-3xl font-semibold text-highlighted">
         {{ category ? t(category.name) : 'Category' }}
       </h1>
       <p v-if="category?.description" class="text-muted mt-2">

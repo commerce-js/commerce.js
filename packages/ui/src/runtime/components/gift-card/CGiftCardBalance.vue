@@ -97,7 +97,7 @@ const slotClasses = computed(() => {
       </div>
 
       <div class="flex items-baseline gap-2">
-        <span class="text-3xl font-bold text-highlighted">{{ giftCard.currentBalance.formatted }}</span>
+        <span class="text-3xl font-semibold text-highlighted">{{ giftCard.currentBalance.formatted }}</span>
         <span v-if="giftCard.currentBalance.amount !== giftCard.initialBalance.amount" class="text-sm text-muted">
           of {{ giftCard.initialBalance.formatted }}
         </span>

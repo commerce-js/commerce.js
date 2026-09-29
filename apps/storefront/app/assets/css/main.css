@@ -2,6 +2,13 @@
 @import "@nuxt/ui";
 
 /* Design tokens */
+@theme {
+  /* Inter is loaded via the Google Fonts <link> in nuxt.config.ts. Without this
+     token Nuxt UI falls back to its own default stack and the font request is
+     wasted. Nuxt UI v4 maps --font-sans onto the body font. */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
 :root {
   --ui-radius: 0.5rem;
   --ui-container-width: 1280px;

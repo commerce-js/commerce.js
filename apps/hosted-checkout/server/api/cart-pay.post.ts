@@ -21,6 +21,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'cartId is required' })
   }
 
+  // Without a payment instrument there is nothing to charge — fail before the
+  // order is created rather than leaving an unpayable order behind.
+  if (!body.sourceToken && !body.tapCustomerId) {
+    throw createError({ statusCode: 400, message: 'A payment method is required' })
+  }
+
   ensureDb()
   const config = useRuntimeConfig()
   const currency = config.commerceCurrency || 'BHD'
@@ -63,12 +69,17 @@ export default defineEventHandler(async (event) => {
   // ── Step 2: Create Tap charge with orderId ─────────────────────────
   const { provider } = useTapProviderFromEnv()
 
+  // Tracks whether the order already reached a final state, so the catch block
+  // below only cancels it when the failure happened before that.
+  let orderSettled = false
+
   try {
     const session = await provider.createSession({
       amount: total,
       currency,
       sourceToken: body.sourceToken,
-      saveCard: true,
+      // Only vault the card when the customer explicitly opted in.
+      saveCard: body.saveCard === true,
       customerId: body.tapCustomerId || undefined,
       returnUrl: `${appUrl}/api/cart-confirm?orderId=${order.id}&cartId=${body.cartId}&email=${encodeURIComponent(body.email || '')}&returnUrl=${encodeURIComponent(body.returnUrl || '')}`,
       webhookUrl: `${appUrl}/api/webhooks/tap-payment`,
@@ -93,6 +104,7 @@ export default defineEventHandler(async (event) => {
         note: `Card payment captured directly (Tap charge: ${session.id})`,
       })
       await cartDomain.deleteCart(body.cartId)
+      orderSettled = true
       return { state: 'complete', orderId: order.id }
     }
 
@@ -101,13 +113,28 @@ export default defineEventHandler(async (event) => {
       status: 'cancelled',
       note: `Payment not captured: ${session.status}`,
     })
+    orderSettled = true
     throw new Error(`Payment not captured: ${session.status}`)
   }
   catch (err: any) {
-    if (err.statusCode) throw err // re-throw createError
+    // The order was created before the charge, so a failure here would leave it
+    // stuck in `pending` forever. Cancel it before surfacing the error.
+    if (!orderSettled) {
+      try {
+        await ordersDomain.updateOrderStatus(order.id, {
+          status: 'cancelled',
+          note: `Payment could not be initiated: ${err?.message ?? 'unknown error'}`,
+        })
+      }
+      catch {
+        // Never let a bookkeeping failure mask the original payment error
+      }
+    }
+
+    if (err?.statusCode) throw err // re-throw createError
     throw createError({
       statusCode: 400,
-      message: err.message || 'Payment failed',
+      message: err?.message || 'Payment failed',
     })
   }
 })

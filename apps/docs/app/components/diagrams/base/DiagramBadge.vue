@@ -12,7 +12,10 @@ defineProps<{
     class="mt-10 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-white"
     :style="{ backgroundColor: color }"
   >
-    <UIcon :name="icon" class="size-4 shrink-0" />
+    <UIcon
+      :name="icon"
+      class="size-4 shrink-0"
+    />
     <span class="text-sm font-bold uppercase tracking-wide">{{ label }}</span>
   </div>
 </template>

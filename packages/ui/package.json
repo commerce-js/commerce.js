@@ -22,6 +22,7 @@
   ],
   "scripts": {
     "build": "nuxt-module-build build",
+    "lint": "eslint .",
     "dev": "nuxi dev playground",
     "typecheck": "nuxt-module-build build",
     "clean": "rm -rf dist .nuxt"

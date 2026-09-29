@@ -78,13 +78,13 @@ useHead({
         <div class="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto">
           <UIcon name="i-heroicons-check-circle-solid" class="text-5xl text-success" />
         </div>
-        <h1 class="text-3xl font-bold text-highlighted">
+        <h1 class="text-3xl font-semibold text-highlighted">
           Order Confirmed!
         </h1>
         <p class="text-lg text-muted">
           Thank you for your order. Your order number is:
         </p>
-        <p class="text-2xl font-mono font-bold text-primary">
+        <p class="text-2xl font-mono font-semibold text-primary">
           {{ order.orderNumber }}
         </p>
       </div>
@@ -155,7 +155,7 @@ useHead({
 
         <USeparator />
 
-        <div class="flex justify-between text-lg font-bold">
+        <div class="flex justify-between text-lg font-semibold">
           <span>Total</span>
           <span class="text-primary">{{ formatPrice(order.totals.total) }}</span>
         </div>

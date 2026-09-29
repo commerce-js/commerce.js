@@ -290,6 +290,7 @@ async function submitPaymentWithToken(sourceToken: string | undefined) {
         phone: phone.value,
         sourceToken,
         tapCustomerId: profile.tapCustomerId.value || undefined,
+        saveCard: tapCard.saveCardSelected.value,
         returnUrl: returnUrl ? `${returnUrl}/order-confirmation` : '',
       },
     })

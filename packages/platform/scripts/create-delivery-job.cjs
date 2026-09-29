@@ -1,9 +1,11 @@
 // Create delivery job via Armada API — v2 with explicit output
-const { neon } = require('@neondatabase/serverless')
+// Set ARMADA_API_KEY in the environment; never commit credentials.
 
 async function main() {
-  // Use developer account API key directly
-  const token = 'main_50380d6b76a34cf441f48bdmddag9r6'
+  const token = process.env.ARMADA_API_KEY
+  if (!token) {
+    throw new Error('ARMADA_API_KEY is not set')
+  }
 
   process.stdout.write('Token: ' + token.substring(0, 15) + '...\n')
 

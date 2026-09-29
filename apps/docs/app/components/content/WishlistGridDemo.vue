@@ -31,6 +31,9 @@ const items = [
 
 <template>
   <ComponentDemo label="Wishlist Grid">
-    <CWishlistGrid :items="items" :columns="2" />
+    <CWishlistGrid
+      :items="items"
+      :columns="2"
+    />
   </ComponentDemo>
 </template>

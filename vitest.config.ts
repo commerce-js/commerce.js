@@ -9,6 +9,16 @@ export default defineConfig({
       'packages/webhook-verifier',
       'packages/checkout',
       'packages/payment-tap',
+      'packages/core',
+      'packages/analytics-ga',
+      'packages/delivery-armada',
+      'packages/delivery-parcel',
+      'packages/notification-resend',
+      'packages/notification-smtp',
+      'packages/storage-s3',
+      // packages/cloud and packages/platform are intentionally absent: their
+      // tests are integration suites that need real Neon/Cloudflare credentials
+      // and a live database, so they run via `pnpm --filter <pkg> test`.
     ],
     coverage: {
       provider: 'v8',

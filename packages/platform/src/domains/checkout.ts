@@ -13,7 +13,6 @@ import {
   findCart,
   updateCart,
   deleteCart,
-  findProductById,
   createOrder as dbCreateOrder,
   createOrderItem,
   createOrderHistory,

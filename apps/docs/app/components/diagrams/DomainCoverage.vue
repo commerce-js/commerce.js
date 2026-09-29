@@ -11,24 +11,34 @@ const implemented = [
   { emoji: '❤️', label: 'Wishlist' },
   { emoji: '🎟', label: 'Promotions' },
   { emoji: '📋', label: 'Returns' },
-  { emoji: '🏪', label: 'Store' },
+  { emoji: '🏪', label: 'Store' }
 ]
 
 const planned = [
   { emoji: '🎁', label: 'Gift Cards' },
   { emoji: '📍', label: 'Locations' },
   { emoji: '🏭', label: 'Wholesale' },
-  { emoji: '🔨', label: 'Auctions' },
+  { emoji: '🔨', label: 'Auctions' }
 ]
 </script>
 
 <template>
-  <DiagramContainer icon="i-lucide-shapes" max-width="max-w-5xl">
-    <DiagramHeader title="Domain Coverage" subtitle="Unified Type System" />
+  <DiagramContainer
+    icon="i-lucide-shapes"
+    max-width="max-w-5xl"
+  >
+    <DiagramHeader
+      title="Domain Coverage"
+      subtitle="Unified Type System"
+    />
 
     <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
       <!-- Implemented -->
-      <DiagramPanel label="Implemented Domains" color="success" variant="dashed">
+      <DiagramPanel
+        label="Implemented Domains"
+        color="success"
+        variant="dashed"
+      >
         <div class="grid w-full grid-cols-2 gap-2 sm:grid-cols-3">
           <div
             v-for="domain in implemented"
@@ -42,7 +52,11 @@ const planned = [
       </DiagramPanel>
 
       <!-- Planned -->
-      <DiagramPanel label="Planned Domains" color="secondary" variant="dashed">
+      <DiagramPanel
+        label="Planned Domains"
+        color="secondary"
+        variant="dashed"
+      >
         <div class="grid w-full grid-cols-2 gap-2">
           <div
             v-for="domain in planned"
@@ -59,7 +73,7 @@ const planned = [
     <DiagramFooter
       :legends="[
         { color: '#10b981', label: 'Implemented' },
-        { color: '#64748b', label: 'Planned' },
+        { color: '#64748b', label: 'Planned' }
       ]"
       document-id="COMMERCE_JS_TYPES_01"
     />

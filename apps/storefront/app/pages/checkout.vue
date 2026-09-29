@@ -779,7 +779,7 @@ useHead({
 
           <USeparator />
 
-          <div class="flex justify-between text-lg font-bold">
+          <div class="flex justify-between text-lg font-semibold">
             <span>Total</span>
             <span class="text-primary">{{ formatPrice(total) }}</span>
           </div>

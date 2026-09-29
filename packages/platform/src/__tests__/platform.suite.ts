@@ -3,9 +3,9 @@
 // ---------------------------------------------------------------------------
 // All adapter tests. Each driver test file calls this with its own setup.
 
-import { it, expect, beforeEach } from 'vitest'
+import { it as baseIt, expect, beforeEach } from 'vitest'
 import { createPlatformAdapter } from '../adapter.js'
-import type { CommerceAdapter, Address } from '@commercejs/types'
+import type { Address } from '@commercejs/types'
 
 /** Helper: create a full Address with all required fields */
 function fullAddress(overrides: Partial<Address> = {}): Omit<Address, 'id' | 'isDefault'> {
@@ -35,6 +35,12 @@ export interface SuiteOptions {
 
 export function platformTestSuite(opts: SuiteOptions, timeout = 30_000) {
   let adapter: any
+
+  // Every test in this suite talks to a database, so they all need a longer
+  // timeout than vitest's 5s default. Wrap `it` once instead of repeating the
+  // timeout on all 46 test declarations below.
+  const it = ((name: string, fn: () => unknown) =>
+    baseIt(name, fn as () => Promise<void>, timeout)) as typeof baseIt
 
   beforeEach(async () => {
     await opts.setup()

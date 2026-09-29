@@ -72,7 +72,7 @@ const cartBadge = computed(() =>
           <!-- Logo -->
           <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
             <UIcon name="i-heroicons-shopping-bag-20-solid" class="text-2xl text-primary" />
-            <span class="text-lg font-bold text-highlighted">
+            <span class="text-lg font-semibold text-highlighted">
               {{ storeName }}
             </span>
           </NuxtLink>
@@ -167,7 +167,7 @@ const cartBadge = computed(() =>
           <div class="md:col-span-1">
             <div class="flex items-center gap-2 mb-4">
               <UIcon name="i-heroicons-shopping-bag-20-solid" class="text-xl text-primary" />
-              <span class="font-bold text-highlighted">{{ storeName }}</span>
+              <span class="font-semibold text-highlighted">{{ storeName }}</span>
             </div>
             <p class="text-sm text-muted">
               A premium storefront experience powered by CommerceJS.

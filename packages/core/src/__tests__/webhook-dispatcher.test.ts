@@ -1,15 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Mock } from 'vitest'
 import { createWebhookDispatcher } from '../webhook-dispatcher.js'
 import { CommerceEventBus } from '../event-bus.js'
 import type { CommerceEvents } from '../events.js'
 
+/** Read the plain-object headers the dispatcher sends on a given mock call */
+function headersOf(call: unknown[]): Record<string, string> {
+  return (call[1] as RequestInit).headers as Record<string, string>
+}
+
 describe('createWebhookDispatcher', () => {
   let bus: CommerceEventBus<CommerceEvents>
-  let mockFetch: ReturnType<typeof vi.fn>
+  let mockFetch: Mock<typeof fetch>
 
   beforeEach(() => {
     bus = new CommerceEventBus<CommerceEvents>()
-    mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    mockFetch = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 200 }))
   })
 
   it('should dispatch events to subscribed endpoints', async () => {
@@ -94,9 +100,10 @@ describe('createWebhookDispatcher', () => {
     await bus.emit('order.created', { order: { id: 'ord_1' } as any })
 
     const callArgs = mockFetch.mock.calls[0]
-    expect(callArgs[1].headers['X-Commerce-Event']).toBe('order.created')
-    expect(callArgs[1].headers['Content-Type']).toBe('application/json')
-    expect(callArgs[1].headers['X-Commerce-Delivery']).toBeDefined()
+    const headers = headersOf(callArgs)
+    expect(headers['X-Commerce-Event']).toBe('order.created')
+    expect(headers['Content-Type']).toBe('application/json')
+    expect(headers['X-Commerce-Delivery']).toBeDefined()
   })
 
   it('should sign payload when sign function and secret are provided', async () => {
@@ -117,13 +124,13 @@ describe('createWebhookDispatcher', () => {
 
     expect(sign).toHaveBeenCalledWith(expect.any(String), 'my-secret')
     const callArgs = mockFetch.mock.calls[0]
-    expect(callArgs[1].headers['X-Commerce-Signature']).toBe('sig_abc123')
+    expect(headersOf(callArgs)['X-Commerce-Signature']).toBe('sig_abc123')
   })
 
   it('should retry on 5xx errors', async () => {
     mockFetch
-      .mockResolvedValueOnce({ ok: false, status: 500 })
-      .mockResolvedValueOnce({ ok: true, status: 200 })
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
 
     const { deliveries } = createWebhookDispatcher(bus, {
       endpoints: [{
@@ -144,7 +151,7 @@ describe('createWebhookDispatcher', () => {
   })
 
   it('should NOT retry on 4xx errors', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 400 })
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 400 }))
 
     const { deliveries } = createWebhookDispatcher(bus, {
       endpoints: [{

@@ -12,8 +12,8 @@ const groups = ref([
       { label: 'AirPods Pro', icon: 'i-heroicons-speaker-wave', suffix: '$249' },
       { label: 'Apple Watch Ultra', icon: 'i-heroicons-clock', suffix: '$799' },
       { label: 'Samsung Galaxy S24', icon: 'i-heroicons-device-phone-mobile', suffix: '$899' },
-      { label: 'Sony WH-1000XM5', icon: 'i-heroicons-speaker-wave', suffix: '$349' },
-    ],
+      { label: 'Sony WH-1000XM5', icon: 'i-heroicons-speaker-wave', suffix: '$349' }
+    ]
   },
   {
     id: 'categories',
@@ -21,9 +21,9 @@ const groups = ref([
     items: [
       { label: 'Electronics', icon: 'i-heroicons-bolt' },
       { label: 'Clothing', icon: 'i-heroicons-shopping-bag' },
-      { label: 'Accessories', icon: 'i-heroicons-sparkles' },
-    ],
-  },
+      { label: 'Accessories', icon: 'i-heroicons-sparkles' }
+    ]
+  }
 ])
 </script>
 

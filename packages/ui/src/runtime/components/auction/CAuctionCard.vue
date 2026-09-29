@@ -169,7 +169,7 @@ const slotClasses = computed(() => {
 
     <!-- Body -->
     <div :class="['p-4 space-y-2', slotClasses.body]">
-      <slot name="title" :name="productName">
+      <slot name="title" :title="productName">
         <h3 :class="['font-medium text-sm text-highlighted line-clamp-2', slotClasses.title]">{{ productName }}</h3>
       </slot>
 
@@ -178,7 +178,7 @@ const slotClasses = computed(() => {
         <div v-if="auctionMeta" :class="['space-y-1', slotClasses.bidInfo]">
           <div class="flex items-baseline justify-between">
             <span class="text-xs text-muted">{{ auctionMeta.bidCount > 0 ? 'Current Bid' : 'Starting Price' }}</span>
-            <span :class="['font-bold text-lg text-highlighted', slotClasses.currentBid]">
+            <span :class="['font-semibold text-lg text-highlighted', slotClasses.currentBid]">
               {{ auctionMeta.currentBid?.formatted || auctionMeta.startingPrice.formatted }}
             </span>
           </div>
