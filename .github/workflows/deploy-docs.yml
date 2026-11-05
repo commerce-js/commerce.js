@@ -12,7 +12,21 @@ on:
       - 'packages/types/**'
 
 jobs:
+  # Fail-fast integrity gate (docs/security/2026-07-18-repo-compromise.md).
+  # Runs first with no pnpm install; the jobs below `needs:` it so a poisoned
+  # tree never reaches install/build/publish.
+  security-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/ci/security-guard.mjs
+
   build:
+    needs: security-guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
